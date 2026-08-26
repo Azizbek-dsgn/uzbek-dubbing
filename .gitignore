@@ -1,0 +1,33 @@
+# Maxfiy ma'lumotlar
+.env
+.env.*
+kalitsheet.json
+GOOGLE_CREDENTIALS*.json
+
+# Telegram / Telethon sessions — NEVER commit these
+*.session
+*.session-journal
+
+# Runtime Telegram poster cache
+static/posters/tg_*
+
+# Baza va loglar
+*.db
+*.db-shm
+*.db-wal
+*.sqlite
+bot.log*
+backup_*.db
+
+# Python
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# Local dubbing pipeline runtime files
+.dubbing_work/
+output_uzbek.*
+
+# Tizim
+.DS_Store
+.vscode/
