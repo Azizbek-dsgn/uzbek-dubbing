@@ -1,45 +1,60 @@
-# Uzbek Dubbing Pipeline
+# O‘zbekcha subtitr plagini
 
-Ingliz yoki rus tilidagi video va podkastlarni o‘zbek tiliga tabiiy dublyaj qilish uchun mahalliy Python pipeline.
-
-Pipeline audio ajratadi, `faster-whisper` bilan vaqt kodli transkripsiya yaratadi, Gemini yordamida tabiiy o‘zbekchaga tarjima qiladi, Edge-TTS orqali Sardor yoki Madina ovozini hosil qiladi, segmentlarni original timeline bo‘yicha yig‘adi va original fon ovozini pasaytirib yakuniy video yaratadi.
-
-## O‘rnatish
-
-```bash
-python3 -m venv .venv
-source .venv/bin/activate
-pip install -r dubbing/requirements.txt
-sudo apt install ffmpeg
-cp dubbing/.env.example .env
-```
-
-`.env` ichiga `GEMINI_API_KEY` qiymatini yozing. `.env` Git’ga kiritilmaydi.
+Premiere Pro va After Effects uchun bepul, lokal CEP panel. U faol sequence yoki kompozitsiyadagi audioni eksport qiladi, tanlangan model bilan o‘zbekcha nutqni so‘z vaqtigacha taniydi va subtitrlarni timeline’ga qo‘yadi. API kaliti kerak emas; model bir marta yuklangach internet talab qilinmaydi.
 
 ## Ishlatish
 
+1. Premiere Pro’da sequence’ni yoki After Effects’da kompozitsiyani oching.
+2. Kerakli joyga In/Out nuqtalarini qo‘ying. AE’da Work Area belgilang. Belgilanmagan bo‘lsa butun timeline olinadi.
+3. **Window → Extensions → Uzbek Subtitles** panelini oching, oraliq va modelni tanlang. Qisqa, O‘rta yoki Uzun uslubini tanlang yoki qatorlar soni, har qatordagi so‘z, belgi va davomiylikni qo‘lda kiriting. Nuqta/undov/so‘roq, vergul va pauza bo‘yicha bo‘lishni alohida yoqing. Boshlanish/oxir vaqtini millisekundlarda surish va minimal ko‘rinish vaqtini ham sozlash mumkin.
+4. **Timeline’ga subtitr qo‘shish** tugmasini bosing. Premiere’da caption track, AE’da vaqtli matn qatlamlari yaratiladi. SRT nusxasi `exports/` papkasida qoladi.
+
+Oraliq tanlovida **Faqat In/Out** belgilar bo‘lmasa xato beradi; **To‘liq timeline** belgilarni e’tiborsiz qoldiradi. GigaAM Uzbek o‘rnatilgan bo‘lsa panel uni dastlab tanlaydi. NavAI va umumiy `large-v3`, `medium`, `small` modellari ham qoladi. GigaAM tinish belgilarini va so‘z vaqtlarini o‘z CTC chiqishidan oladi. Qator va so‘z chegaralari transkripsiya matnini bo‘ladi; xato eshitilgan so‘zni o‘zi tuzatmaydi.
+
+## Suhbat nutqi uchun GigaAM Uzbek
+
+[`rustam1221/uzbek-asr-gigaam`](https://huggingface.co/rustam1221/uzbek-asr-gigaam) `large_full_600m` modeli o‘zbekcha suhbat nutqiga moslashtirilgan. Uni o‘rnatish uchun loyiha ildizida:
+
 ```bash
-python3 -m dubbing \
-  --input /path/to/video.mp4 \
-  --voice sardor \
-  --lang auto \
-  --output output_uzbek.mp4
+python3 -m pip install -r subtitles/requirements.txt -r subtitles/requirements-gigaam.txt huggingface_hub
+python3 -c 'from huggingface_hub import snapshot_download; snapshot_download("ai-sage/GigaAM-Multilingual", revision="large_ctc", local_dir="models/gigaam-base-large", allow_patterns=["config.json", "modeling_gigaam.py"])'
+python3 -c 'from huggingface_hub import hf_hub_download; hf_hub_download("rustam1221/uzbek-asr-gigaam", "checkpoints/large_full_600m/best.pt", local_dir="models/gigaam-uzbek")'
 ```
 
-YouTube URL uchun:
+Taxminan 2.3 GB checkpoint yuklanadi. Mavjud o‘rnatilgan plagin uchun Python paketlarini uning `.venv/bin/python` fayli bilan o‘rnating. Model bir marta yuklangach internet talab qilmaydi. Boshqa ovozlar, shevalar va shovqinda sifat o‘zgaradi; yakuniy subtitrni tekshiring.
+
+## O‘zbekchaga maxsus model
+
+[`navai-uz/whisper-medium-uzbek`](https://huggingface.co/navai-uz/whisper-medium-uzbek) Apache-2.0 litsenziyali model. Uni `faster-whisper` uchun CTranslate2 `int8` formatiga o‘girib `models/navai-medium/` papkasiga joylang:
 
 ```bash
-python3 -m dubbing --input "https://www.youtube.com/watch?v=VIDEO_ID" --voice madina
+python3 -m pip install 'transformers>=4.40,<5' 'torch>=2.2'
+python3 -c 'from huggingface_hub import snapshot_download; snapshot_download("navai-uz/whisper-medium-uzbek", local_dir="models/navai-medium-source")'
+python3 -c 'from transformers import AutoTokenizer; p="models/navai-medium-source"; AutoTokenizer.from_pretrained(p, use_fast=True).save_pretrained(p)'
+ct2-transformers-converter --model models/navai-medium-source \
+  --output_dir models/navai-medium --quantization int8 \
+  --copy_files tokenizer.json preprocessor_config.json
 ```
 
-Lokal audio manbada natija `output_uzbek.wav` bo‘ladi. `--whisper-model large-v3` sifatni oshiradi, ammo `medium` boshlash uchun yengilroq variant.
+Konvertatsiya uchun qo‘shimcha disk va xotira kerak. Model bir marta tayyorlangach lokal ishlaydi. Nutqdagi sheva, shovqin yoki ruscha/turkcha aralash so‘zlar uchun 100% aniqlik kafolati yo‘q.
 
-## Davom ettirish
+## O‘rnatish
 
-`--work-dir` katalogida `checkpoint.json`, transkripsiya, tarjimalar va tayyor segmentlar saqlanadi. Jarayon Gemini yoki TTS bosqichida to‘xtasa, qayta ishga tushirilganda tugallangan bosqichlar qayta bajarilmaydi.
+Python 3.10+ bilan `pip install -r subtitles/requirements.txt` bajaring. `adobe/UzbekSubtitles` papkasini Adobe CEP extensions katalogiga symlink qiling. Imzosiz development paneli uchun `PlayerDebugMode=1` kerak. Adobe dasturini qayta ishga tushiring. Mac’da:
 
-To‘liq texnik ma’lumot: [`dubbing/README.md`](dubbing/README.md).
+```bash
+mkdir -p "$HOME/Library/Application Support/Adobe/CEP/extensions"
+ln -s "$(pwd)/adobe/UzbekSubtitles" "$HOME/Library/Application Support/Adobe/CEP/extensions/UzbekSubtitles"
+```
 
-## O‘zbekcha subtitr plagini
+Panel repo ichidagi `.venv/bin/python` ni o‘zi topadi; boshqa Python ishlatsangiz paneldagi yo‘lni o‘zgartiring. Premiere eksporti Adobe o‘rnatgan `WAV_Mono_16bit_16kHz.epr` presetiga tayanadi; hozirgi avtomatik qidiruv macOS’dagi Premiere 2024–2026 paketlariga mo‘ljallangan.
 
-Premiere Pro va After Effects uchun bepul, lokal CEP paneli qo‘shildi. U faol timeline’dagi In/Out yoki to‘liq audioni transkripsiya qiladi va subtitrlarni o‘z vaqtida timeline’ga joylaydi. Qator, so‘z va pauza sozlamalari bor; o‘zbekchaga maxsus NavAI modelini ham qo‘llaydi. Gemini kaliti kerak emas. O‘rnatish va ishlatish: [`subtitles/README.md`](subtitles/README.md).
+## Alohida SRT yaratish
+
+```bash
+python3 subtitles/cli.py --input audio.wav --output audio.uz.srt --model large-v3 --fps 25
+```
+
+SRT UTF-8 BOM bilan yoziladi. Timestamps kadrga moslanadi. Sheva, fon shovqini va aralash til xatolar keltirishi mumkin, shuning uchun yakuniy subtitrni ko‘zdan kechiring.
+
+`adobe/premiere-uxp` katalogidagi UXP panel SRT importi uchun qo‘shimcha fallback; avtomatik timeline jarayoni CEP panelida.
