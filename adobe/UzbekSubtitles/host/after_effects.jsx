@@ -1,4 +1,4 @@
-function importUzbekSrt(srtPath) {
+function importUzbekSrt(srtPath, offsetSeconds) {
     if (!app.project || !app.project.activeItem || !(app.project.activeItem instanceof CompItem)) {
         return "Avval After Effects kompozitsiyasini oching. SRT: " + srtPath;
     }
@@ -26,6 +26,9 @@ function importUzbekSrt(srtPath) {
             var start = seconds(range[1]);
             var end = seconds(range[2]);
             if (start === null || end === null || end <= start || start >= comp.duration) { continue; }
+            start += Number(offsetSeconds) || 0;
+            end += Number(offsetSeconds) || 0;
+            if (start >= comp.duration) { continue; }
             var layer = comp.layers.addText(lines.slice(2).join("\r"));
             var text = layer.property("Source Text").value;
             text.fontSize = Math.max(28, Math.round(comp.width / 32));
@@ -35,7 +38,7 @@ function importUzbekSrt(srtPath) {
             text.justification = ParagraphJustification.CENTER_JUSTIFY;
             layer.property("Source Text").setValue(text);
             layer.property("Position").setValue([comp.width / 2, comp.height * 0.88]);
-            layer.startTime = start;
+            layer.startTime = 0;
             layer.inPoint = start;
             layer.outPoint = Math.min(end, comp.duration);
             count++;
