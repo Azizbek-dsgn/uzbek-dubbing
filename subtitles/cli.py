@@ -83,7 +83,10 @@ def make_cues(
     frame = 1.0 / fps
     for i, group in enumerate(groups):
         start = max(0.0, math.floor(group[0].start * fps) / fps)
-        end = math.ceil(group[-1].end * fps) / fps
+        if result:
+            start = max(start, result[-1].end + frame)
+        end = max(math.ceil(group[-1].end * fps) / fps,
+                  start + math.ceil(0.8 * fps) / fps)
         if i + 1 < len(groups):
             next_start = math.floor(groups[i + 1][0].start * fps) / fps
             end = min(end, next_start - frame)
