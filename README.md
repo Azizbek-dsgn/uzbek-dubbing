@@ -42,4 +42,4 @@ To‘liq texnik ma’lumot: [`dubbing/README.md`](dubbing/README.md).
 
 ## O‘zbekcha subtitr plagini
 
-Premiere Pro va After Effects uchun bepul, lokal CEP paneli qo‘shildi. U faol timeline’dagi In/Out yoki to‘liq audioni transkripsiya qiladi va subtitrlarni o‘z vaqtida timeline’ga joylaydi; Gemini kaliti kerak emas. O‘rnatish va ishlatish: [`subtitles/README.md`](subtitles/README.md).
+Premiere Pro va After Effects uchun bepul, lokal CEP paneli qo‘shildi. U faol timeline’dagi In/Out yoki to‘liq audioni transkripsiya qiladi va subtitrlarni o‘z vaqtida timeline’ga joylaydi. Qator, so‘z va pauza sozlamalari bor; o‘zbekchaga maxsus NavAI modelini ham qo‘llaydi. Gemini kaliti kerak emas. O‘rnatish va ishlatish: [`subtitles/README.md`](subtitles/README.md).
