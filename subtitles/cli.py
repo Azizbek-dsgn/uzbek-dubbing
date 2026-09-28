@@ -130,6 +130,17 @@ def _reliable_segment(segment: object) -> bool:
 
 
 def transcribe(path: Path, model_name: str, device: str) -> list[Word]:
+    if model_name == "gigaam-uzbek":
+        if __package__:
+            from .gigaam import transcribe as gigaam_transcribe
+        else:
+            from gigaam import transcribe as gigaam_transcribe
+        root = Path(__file__).resolve().parent.parent / "models"
+        rows = gigaam_transcribe(path, root / "gigaam-base-large",
+                                 root / "gigaam-uzbek" / "checkpoints" / "large_full_600m" / "best.pt",
+                                 device)
+        return [Word(max(0.0, start), max(start + 0.01, end), text)
+                for start, end, text in rows]
     try:
         from faster_whisper import WhisperModel
     except ImportError as exc:
@@ -171,8 +182,8 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Offline o'zbekcha SRT subtitr yaratuvchi")
     parser.add_argument("--input", required=True, type=Path)
     parser.add_argument("--output", required=True, type=Path)
-    parser.add_argument("--model", default="large-v3", choices=["small", "medium", "large-v3", "navai-medium"])
-    parser.add_argument("--device", default="auto", choices=["auto", "cpu", "cuda"])
+    parser.add_argument("--model", default="large-v3", choices=["small", "medium", "large-v3", "navai-medium", "gigaam-uzbek"])
+    parser.add_argument("--device", default="auto", choices=["auto", "cpu", "cuda", "mps"])
     parser.add_argument("--fps", type=float, default=25.0)
     parser.add_argument("--max-chars", type=int, default=42)
     parser.add_argument("--lines", type=int, default=2)
