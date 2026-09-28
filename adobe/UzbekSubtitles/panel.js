@@ -12,12 +12,55 @@
   var model = document.getElementById('model');
   var fps = document.getElementById('fps');
   var range = document.getElementById('range');
+  var style = document.getElementById('style');
+  var lines = document.getElementById('lines');
+  var words = document.getElementById('words');
+  var chars = document.getElementById('chars');
+  var duration = document.getElementById('duration');
+  var pause = document.getElementById('pause');
+  var preview = document.getElementById('preview');
   var run = document.getElementById('run');
   var refresh = document.getElementById('refresh');
   var timeline = document.getElementById('timeline');
   var status = document.getElementById('status');
   var localPython = path.join(root, '.venv', process.platform === 'win32' ? 'Scripts/python.exe' : 'bin/python');
   python.value = fs.existsSync(localPython) ? localPython : (process.platform === 'win32' ? 'python' : 'python3');
+  if (fs.existsSync(path.join(root, 'models', 'navai-medium', 'model.bin'))) {
+    var option = document.createElement('option');
+    option.value = 'navai-medium';
+    option.textContent = 'NavAI Uzbek medium — o‘zbekchaga mos';
+    model.insertBefore(option, model.firstChild);
+    model.value = 'navai-medium';
+  }
+
+  var styles = {
+    short: [1, 4, 36, 3.0, 0.45],
+    medium: [2, 3, 42, 5.0, 0.65],
+    long: [2, 6, 50, 7.0, 0.8]
+  };
+  function updatePreview() {
+    var sample = ['Bugun', 'o‘zbekcha', 'subtitrlar', 'aniq', 'vaqt', 'bilan', 'ekranda', 'chiqadi'];
+    var count = Math.max(1, Math.min(8, Number(words.value) || 1));
+    var rows = Math.max(1, Math.min(3, Number(lines.value) || 1));
+    var result = [];
+    for (var i = 0; i < rows; i++) result.push(sample.slice(i * count, (i + 1) * count).join(' '));
+    preview.textContent = result.filter(Boolean).join('\n');
+  }
+  function applyStyle() {
+    var values = styles[style.value];
+    if (!values) return;
+    [lines, words, chars, duration, pause].forEach(function (field, i) { field.value = values[i]; });
+    updatePreview();
+  }
+  style.onchange = applyStyle;
+  [lines, words, chars, duration, pause].forEach(function (field) {
+    field.oninput = function () { style.value = 'custom'; updatePreview(); };
+  });
+  updatePreview();
+  function validNumber(field, minimum, maximum) {
+    var value = Number(field.value);
+    return isFinite(value) && value >= minimum && value <= maximum ? value : null;
+  }
 
   function show(message) { status.textContent = message; }
   function hostCall(script, expression, callback) {
@@ -80,7 +123,9 @@
     var script = path.join(root, 'subtitles', 'cli.py');
     if (!fs.existsSync(script)) { removeTemp(audio); finish('Python moduli topilmadi.'); return; }
     show('O‘zbekcha nutq va so‘z vaqtlarini aniqlayapman...');
-    var args = [script, '--input', audio, '--output', srt, '--model', model.value, '--fps', fps.value];
+    var args = [script, '--input', audio, '--output', srt, '--model', model.value, '--fps', fps.value,
+      '--lines', lines.value, '--words-per-line', words.value, '--max-chars', chars.value,
+      '--max-duration', duration.value, '--pause', pause.value];
     var child = spawn(python.value.trim(), args, {cwd: root});
     var stderr = '', ended = false;
     child.stderr.on('data', function (data) { stderr += String(data); show(stderr.slice(-1500)); });
@@ -101,6 +146,12 @@
   run.onclick = function () {
     var rate = Number(fps.value);
     if (!isFinite(rate) || rate <= 0 || rate > 120) { show('FPS 1–120 oralig‘ida bo‘lsin.'); return; }
+    if (validNumber(lines, 1, 3) === null || validNumber(words, 1, 8) === null ||
+        validNumber(chars, 8, 80) === null || validNumber(duration, 1, 10) === null ||
+        validNumber(pause, 0.1, 2) === null || Number(lines.value) % 1 ||
+        Number(words.value) % 1 || Number(chars.value) % 1) {
+      show('Qator, so‘z, belgi va vaqt sozlamalarini tekshiring.'); return;
+    }
     if (!python.value.trim()) { show('Python yo‘lini kiriting.'); return; }
     run.disabled = true; refresh.disabled = true;
     show('Faol timeline tekshirilmoqda...');
