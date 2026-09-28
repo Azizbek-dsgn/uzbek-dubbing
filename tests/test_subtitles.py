@@ -53,6 +53,24 @@ class SubtitleTests(unittest.TestCase):
         self.assertFalse(_reliable_segment(weak))
         self.assertTrue(_reliable_segment(spoken))
 
+    def test_sentence_and_comma_boundaries_are_configurable(self):
+        words = [Word(0, .3, "Salom,"), Word(.31, .6, "bugun."),
+                 Word(.61, .9, "Yaxshi"), Word(.91, 1.2, "kun.")]
+        combined = make_cues(words, split_sentences=False, split_commas=False,
+                             split_pauses=False, max_lines=2, words_per_line=4)
+        self.assertEqual(len(combined), 1)
+        sentences = make_cues(words, split_sentences=True, split_commas=False,
+                              split_pauses=False, max_lines=2, words_per_line=4)
+        self.assertEqual([cue.text for cue in sentences], ["Salom, bugun.", "Yaxshi kun."])
+        commas = make_cues(words, split_sentences=False, split_commas=True,
+                           split_pauses=False, max_lines=2, words_per_line=4)
+        self.assertEqual([cue.text for cue in commas], ["Salom,", "bugun. Yaxshi kun."])
+
+    def test_start_and_end_padding_are_frame_aligned(self):
+        cues = make_cues([Word(1.0, 1.5, "Salom.")], fps=25,
+                         start_pad=.08, end_pad=.12, min_duration=0)
+        self.assertEqual((cues[0].start, cues[0].end), (.92, 1.64))
+
 
 if __name__ == "__main__":
     unittest.main()
