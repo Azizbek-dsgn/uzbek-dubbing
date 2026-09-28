@@ -1,6 +1,6 @@
 # O‘zbekcha subtitr plagini
 
-Premiere Pro va After Effects uchun bepul, lokal CEP panel. U faol sequence yoki kompozitsiyadagi audioni eksport qiladi, `faster-whisper` bilan o‘zbekcha nutqni so‘z vaqtigacha taniydi va subtitrlarni timeline’ga qo‘yadi. API kaliti kerak emas; model bir marta yuklangach internet talab qilinmaydi.
+Premiere Pro va After Effects uchun bepul, lokal CEP panel. U faol sequence yoki kompozitsiyadagi audioni eksport qiladi, tanlangan model bilan o‘zbekcha nutqni so‘z vaqtigacha taniydi va subtitrlarni timeline’ga qo‘yadi. API kaliti kerak emas; model bir marta yuklangach internet talab qilinmaydi.
 
 ## Ishlatish
 
@@ -9,7 +9,19 @@ Premiere Pro va After Effects uchun bepul, lokal CEP panel. U faol sequence yoki
 3. **Window → Extensions → Uzbek Subtitles** panelini oching, oraliq va modelni tanlang. Qisqa, O‘rta yoki Uzun uslubini tanlang yoki qatorlar soni, har qatordagi so‘z, belgi va davomiylikni qo‘lda kiriting. Nuqta/undov/so‘roq, vergul va pauza bo‘yicha bo‘lishni alohida yoqing. Boshlanish/oxir vaqtini millisekundlarda surish va minimal ko‘rinish vaqtini ham sozlash mumkin.
 4. **Timeline’ga subtitr qo‘shish** tugmasini bosing. Premiere’da caption track, AE’da vaqtli matn qatlamlari yaratiladi. SRT nusxasi `exports/` papkasida qoladi.
 
-Oraliq tanlovida **Faqat In/Out** belgilar bo‘lmasa xato beradi; **To‘liq timeline** belgilarni e’tiborsiz qoldiradi. O‘zbekchaga maxsus o‘qitilgan NavAI modeli o‘rnatilgan bo‘lsa panel uni asosiy model sifatida tanlaydi. Umumiy `large-v3`, `medium` va `small` modellari ham mavjud. Qator va so‘z chegaralari transkripsiya matnini bo‘ladi; xato eshitilgan so‘zni o‘zi tuzatmaydi. Nuqta yoki vergul audio nutqdan noto‘g‘ri tanilsa, u yerdagi bo‘linishni qo‘lda tuzatish kerak bo‘lishi mumkin.
+Oraliq tanlovida **Faqat In/Out** belgilar bo‘lmasa xato beradi; **To‘liq timeline** belgilarni e’tiborsiz qoldiradi. GigaAM Uzbek o‘rnatilgan bo‘lsa panel uni dastlab tanlaydi. NavAI va umumiy `large-v3`, `medium`, `small` modellari ham qoladi. GigaAM tinish belgilarini va so‘z vaqtlarini o‘z CTC chiqishidan oladi. Qator va so‘z chegaralari transkripsiya matnini bo‘ladi; xato eshitilgan so‘zni o‘zi tuzatmaydi.
+
+## Suhbat nutqi uchun GigaAM Uzbek
+
+[`rustam1221/uzbek-asr-gigaam`](https://huggingface.co/rustam1221/uzbek-asr-gigaam) `large_full_600m` modeli o‘zbekcha suhbat nutqiga moslashtirilgan. Uni o‘rnatish uchun loyiha ildizida:
+
+```bash
+python3 -m pip install -r subtitles/requirements.txt -r subtitles/requirements-gigaam.txt huggingface_hub
+python3 -c 'from huggingface_hub import snapshot_download; snapshot_download("ai-sage/GigaAM-Multilingual", revision="large_ctc", local_dir="models/gigaam-base-large", allow_patterns=["config.json", "modeling_gigaam.py"])'
+python3 -c 'from huggingface_hub import hf_hub_download; hf_hub_download("rustam1221/uzbek-asr-gigaam", "checkpoints/large_full_600m/best.pt", local_dir="models/gigaam-uzbek")'
+```
+
+Taxminan 2.3 GB checkpoint yuklanadi. Mavjud o‘rnatilgan plagin uchun Python paketlarini uning `.venv/bin/python` fayli bilan o‘rnating. Model bir marta yuklangach internet talab qilmaydi. Boshqa ovozlar, shevalar va shovqinda sifat o‘zgaradi; yakuniy subtitrni tekshiring.
 
 ## O‘zbekchaga maxsus model
 
