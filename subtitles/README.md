@@ -17,7 +17,9 @@ Oraliq tanlovida **Faqat In/Out** belgilar bo‘lmasa xato beradi; **To‘liq ti
 
 ```bash
 python3 -m pip install 'transformers>=4.40,<5' 'torch>=2.2'
-ct2-transformers-converter --model navai-uz/whisper-medium-uzbek \
+python3 -c 'from huggingface_hub import snapshot_download; snapshot_download("navai-uz/whisper-medium-uzbek", local_dir="models/navai-medium-source")'
+python3 -c 'from transformers import AutoTokenizer; p="models/navai-medium-source"; AutoTokenizer.from_pretrained(p, use_fast=True).save_pretrained(p)'
+ct2-transformers-converter --model models/navai-medium-source \
   --output_dir models/navai-medium --quantization int8 \
   --copy_files tokenizer.json preprocessor_config.json
 ```
