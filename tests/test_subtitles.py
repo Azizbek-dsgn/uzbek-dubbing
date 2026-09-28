@@ -1,6 +1,7 @@
 import unittest
+from types import SimpleNamespace
 
-from subtitles.cli import Word, make_cues, to_srt
+from subtitles.cli import Word, _reliable_segment, make_cues, to_srt
 
 
 class SubtitleTests(unittest.TestCase):
@@ -40,6 +41,17 @@ class SubtitleTests(unittest.TestCase):
         cues = make_cues(words, max_lines=2, words_per_line=2)
         self.assertEqual(cues[0].text, "Bugun havo\njuda yaxshi")
         self.assertEqual(cues[1].text, "ertalab uchrashamiz")
+
+    def test_subword_without_space_stays_attached(self):
+        cues = make_cues([Word(0, 0.2, "Wi"), Word(0.2, 0.4, "-Fi"),
+                          Word(0.5, 0.7, " ishlaydi.")])
+        self.assertEqual(cues[0].text, "Wi-Fi ishlaydi.")
+
+    def test_low_confidence_hallucination_is_filtered(self):
+        weak = SimpleNamespace(avg_logprob=-1.3, words=[SimpleNamespace(probability=0.001)])
+        spoken = SimpleNamespace(avg_logprob=-0.3, words=[SimpleNamespace(probability=0.9)])
+        self.assertFalse(_reliable_segment(weak))
+        self.assertTrue(_reliable_segment(spoken))
 
 
 if __name__ == "__main__":
