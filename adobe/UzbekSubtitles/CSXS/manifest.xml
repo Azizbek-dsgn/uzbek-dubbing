@@ -16,7 +16,7 @@
       <DispatchInfo>
         <Resources>
           <MainPath>./index.html</MainPath>
-          <CEFCommandLine><Parameter>--enable-nodejs</Parameter></CEFCommandLine>
+          <CEFCommandLine><Parameter>--enable-nodejs</Parameter><Parameter>--mixed-context</Parameter></CEFCommandLine>
         </Resources>
         <Lifecycle><AutoVisible>true</AutoVisible></Lifecycle>
         <UI><Type>Panel</Type><Menu>Uzbek Subtitles</Menu><Geometry><Size><Width>380</Width><Height>440</Height></Size></Geometry></UI>
