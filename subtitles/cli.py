@@ -123,7 +123,9 @@ def transcribe(path: Path, model_name: str, device: str) -> list[Word]:
             device = "cuda" if probe.returncode == 0 and probe.stdout else "cpu"
         except (FileNotFoundError, subprocess.TimeoutExpired):
             device = "cpu"
-    model = WhisperModel(model_name, device=device,
+    local_model = Path(__file__).resolve().parent.parent / "models" / model_name
+    model_ref = str(local_model) if (local_model / "model.bin").is_file() else model_name
+    model = WhisperModel(model_ref, device=device,
                          compute_type="float16" if device == "cuda" else "int8")
     segments, _ = model.transcribe(
         str(path), language="uz", beam_size=5, vad_filter=True,
