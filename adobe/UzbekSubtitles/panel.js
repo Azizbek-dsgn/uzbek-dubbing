@@ -18,7 +18,14 @@
   var chars = document.getElementById('chars');
   var duration = document.getElementById('duration');
   var pause = document.getElementById('pause');
+  var splitSentences = document.getElementById('splitSentences');
+  var splitCommas = document.getElementById('splitCommas');
+  var splitPauses = document.getElementById('splitPauses');
+  var startPad = document.getElementById('startPad');
+  var endPad = document.getElementById('endPad');
+  var minCue = document.getElementById('minCue');
   var preview = document.getElementById('preview');
+  var boundaryPreview = document.getElementById('boundaryPreview');
   var run = document.getElementById('run');
   var refresh = document.getElementById('refresh');
   var timeline = document.getElementById('timeline');
@@ -56,6 +63,10 @@
       if (line.length) result.push(line.join(' '));
     }
     preview.textContent = result.join('\n');
+    var example = 'Bugun, havo yaxshi. Ertaga uchrashamiz.';
+    if (splitCommas.checked) example = example.replace(/, /g, ',\n');
+    if (splitSentences.checked) example = example.replace(/([.!?]) /g, '$1\n');
+    boundaryPreview.textContent = example;
   }
   function applyStyle() {
     var values = styles[style.value];
@@ -67,6 +78,9 @@
   [lines, words, chars, duration, pause].forEach(function (field) {
     field.oninput = function () { style.value = 'custom'; updatePreview(); };
   });
+  splitPauses.onchange = function () { pause.disabled = !splitPauses.checked; };
+  splitSentences.onchange = updatePreview;
+  splitCommas.onchange = updatePreview;
   updatePreview();
   function validNumber(field, minimum, maximum) {
     var value = Number(field.value);
@@ -136,7 +150,11 @@
     show('O‘zbekcha nutq va so‘z vaqtlarini aniqlayapman...');
     var args = [script, '--input', audio, '--output', srt, '--model', model.value, '--fps', fps.value,
       '--lines', lines.value, '--words-per-line', words.value, '--max-chars', chars.value,
-      '--max-duration', duration.value, '--pause', pause.value];
+      '--max-duration', duration.value, '--pause', pause.value, '--start-pad-ms', startPad.value,
+      '--end-pad-ms', endPad.value, '--min-cue-duration', minCue.value];
+    if (!splitSentences.checked) args.push('--no-sentence-split');
+    if (splitCommas.checked) args.push('--split-commas');
+    if (!splitPauses.checked) args.push('--no-pause-split');
     var child = spawn(python.value.trim(), args, {cwd: root});
     var stderr = '', ended = false;
     child.stderr.on('data', function (data) { stderr += String(data); show(stderr.slice(-1500)); });
@@ -159,8 +177,10 @@
     if (!isFinite(rate) || rate <= 0 || rate > 120) { show('FPS 1–120 oralig‘ida bo‘lsin.'); return; }
     if (validNumber(lines, 1, 3) === null || validNumber(words, 1, 8) === null ||
         validNumber(chars, 8, 80) === null || validNumber(duration, 1, 10) === null ||
-        validNumber(pause, 0.1, 2) === null || Number(lines.value) % 1 ||
-        Number(words.value) % 1 || Number(chars.value) % 1) {
+        validNumber(pause, 0.1, 2) === null || validNumber(startPad, 0, 500) === null ||
+        validNumber(endPad, 0, 500) === null || validNumber(minCue, 0, 3) === null ||
+        Number(lines.value) % 1 || Number(words.value) % 1 || Number(chars.value) % 1 ||
+        Number(startPad.value) % 1 || Number(endPad.value) % 1) {
       show('Qator, so‘z, belgi va vaqt sozlamalarini tekshiring.'); return;
     }
     if (!python.value.trim()) { show('Python yo‘lini kiriting.'); return; }
