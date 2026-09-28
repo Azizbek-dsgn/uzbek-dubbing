@@ -24,6 +24,11 @@ class SubtitleTests(unittest.TestCase):
         self.assertEqual(cues[0].text.count("\n"), 1)
         self.assertEqual(len(cues), 1)
 
+    def test_short_caption_gets_reading_time_without_overlap(self):
+        cues = make_cues([Word(0, 0.1, "Ha."), Word(1.0, 1.1, "Yo'q.")], fps=25)
+        self.assertEqual(cues[0].end, 0.8)
+        self.assertLess(cues[0].end, cues[1].start)
+
 
 if __name__ == "__main__":
     unittest.main()
