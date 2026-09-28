@@ -44,23 +44,27 @@ def _join(words: list[Word]) -> str:
     return text
 
 
-def _wrap(text: str, width: int) -> str:
+def _wrap(text: str, width: int, words_per_line: int) -> str:
     lines = [""]
+    count = 0
     for word in text.split():
-        if lines[-1] and len(lines[-1]) + len(word) + 1 > width and len(lines) < 2:
+        if lines[-1] and (len(lines[-1]) + len(word) + 1 > width or count >= words_per_line):
             lines.append(word)
+            count = 1
         else:
             lines[-1] += (" " if lines[-1] else "") + word
+            count += 1
     return "\n".join(lines)
 
 
 def make_cues(
     words: list[Word], fps: float = 25.0, max_chars: int = 42,
     max_duration: float = 5.0, gap: float = 0.65,
+    max_lines: int = 2, words_per_line: int = 4,
 ) -> list[Cue]:
     """Group words at pauses, punctuation and readable line/duration limits."""
-    if fps <= 0 or max_chars < 8 or max_duration <= 0:
-        raise ValueError("fps, max_chars va max_duration musbat bo'lishi kerak")
+    if fps <= 0 or max_chars < 8 or max_duration <= 0 or not 1 <= max_lines <= 3 or not 1 <= words_per_line <= 8:
+        raise ValueError("FPS va subtitr o'lchamlari noto'g'ri")
     ordered = sorted((w for w in words if _clean(w.text) and w.end > w.start), key=lambda w: w.start)
     groups: list[list[Word]] = []
     current: list[Word] = []
@@ -68,9 +72,10 @@ def make_cues(
         if current:
             previous = current[-1]
             proposed = _join(current + [word])
+            layout = _wrap(proposed, max_chars, words_per_line)
             if (word.start - previous.end > gap or
                     word.end - current[0].start > max_duration or
-                    len(proposed) > 2 * max_chars or
+                    len(layout.splitlines()) > max_lines or
                     (re.search(r"[.!?]$", _clean(previous.text)) and
                      word.start - previous.end >= 0.12)):
                 groups.append(current)
@@ -91,7 +96,7 @@ def make_cues(
             next_start = math.floor(groups[i + 1][0].start * fps) / fps
             end = min(end, next_start - frame)
         end = max(start + frame, end)
-        text = _wrap(_join(group), max_chars)
+        text = _wrap(_join(group), max_chars, words_per_line)
         result.append(Cue(round(start, 3), round(end, 3), text))
     return result
 
@@ -124,13 +129,19 @@ def transcribe(path: Path, model_name: str, device: str) -> list[Word]:
         except (FileNotFoundError, subprocess.TimeoutExpired):
             device = "cpu"
     local_model = Path(__file__).resolve().parent.parent / "models" / model_name
+    if model_name == "navai-medium" and not (local_model / "model.bin").is_file():
+        raise RuntimeError("NavAI o'zbekcha modeli o'rnatilmagan; models/navai-medium/model.bin topilmadi")
     model_ref = str(local_model) if (local_model / "model.bin").is_file() else model_name
     model = WhisperModel(model_ref, device=device,
                          compute_type="float16" if device == "cuda" else "int8")
     segments, _ = model.transcribe(
-        str(path), language="uz", beam_size=5, vad_filter=True,
+        str(path), language="uz", task="transcribe", beam_size=5,
+        temperature=0, repetition_penalty=1.1, no_repeat_ngram_size=4,
+        vad_filter=True,
+        vad_parameters={"min_silence_duration_ms": 500, "speech_pad_ms": 300, "threshold": 0.35},
         word_timestamps=True, condition_on_previous_text=False,
-        initial_prompt="O'zbek tilidagi nutq. O‘zbekiston, Toshkent, qo‘shimcha, bugun.",
+        initial_prompt=None if model_name == "navai-medium" else
+            "Bu o‘zbek tilidagi nutq. O‘zbekiston, Toshkent, o‘zbekcha, g‘oya, ta’lim.",
     )
     words: list[Word] = []
     for segment in segments:
@@ -147,16 +158,22 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Offline o'zbekcha SRT subtitr yaratuvchi")
     parser.add_argument("--input", required=True, type=Path)
     parser.add_argument("--output", required=True, type=Path)
-    parser.add_argument("--model", default="large-v3", choices=["small", "medium", "large-v3"])
+    parser.add_argument("--model", default="large-v3", choices=["small", "medium", "large-v3", "navai-medium"])
     parser.add_argument("--device", default="auto", choices=["auto", "cpu", "cuda"])
     parser.add_argument("--fps", type=float, default=25.0)
     parser.add_argument("--max-chars", type=int, default=42)
+    parser.add_argument("--lines", type=int, default=2)
+    parser.add_argument("--words-per-line", type=int, default=4)
+    parser.add_argument("--max-duration", type=float, default=5.0)
+    parser.add_argument("--pause", type=float, default=0.65)
     args = parser.parse_args(argv)
     try:
         if not args.input.is_file():
             raise FileNotFoundError(f"Media topilmadi: {args.input}")
         words = transcribe(args.input, args.model, args.device)
-        cues = make_cues(words, fps=args.fps, max_chars=args.max_chars)
+        cues = make_cues(words, fps=args.fps, max_chars=args.max_chars,
+                         max_duration=args.max_duration, gap=args.pause,
+                         max_lines=args.lines, words_per_line=args.words_per_line)
         if not cues:
             raise RuntimeError("Nutq topilmadi")
         args.output.parent.mkdir(parents=True, exist_ok=True)
