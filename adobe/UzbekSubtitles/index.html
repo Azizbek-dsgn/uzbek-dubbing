@@ -8,7 +8,9 @@
     body{font:14px Arial,sans-serif;background:#232323;color:#f3f3f3;margin:20px}
     h1{font-size:20px;margin:0 0 8px}p{color:#bbb;line-height:1.4}
     label{display:block;margin:14px 0 5px}input,select,button{box-sizing:border-box;width:100%;padding:9px;border-radius:5px;border:1px solid #666;background:#353535;color:white}
-    input[type=file]{padding:6px}button{margin-top:16px;background:#1979d2;border:0;cursor:pointer;font-weight:bold}button:disabled{opacity:.5;cursor:default}
+    button{margin-top:16px;background:#1979d2;border:0;cursor:pointer;font-weight:bold}button:disabled{opacity:.5;cursor:default}
+    .grid{display:grid;grid-template-columns:1fr 1fr;gap:0 10px}.hint{font-size:12px;color:#aaa}
+    #preview{white-space:pre-line;background:#151515;border-radius:5px;text-align:center;padding:12px;line-height:1.5}
     #status{white-space:pre-wrap;word-break:break-word;margin-top:16px;line-height:1.45}
   </style>
 </head>
@@ -21,6 +23,16 @@
   <label for="python">Python yo‘li</label><input id="python" value="python3" spellcheck="false">
   <label for="model">Model</label><select id="model"><option value="large-v3">large-v3 — sifatli</option><option value="medium">medium — tezroq</option><option value="small">small — yengil</option></select>
   <label for="fps">Timeline FPS</label><input id="fps" type="number" min="1" max="120" step="0.001" value="25">
+  <label for="style">Subtitr uslubi</label><select id="style"><option value="short">Qisqa — Reels</option><option value="medium" selected>O‘rta</option><option value="long">Uzun — podkast</option><option value="custom">O‘zim sozlayman</option></select>
+  <div class="grid">
+    <div><label for="lines">Qatorlar soni</label><input id="lines" type="number" min="1" max="3" step="1" value="2"></div>
+    <div><label for="words">Har qatorda so‘z</label><input id="words" type="number" min="1" max="8" step="1" value="3"></div>
+    <div><label for="chars">Har qatorda belgi</label><input id="chars" type="number" min="8" max="80" step="1" value="42"></div>
+    <div><label for="duration">Eng uzun subtitr (s)</label><input id="duration" type="number" min="1" max="10" step="0.1" value="5"></div>
+    <div><label for="pause">Pauza chegarasi (s)</label><input id="pause" type="number" min="0.1" max="2" step="0.05" value="0.65"></div>
+  </div>
+  <label>Namuna</label><div id="preview"></div>
+  <p class="hint">Qator va so‘z soni aniq chegaralanadi. Bu sozlamalar subtitr bo‘linishini boshqaradi; tanilgan so‘zning to‘g‘riligi modelga bog‘liq.</p>
   <button id="run">Timeline’ga subtitr qo‘shish</button>
   <div id="status" role="status"></div>
   <script src="panel.js"></script>
