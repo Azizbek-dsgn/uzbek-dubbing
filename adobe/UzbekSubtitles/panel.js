@@ -39,12 +39,23 @@
     long: [2, 6, 50, 7.0, 0.8]
   };
   function updatePreview() {
-    var sample = ['Bugun', 'o‘zbekcha', 'subtitrlar', 'aniq', 'vaqt', 'bilan', 'ekranda', 'chiqadi'];
+    var sample = ['Bugun', 'o‘zbekcha', 'subtitrlar', 'aniq', 'vaqt', 'bilan', 'ekranda', 'chiqadi',
+      'Har', 'bir', 'qatordagi', 'so‘zlar', 'sonini', 'o‘zingiz', 'tanlab', 'olishingiz',
+      'mumkin', 'Bu', 'namuna', 'sozlamalarni', 'oldindan', 'ko‘rishga', 'yordam', 'beradi'];
     var count = Math.max(1, Math.min(8, Number(words.value) || 1));
     var rows = Math.max(1, Math.min(3, Number(lines.value) || 1));
-    var result = [];
-    for (var i = 0; i < rows; i++) result.push(sample.slice(i * count, (i + 1) * count).join(' '));
-    preview.textContent = result.filter(Boolean).join('\n');
+    var width = Math.max(8, Math.min(80, Number(chars.value) || 42));
+    var result = [], index = 0;
+    for (var i = 0; i < rows; i++) {
+      var line = [], length = 0;
+      while (line.length < count && index < sample.length) {
+        var next = sample[index];
+        if (line.length && length + next.length + 1 > width) break;
+        line.push(next); length += next.length + (line.length > 1 ? 1 : 0); index++;
+      }
+      if (line.length) result.push(line.join(' '));
+    }
+    preview.textContent = result.join('\n');
   }
   function applyStyle() {
     var values = styles[style.value];
