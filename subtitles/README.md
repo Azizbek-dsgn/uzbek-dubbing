@@ -6,10 +6,10 @@ Premiere Pro va After Effects uchun bepul, lokal CEP panel. U faol sequence yoki
 
 1. Premiere Pro’da sequence’ni yoki After Effects’da kompozitsiyani oching.
 2. Kerakli joyga In/Out nuqtalarini qo‘ying. AE’da Work Area belgilang. Belgilanmagan bo‘lsa butun timeline olinadi.
-3. **Window → Extensions → Uzbek Subtitles** panelini oching, oraliq va modelni tanlang. Qisqa, O‘rta yoki Uzun uslubini tanlang yoki qatorlar soni, har qatordagi so‘z, belgi, davomiylik va pauzani qo‘lda kiriting.
+3. **Window → Extensions → Uzbek Subtitles** panelini oching, oraliq va modelni tanlang. Qisqa, O‘rta yoki Uzun uslubini tanlang yoki qatorlar soni, har qatordagi so‘z, belgi va davomiylikni qo‘lda kiriting. Nuqta/undov/so‘roq, vergul va pauza bo‘yicha bo‘lishni alohida yoqing. Boshlanish/oxir vaqtini millisekundlarda surish va minimal ko‘rinish vaqtini ham sozlash mumkin.
 4. **Timeline’ga subtitr qo‘shish** tugmasini bosing. Premiere’da caption track, AE’da vaqtli matn qatlamlari yaratiladi. SRT nusxasi `exports/` papkasida qoladi.
 
-Oraliq tanlovida **Faqat In/Out** belgilar bo‘lmasa xato beradi; **To‘liq timeline** belgilarni e’tiborsiz qoldiradi. O‘zbekchaga maxsus o‘qitilgan NavAI modeli o‘rnatilgan bo‘lsa panel uni asosiy model sifatida tanlaydi. Umumiy `large-v3`, `medium` va `small` modellari ham mavjud. Qator va so‘z chegaralari transkripsiya matnini bo‘ladi; xato eshitilgan so‘zni o‘zi tuzatmaydi.
+Oraliq tanlovida **Faqat In/Out** belgilar bo‘lmasa xato beradi; **To‘liq timeline** belgilarni e’tiborsiz qoldiradi. O‘zbekchaga maxsus o‘qitilgan NavAI modeli o‘rnatilgan bo‘lsa panel uni asosiy model sifatida tanlaydi. Umumiy `large-v3`, `medium` va `small` modellari ham mavjud. Qator va so‘z chegaralari transkripsiya matnini bo‘ladi; xato eshitilgan so‘zni o‘zi tuzatmaydi. Nuqta yoki vergul audio nutqdan noto‘g‘ri tanilsa, u yerdagi bo‘linishni qo‘lda tuzatish kerak bo‘lishi mumkin.
 
 ## O‘zbekchaga maxsus model
 
