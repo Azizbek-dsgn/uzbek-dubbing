@@ -37,7 +37,7 @@ def _join(words: list[Word]) -> str:
             continue
         if part[0] in ",.!?:;)]}" and text:
             text += part
-        elif part[0] in "'" and text and word.text[:1] != " ":
+        elif text and part[0] in "'-’" and word.text[:1] and not word.text[:1].isspace():
             text += part
         else:
             text += (" " if text else "") + part
@@ -116,6 +116,13 @@ def to_srt(cues: list[Cue]) -> str:
     )
 
 
+def _reliable_segment(segment: object) -> bool:
+    """Discard only segments whose text and every word have very low confidence."""
+    if float(segment.avg_logprob) >= -1.0:
+        return True
+    return any(float(word.probability) >= 0.2 for word in (segment.words or []))
+
+
 def transcribe(path: Path, model_name: str, device: str) -> list[Word]:
     try:
         from faster_whisper import WhisperModel
@@ -140,11 +147,11 @@ def transcribe(path: Path, model_name: str, device: str) -> list[Word]:
         vad_filter=True,
         vad_parameters={"min_silence_duration_ms": 500, "speech_pad_ms": 300, "threshold": 0.35},
         word_timestamps=True, condition_on_previous_text=False,
-        initial_prompt=None if model_name == "navai-medium" else
-            "Bu o‘zbek tilidagi nutq. O‘zbekiston, Toshkent, o‘zbekcha, g‘oya, ta’lim.",
     )
     words: list[Word] = []
     for segment in segments:
+        if not _reliable_segment(segment):
+            continue
         if segment.words:
             for word in segment.words:
                 if word.start is not None and word.end is not None:
