@@ -2,9 +2,33 @@ import unittest
 from types import SimpleNamespace
 
 from subtitles.cli import Word, _reliable_segment, make_cues, to_srt
+from subtitles.gigaam import _chunks
 
 
 class SubtitleTests(unittest.TestCase):
+    def test_gigaam_chunks_preserve_timeline(self):
+        import numpy as np
+        rate = 100
+        audio = np.ones(5000, dtype=np.float32)
+        chunks = list(_chunks(audio, rate))
+        self.assertGreater(len(chunks), 1)
+        self.assertEqual(sum(len(part) for _, part in chunks), len(audio))
+        self.assertTrue(all(len(part) <= 22 * rate for _, part in chunks))
+        self.assertEqual([round(offset * rate) for offset, _ in chunks],
+                         [0] + [sum(len(part) for _, part in chunks[:i])
+                                for i in range(1, len(chunks))])
+
+    def test_gigaam_splits_repeated_phrases_at_silence(self):
+        import numpy as np
+        rate = 100
+        utterance = np.ones(690, dtype=np.float32)
+        pause = np.zeros(80, dtype=np.float32)
+        audio = np.concatenate([utterance, pause, utterance, pause,
+                                utterance, pause, utterance])
+        chunks = list(_chunks(audio, rate))
+        self.assertEqual(len(chunks), 4)
+        self.assertEqual(sum(len(part) for _, part in chunks), len(audio))
+
     def test_pause_and_frame_alignment(self):
         cues = make_cues([
             Word(0.013, 0.42, "Salom"),
