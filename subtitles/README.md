@@ -1,15 +1,15 @@
 # O‘zbekcha subtitr plagini
 
-Premiere Pro va After Effects uchun lokal subtitr paneli. O‘zbekcha nutqni `faster-whisper` bilan o‘qiydi, so‘z vaqtlaridan ikki qatorli subtitrlar tuzadi va `.srt` yaratadi. Gemini kaliti, pullik API va TTS kerak emas. Model birinchi ishlatishda yuklanadi; undan keyin transkripsiya kompyuterda bajariladi.
+Premiere Pro va After Effects uchun lokal subtitr yechimi. O‘zbekcha nutqni `faster-whisper` bilan o‘qiydi, so‘z vaqtlaridan ikki qatorli subtitrlar tuzadi va `.srt` yaratadi. Gemini kaliti, pullik API va TTS kerak emas. Model birinchi ishlatishda yuklanadi; undan keyin transkripsiya kompyuterda bajariladi.
 
 ## Talablar
 
 - Python 3.10 yoki yangiroq
 - `pip install -r subtitles/requirements.txt`
-- Premiere Pro yoki After Effects’ning CEP panelini qo‘llaydigan versiyasi
+- CEP paneli uchun uni qo‘llaydigan Premiere Pro yoki After Effects versiyasi; yangi Premiere uchun UXP import paneli ham bor
 - Model uchun disk joyi va yetarli RAM; `large-v3` eng sifatli, `medium` tezroq
 
-## O‘rnatish
+## CEP panelini o‘rnatish (After Effects va mos Premiere versiyalari)
 
 Repo katalogini kompyuterga saqlang. `adobe/UzbekSubtitles` papkasini **symlink** sifatida CEP extensions katalogiga ulang, shunda panel Python modulini repo ichidan topadi:
 
@@ -27,6 +27,10 @@ New-Item -ItemType SymbolicLink -Path "$env:APPDATA\Adobe\CEP\extensions\UzbekSu
 ```
 
 Bu manba kodidagi imzosiz CEP paneli. Ishlab chiqish rejimida `PlayerDebugMode=1` yoqilishi kerak; Adobe’ning CEP qo‘llanmasidagi operatsion tizimingizga mos ko‘rsatmadan foydalaning. Adobe dasturini qayta ishga tushirib, **Window → Extensions → Uzbek Subtitles** ni oching.
+
+## Yangi Premiere uchun UXP paneli
+
+Premiere Pro 25.6+ da `adobe/premiere-uxp` papkasini **UXP Developer Tool** orqali yuklang (Premiere’da Developer Mode yoqilgan bo‘lishi kerak). UXP paneli SRT’ni loyiha ichiga import qiladi. Hozircha UXP ichidan Python jarayonini ishga tushirish yo‘q: avval pastdagi CLI bilan SRT yarating, keyin **SRT import qilish** ni bosing. Adobe UXP jarayon ishga tushirish APIsi argument va chiqishni bermaydi, shu sabab avtomatik transkripsiya CEP panelida mavjud.
 
 ## Ishlatish
 
