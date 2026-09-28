@@ -10,6 +10,9 @@
   var fps = document.getElementById('fps');
   var run = document.getElementById('run');
   var status = document.getElementById('status');
+  var repoRoot = path.resolve(fs.realpathSync(__dirname), '..', '..');
+  var localPython = path.join(repoRoot, '.venv', process.platform === 'win32' ? 'Scripts/python.exe' : 'bin/python');
+  python.value = fs.existsSync(localPython) ? localPython : (process.platform === 'win32' ? 'python' : 'python3');
 
   function show(message) { status.textContent = message; }
   function evalHost(script, callback) { __adobe_cep__.evalScript(script, callback); }
@@ -32,8 +35,7 @@
     if (!selected || !selected.path) { show('Lokal media faylni tanlang.'); return; }
     var rate = Number(fps.value);
     if (!isFinite(rate) || rate <= 0 || rate > 120) { show('FPS 1–120 oralig‘ida bo‘lsin.'); return; }
-    var extensionRoot = fs.realpathSync(__dirname);
-    var repo = path.resolve(extensionRoot, '..', '..');
+    var repo = repoRoot;
     var script = path.join(repo, 'subtitles', 'cli.py');
     if (!fs.existsSync(script)) { show('Python moduli topilmadi: ' + script); return; }
     var input = selected.path;
