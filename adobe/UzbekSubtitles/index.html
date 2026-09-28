@@ -10,7 +10,9 @@
     label{display:block;margin:14px 0 5px}input,select,button{box-sizing:border-box;width:100%;padding:9px;border-radius:5px;border:1px solid #666;background:#353535;color:white}
     button{margin-top:16px;background:#1979d2;border:0;cursor:pointer;font-weight:bold}button:disabled{opacity:.5;cursor:default}
     .grid{display:grid;grid-template-columns:1fr 1fr;gap:0 10px}.hint{font-size:12px;color:#aaa}
-    #preview{white-space:pre-line;background:#151515;border-radius:5px;text-align:center;padding:12px;line-height:1.5}
+    .checks{margin-top:16px}.checks label{display:flex;align-items:center;gap:8px;margin:8px 0;cursor:pointer}
+    .checks input[type=checkbox]{width:auto;margin:0;accent-color:#1979d2}
+    #preview,#boundaryPreview{white-space:pre-line;background:#151515;border-radius:5px;text-align:center;padding:12px;line-height:1.5}
     #status{white-space:pre-wrap;word-break:break-word;margin-top:16px;line-height:1.45}
   </style>
 </head>
@@ -31,8 +33,20 @@
     <div><label for="duration">Eng uzun subtitr (s)</label><input id="duration" type="number" min="1" max="10" step="0.1" value="5"></div>
     <div><label for="pause">Pauza chegarasi (s)</label><input id="pause" type="number" min="0.1" max="2" step="0.05" value="0.65"></div>
   </div>
-  <label>Namuna</label><div id="preview"></div>
-  <p class="hint">Qator va so‘z soni aniq chegaralanadi. Bu sozlamalar subtitr bo‘linishini boshqaradi; tanilgan so‘zning to‘g‘riligi modelga bog‘liq.</p>
+  <div class="checks">
+    <strong>Gaplarni qayerda bo‘lish</strong>
+    <label><input id="splitSentences" type="checkbox" checked> Nuqta, ! yoki ? dan keyin</label>
+    <label><input id="splitCommas" type="checkbox"> Vergul, ; yoki : dan keyin</label>
+    <label><input id="splitPauses" type="checkbox" checked> Pauza bo‘lganda</label>
+  </div>
+  <div class="grid">
+    <div><label for="startPad">Boshini oldinroq (ms)</label><input id="startPad" type="number" min="0" max="500" step="20" value="0"></div>
+    <div><label for="endPad">Oxirini keyinroq (ms)</label><input id="endPad" type="number" min="0" max="500" step="20" value="0"></div>
+    <div><label for="minCue">Minimal ko‘rinish (s)</label><input id="minCue" type="number" min="0" max="3" step="0.1" value="0.8"></div>
+  </div>
+  <label>Qatorlar namunasi</label><div id="preview"></div>
+  <label>Gap bo‘linishi namunasi</label><div id="boundaryPreview"></div>
+  <p class="hint">Gaplar tinish belgisi, pauza va uzunlikka qarab ajraladi. Tinish belgisi audio orqali xato tanilsa, bo‘linishni SRT’da qo‘lda tuzatish mumkin.</p>
   <button id="run">Timeline’ga subtitr qo‘shish</button>
   <div id="status" role="status"></div>
   <script src="panel.js"></script>
