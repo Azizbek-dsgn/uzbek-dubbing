@@ -61,9 +61,15 @@ def make_cues(
     words: list[Word], fps: float = 25.0, max_chars: int = 42,
     max_duration: float = 5.0, gap: float = 0.65,
     max_lines: int = 2, words_per_line: int = 4,
+    split_sentences: bool = True, split_commas: bool = False,
+    split_pauses: bool = True, start_pad: float = 0.0,
+    end_pad: float = 0.0, min_duration: float = 0.8,
 ) -> list[Cue]:
     """Group words at pauses, punctuation and readable line/duration limits."""
-    if fps <= 0 or max_chars < 8 or max_duration <= 0 or not 1 <= max_lines <= 3 or not 1 <= words_per_line <= 8:
+    if (fps <= 0 or max_chars < 8 or max_duration <= 0 or
+            not 1 <= max_lines <= 3 or not 1 <= words_per_line <= 8 or
+            not 0 <= start_pad <= 0.5 or not 0 <= end_pad <= 0.5 or
+            not 0 <= min_duration <= 3):
         raise ValueError("FPS va subtitr o'lchamlari noto'g'ri")
     ordered = sorted((w for w in words if _clean(w.text) and w.end > w.start), key=lambda w: w.start)
     groups: list[list[Word]] = []
@@ -73,11 +79,11 @@ def make_cues(
             previous = current[-1]
             proposed = _join(current + [word])
             layout = _wrap(proposed, max_chars, words_per_line)
-            if (word.start - previous.end > gap or
+            if ((split_pauses and word.start - previous.end > gap) or
                     word.end - current[0].start > max_duration or
                     len(layout.splitlines()) > max_lines or
-                    (re.search(r"[.!?]$", _clean(previous.text)) and
-                     word.start - previous.end >= 0.12)):
+                    (split_sentences and re.search(r"[.!?…]$", _clean(previous.text))) or
+                    (split_commas and re.search(r"[,;:]$", _clean(previous.text)))):
                 groups.append(current)
                 current = []
         current.append(word)
@@ -87,13 +93,13 @@ def make_cues(
     result: list[Cue] = []
     frame = 1.0 / fps
     for i, group in enumerate(groups):
-        start = max(0.0, math.floor(group[0].start * fps) / fps)
+        start = max(0.0, math.floor(max(0.0, group[0].start - start_pad) * fps) / fps)
         if result:
             start = max(start, result[-1].end + frame)
-        end = max(math.ceil(group[-1].end * fps) / fps,
-                  start + math.ceil(0.8 * fps) / fps)
+        end = max(math.ceil((group[-1].end + end_pad) * fps) / fps,
+                  start + math.ceil(min_duration * fps) / fps)
         if i + 1 < len(groups):
-            next_start = math.floor(groups[i + 1][0].start * fps) / fps
+            next_start = math.floor(max(0.0, groups[i + 1][0].start - start_pad) * fps) / fps
             end = min(end, next_start - frame)
         end = max(start + frame, end)
         text = _wrap(_join(group), max_chars, words_per_line)
@@ -173,6 +179,12 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--words-per-line", type=int, default=4)
     parser.add_argument("--max-duration", type=float, default=5.0)
     parser.add_argument("--pause", type=float, default=0.65)
+    parser.add_argument("--no-sentence-split", action="store_true")
+    parser.add_argument("--split-commas", action="store_true")
+    parser.add_argument("--no-pause-split", action="store_true")
+    parser.add_argument("--start-pad-ms", type=int, default=0)
+    parser.add_argument("--end-pad-ms", type=int, default=0)
+    parser.add_argument("--min-cue-duration", type=float, default=0.8)
     args = parser.parse_args(argv)
     try:
         if not args.input.is_file():
@@ -180,7 +192,13 @@ def main(argv: list[str] | None = None) -> int:
         words = transcribe(args.input, args.model, args.device)
         cues = make_cues(words, fps=args.fps, max_chars=args.max_chars,
                          max_duration=args.max_duration, gap=args.pause,
-                         max_lines=args.lines, words_per_line=args.words_per_line)
+                         max_lines=args.lines, words_per_line=args.words_per_line,
+                         split_sentences=not args.no_sentence_split,
+                         split_commas=args.split_commas,
+                         split_pauses=not args.no_pause_split,
+                         start_pad=args.start_pad_ms / 1000,
+                         end_pad=args.end_pad_ms / 1000,
+                         min_duration=args.min_cue_duration)
         if not cues:
             raise RuntimeError("Nutq topilmadi")
         args.output.parent.mkdir(parents=True, exist_ok=True)
