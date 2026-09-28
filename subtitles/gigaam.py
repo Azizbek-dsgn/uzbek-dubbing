@@ -111,4 +111,11 @@ def transcribe(path: Path, base_dir: Path, checkpoint: Path, device: str):
             for word in words or []:
                 if word.text.strip() and math.isfinite(word.start) and math.isfinite(word.end):
                     output.append((offset + float(word.start), offset + float(word.end), word.text))
-        return output
+        sentence_start = True
+        polished = []
+        for start, end, text in output:
+            if sentence_start and text[:1].isalpha():
+                text = text[0].upper() + text[1:]
+            polished.append((start, end, text))
+            sentence_start = text.rstrip().endswith((".", "?", "!"))
+        return polished
