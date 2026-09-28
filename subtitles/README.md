@@ -1,47 +1,33 @@
 # O‘zbekcha subtitr plagini
 
-Premiere Pro va After Effects uchun lokal subtitr yechimi. O‘zbekcha nutqni `faster-whisper` bilan o‘qiydi, so‘z vaqtlaridan ikki qatorli subtitrlar tuzadi va `.srt` yaratadi. Gemini kaliti, pullik API va TTS kerak emas. Model birinchi ishlatishda yuklanadi; undan keyin transkripsiya kompyuterda bajariladi.
+Premiere Pro va After Effects uchun bepul, lokal CEP panel. U faol sequence yoki kompozitsiyadagi audioni eksport qiladi, `faster-whisper` bilan o‘zbekcha nutqni so‘z vaqtigacha taniydi va subtitrlarni timeline’ga qo‘yadi. API kaliti kerak emas; model bir marta yuklangach internet talab qilinmaydi.
 
-## Talablar
+## Ishlatish
 
-- Python 3.10 yoki yangiroq
-- `pip install -r subtitles/requirements.txt`
-- CEP paneli uchun uni qo‘llaydigan Premiere Pro yoki After Effects versiyasi; yangi Premiere uchun UXP import paneli ham bor
-- Model uchun disk joyi va yetarli RAM; `large-v3` eng sifatli, `medium` tezroq
+1. Premiere Pro’da sequence’ni yoki After Effects’da kompozitsiyani oching.
+2. Kerakli joyga In/Out nuqtalarini qo‘ying. AE’da Work Area belgilang. Belgilanmagan bo‘lsa butun timeline olinadi.
+3. **Window → Extensions → Uzbek Subtitles** panelini oching, oraliq va modelni tanlang.
+4. **Timeline’ga subtitr qo‘shish** tugmasini bosing. Premiere’da caption track, AE’da vaqtli matn qatlamlari yaratiladi. SRT nusxasi `exports/` papkasida qoladi.
 
-## CEP panelini o‘rnatish (After Effects va mos Premiere versiyalari)
+Oraliq tanlovida **Faqat In/Out** belgilar bo‘lmasa xato beradi; **To‘liq timeline** belgilarni e’tiborsiz qoldiradi. Birinchi model yuklanishi uzoq davom etishi mumkin. `large-v3` yuqoriroq sifat, lekin taxminan 3 GB disk va ko‘proq xotira talab qiladi; `medium` va `small` yengilroq.
 
-Repo katalogini kompyuterga saqlang. `adobe/UzbekSubtitles` papkasini **symlink** sifatida CEP extensions katalogiga ulang, shunda panel Python modulini repo ichidan topadi:
+## O‘rnatish
 
-macOS:
+Python 3.10+ bilan `pip install -r subtitles/requirements.txt` bajaring. `adobe/UzbekSubtitles` papkasini Adobe CEP extensions katalogiga symlink qiling. Imzosiz development paneli uchun `PlayerDebugMode=1` kerak. Adobe dasturini qayta ishga tushiring. Mac’da:
 
 ```bash
 mkdir -p "$HOME/Library/Application Support/Adobe/CEP/extensions"
 ln -s "$(pwd)/adobe/UzbekSubtitles" "$HOME/Library/Application Support/Adobe/CEP/extensions/UzbekSubtitles"
 ```
 
-Windows PowerShell (Developer Mode yoki administrator huquqi bilan):
+Panel repo ichidagi `.venv/bin/python` ni o‘zi topadi; boshqa Python ishlatsangiz paneldagi yo‘lni o‘zgartiring. Premiere eksporti Adobe o‘rnatgan `WAV_Mono_16bit_16kHz.epr` presetiga tayanadi; hozirgi avtomatik qidiruv macOS’dagi Premiere 2024–2026 paketlariga mo‘ljallangan.
 
-```powershell
-New-Item -ItemType SymbolicLink -Path "$env:APPDATA\Adobe\CEP\extensions\UzbekSubtitles" -Target "$(Get-Location)\adobe\UzbekSubtitles"
-```
-
-Bu manba kodidagi imzosiz CEP paneli. Ishlab chiqish rejimida `PlayerDebugMode=1` yoqilishi kerak; Adobe’ning CEP qo‘llanmasidagi operatsion tizimingizga mos ko‘rsatmadan foydalaning. Adobe dasturini qayta ishga tushirib, **Window → Extensions → Uzbek Subtitles** ni oching.
-
-## Yangi Premiere uchun UXP paneli
-
-Premiere Pro 25.6+ da `adobe/premiere-uxp` papkasini **UXP Developer Tool** orqali yuklang (Premiere’da Developer Mode yoqilgan bo‘lishi kerak). UXP paneli SRT’ni loyiha ichiga import qiladi. Hozircha UXP ichidan Python jarayonini ishga tushirish yo‘q: avval pastdagi CLI bilan SRT yarating, keyin **SRT import qilish** ni bosing. Adobe UXP jarayon ishga tushirish APIsi argument va chiqishni bermaydi, shu sabab avtomatik transkripsiya CEP panelida mavjud.
-
-## Ishlatish
-
-1. Video/audio faylni tanlang; Python yo‘lini kerak bo‘lsa to‘liq ko‘rsating.
-2. Model va timeline FPS ni tanlab **Subtitr yaratish** ni bosing.
-3. Media yonida `<nom>.uz.srt` yaratiladi. Premiere Pro’da u loyiha ichiga import qilinadi; caption track uchun uni timeline’ga torting. After Effects’da faol kompozitsiyaga vaqtli matn qatlamlari qo‘shiladi.
-
-Faylni boshqa yo‘l bilan ham yaratish mumkin:
+## Alohida SRT yaratish
 
 ```bash
-python3 subtitles/cli.py --input video.mp4 --output video.uz.srt --model large-v3 --fps 25
+python3 subtitles/cli.py --input audio.wav --output audio.uz.srt --model large-v3 --fps 25
 ```
 
-SRT UTF-8 BOM bilan yoziladi, Adobe importi uchun. So‘z vaqt kodlari kadrga moslanadi. Murakkab fon, aralash til va sheva aniqlikka ta’sir qilishi mumkin; yakuniy subtitrni tahririyat tekshiruvidan o‘tkazing.
+SRT UTF-8 BOM bilan yoziladi. Timestamps kadrga moslanadi. Sheva, fon shovqini va aralash til xatolar keltirishi mumkin, shuning uchun yakuniy subtitrni ko‘zdan kechiring.
+
+`adobe/premiere-uxp` katalogidagi UXP panel SRT importi uchun qo‘shimcha fallback; avtomatik timeline jarayoni CEP panelida.
