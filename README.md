@@ -39,3 +39,7 @@ Lokal audio manbada natija `output_uzbek.wav` bo‘ladi. `--whisper-model large-
 `--work-dir` katalogida `checkpoint.json`, transkripsiya, tarjimalar va tayyor segmentlar saqlanadi. Jarayon Gemini yoki TTS bosqichida to‘xtasa, qayta ishga tushirilganda tugallangan bosqichlar qayta bajarilmaydi.
 
 To‘liq texnik ma’lumot: [`dubbing/README.md`](dubbing/README.md).
+
+## O‘zbekcha subtitr plagini
+
+Premiere Pro va After Effects uchun bepul, lokal transkripsiya qiladigan CEP paneli ham qo‘shildi. O‘zbekcha nutqdan vaqtli `.srt` yaratadi; Gemini kaliti kerak emas. O‘rnatish va ishlatish: [`subtitles/README.md`](subtitles/README.md).
