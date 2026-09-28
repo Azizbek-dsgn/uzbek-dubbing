@@ -39,6 +39,14 @@
     model.insertBefore(option, model.firstChild);
     model.value = 'navai-medium';
   }
+  if (fs.existsSync(path.join(root, 'models', 'gigaam-uzbek', 'checkpoints', 'large_full_600m', 'best.pt')) &&
+      fs.existsSync(path.join(root, 'models', 'gigaam-base-large', 'config.json'))) {
+    var gigaamOption = document.createElement('option');
+    gigaamOption.value = 'gigaam-uzbek';
+    gigaamOption.textContent = 'GigaAM Uzbek 600M — suhbat nutqi';
+    model.insertBefore(gigaamOption, model.firstChild);
+    model.value = 'gigaam-uzbek';
+  }
 
   var styles = {
     short: [1, 4, 36, 3.0, 0.45],
