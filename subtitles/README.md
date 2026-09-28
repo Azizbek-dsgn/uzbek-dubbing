@@ -6,10 +6,23 @@ Premiere Pro va After Effects uchun bepul, lokal CEP panel. U faol sequence yoki
 
 1. Premiere Pro’da sequence’ni yoki After Effects’da kompozitsiyani oching.
 2. Kerakli joyga In/Out nuqtalarini qo‘ying. AE’da Work Area belgilang. Belgilanmagan bo‘lsa butun timeline olinadi.
-3. **Window → Extensions → Uzbek Subtitles** panelini oching, oraliq va modelni tanlang.
+3. **Window → Extensions → Uzbek Subtitles** panelini oching, oraliq va modelni tanlang. Qisqa, O‘rta yoki Uzun uslubini tanlang yoki qatorlar soni, har qatordagi so‘z, belgi, davomiylik va pauzani qo‘lda kiriting.
 4. **Timeline’ga subtitr qo‘shish** tugmasini bosing. Premiere’da caption track, AE’da vaqtli matn qatlamlari yaratiladi. SRT nusxasi `exports/` papkasida qoladi.
 
-Oraliq tanlovida **Faqat In/Out** belgilar bo‘lmasa xato beradi; **To‘liq timeline** belgilarni e’tiborsiz qoldiradi. Birinchi model yuklanishi uzoq davom etishi mumkin. `large-v3` yuqoriroq sifat, lekin taxminan 3 GB disk va ko‘proq xotira talab qiladi; `medium` va `small` yengilroq.
+Oraliq tanlovida **Faqat In/Out** belgilar bo‘lmasa xato beradi; **To‘liq timeline** belgilarni e’tiborsiz qoldiradi. O‘zbekchaga maxsus o‘qitilgan NavAI modeli o‘rnatilgan bo‘lsa panel uni asosiy model sifatida tanlaydi. Umumiy `large-v3`, `medium` va `small` modellari ham mavjud. Qator va so‘z chegaralari transkripsiya matnini bo‘ladi; xato eshitilgan so‘zni o‘zi tuzatmaydi.
+
+## O‘zbekchaga maxsus model
+
+[`navai-uz/whisper-medium-uzbek`](https://huggingface.co/navai-uz/whisper-medium-uzbek) Apache-2.0 litsenziyali model. Uni `faster-whisper` uchun CTranslate2 `int8` formatiga o‘girib `models/navai-medium/` papkasiga joylang:
+
+```bash
+python3 -m pip install 'transformers>=4.40,<5' 'torch>=2.2'
+ct2-transformers-converter --model navai-uz/whisper-medium-uzbek \
+  --output_dir models/navai-medium --quantization int8 \
+  --copy_files tokenizer.json preprocessor_config.json
+```
+
+Konvertatsiya uchun qo‘shimcha disk va xotira kerak. Model bir marta tayyorlangach lokal ishlaydi. Nutqdagi sheva, shovqin yoki ruscha/turkcha aralash so‘zlar uchun 100% aniqlik kafolati yo‘q.
 
 ## O‘rnatish
 
