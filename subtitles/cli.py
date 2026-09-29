@@ -26,7 +26,8 @@ class Cue:
 
 
 def _clean(text: str) -> str:
-    return re.sub(r"\s+", " ", text.replace("’", "'").replace("ʻ", "'")).strip()
+    return re.sub(r"\s+", " ", text.replace("’", "'").replace("‘", "'")
+                  .replace("ʻ", "'").replace("ʼ", "'")).strip()
 
 
 def _join(words: list[Word]) -> str:
@@ -92,17 +93,30 @@ def make_cues(
 
     result: list[Cue] = []
     frame = 1.0 / fps
+    # Distinct captions cannot begin within the same output frame. Keep all
+    # words by merging those groups instead of drifting every later cue.
+    packed: list[list[Word]] = []
+    for group in groups:
+        start_frame = math.floor(max(0.0, group[0].start - start_pad) * fps)
+        if packed and start_frame <= math.floor(max(0.0, packed[-1][0].start - start_pad) * fps):
+            packed[-1].extend(group)
+        else:
+            packed.append(group)
+    groups = packed
     for i, group in enumerate(groups):
         start = max(0.0, math.floor(max(0.0, group[0].start - start_pad) * fps) / fps)
         if result:
-            start = max(start, result[-1].end + frame)
+            start = max(start, result[-1].end)
         end = max(math.ceil((group[-1].end + end_pad) * fps) / fps,
                   start + math.ceil(min_duration * fps) / fps)
         if i + 1 < len(groups):
             next_start = math.floor(max(0.0, groups[i + 1][0].start - start_pad) * fps) / fps
-            end = min(end, next_start - frame)
+            end = min(end, next_start)
         end = max(start + frame, end)
-        text = _wrap(_join(group), max_chars, words_per_line)
+        # If a same-frame merge exceeded the layout limit, allow the minimum
+        # extra words needed to preserve timing and avoid losing speech.
+        effective_words = max(words_per_line, math.ceil(len(group) / max_lines))
+        text = _wrap(_join(group), max_chars, effective_words)
         result.append(Cue(round(start, 3), round(end, 3), text))
     return result
 
@@ -129,7 +143,37 @@ def _reliable_segment(segment: object) -> bool:
     return any(float(word.probability) >= 0.2 for word in (segment.words or []))
 
 
-def transcribe(path: Path, model_name: str, device: str) -> list[Word]:
+def apply_replacements(words: list[Word], rules: list[str]) -> list[Word]:
+    """Replace one recognized word at a time without changing its timestamps."""
+    mapping: dict[str, str] = {}
+    for rule in rules:
+        separator = "=>" if "=>" in rule else "="
+        if separator not in rule:
+            raise ValueError(f"Lug‘at qatori noto‘g‘ri: {rule}")
+        source, target = (_clean(part) for part in rule.split(separator, 1))
+        if not source or not target or any(c.isspace() for c in source + target):
+            raise ValueError(f"Lug‘atda faqat bitta so‘zni almashtiring: {rule}")
+        mapping[source.casefold()] = target
+    result: list[Word] = []
+    for word in words:
+        match = re.match(r"^([^\w'\-]*)([\w'\-]+)([^\w'\-]*)$", _clean(word.text), re.UNICODE)
+        if not match:
+            result.append(word)
+            continue
+        original = match.group(2)
+        replacement = mapping.get(original.casefold())
+        if replacement is None:
+            result.append(word)
+            continue
+        if original.isupper():
+            replacement = replacement.upper()
+        elif original[:1].isupper():
+            replacement = replacement[:1].upper() + replacement[1:]
+        result.append(Word(word.start, word.end, match.group(1) + replacement + match.group(3)))
+    return result
+
+
+def transcribe(path: Path, model_name: str, device: str, progress=None) -> list[Word]:
     if model_name == "gigaam-uzbek":
         if __package__:
             from .gigaam import transcribe as gigaam_transcribe
@@ -138,7 +182,7 @@ def transcribe(path: Path, model_name: str, device: str) -> list[Word]:
         root = Path(__file__).resolve().parent.parent / "models"
         rows = gigaam_transcribe(path, root / "gigaam-base-large",
                                  root / "gigaam-uzbek" / "checkpoints" / "large_full_600m" / "best.pt",
-                                 device)
+                                 device, progress=progress)
         return [Word(max(0.0, start), max(start + 0.01, end), text)
                 for start, end, text in rows]
     try:
@@ -158,7 +202,7 @@ def transcribe(path: Path, model_name: str, device: str) -> list[Word]:
     model_ref = str(local_model) if (local_model / "model.bin").is_file() else model_name
     model = WhisperModel(model_ref, device=device,
                          compute_type="float16" if device == "cuda" else "int8")
-    segments, _ = model.transcribe(
+    segments, info = model.transcribe(
         str(path), language="uz", task="transcribe", beam_size=5,
         temperature=0, repetition_penalty=1.1, no_repeat_ngram_size=4,
         vad_filter=True,
@@ -167,6 +211,8 @@ def transcribe(path: Path, model_name: str, device: str) -> list[Word]:
     )
     words: list[Word] = []
     for segment in segments:
+        if progress and info.duration:
+            progress(min(int(float(segment.end) / info.duration * 100), 100), 100)
         if not _reliable_segment(segment):
             continue
         if segment.words:
@@ -196,11 +242,15 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--start-pad-ms", type=int, default=0)
     parser.add_argument("--end-pad-ms", type=int, default=0)
     parser.add_argument("--min-cue-duration", type=float, default=0.8)
+    parser.add_argument("--replace", action="append", default=[], metavar="XATO=TOGRI")
     args = parser.parse_args(argv)
     try:
         if not args.input.is_file():
             raise FileNotFoundError(f"Media topilmadi: {args.input}")
-        words = transcribe(args.input, args.model, args.device)
+        apply_replacements([], args.replace)
+        def report(done: int, total: int) -> None:
+            print(f"UZPROGRESS {done}/{total}", file=sys.stderr, flush=True)
+        words = apply_replacements(transcribe(args.input, args.model, args.device, report), args.replace)
         cues = make_cues(words, fps=args.fps, max_chars=args.max_chars,
                          max_duration=args.max_duration, gap=args.pause,
                          max_lines=args.lines, words_per_line=args.words_per_line,
