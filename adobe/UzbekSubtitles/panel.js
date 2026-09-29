@@ -688,6 +688,8 @@
       var edited = validateSrt(srtEditor.value);
       fs.writeFileSync(savedPath, '\uFEFF' + edited.text, 'utf8');
       writeEditedFormats(savedPath);
+      if (activeRun.metadata) fs.writeFileSync(savedPath.replace(/\.srt$/, '.json'),
+        JSON.stringify(activeRun.metadata, null, 2), 'utf8');
     } catch (e) { show('SRT saqlanmadi: ' + e.message); return; }
     finish('SRT saqlandi: ' + savedPath);
   };
