@@ -1,7 +1,7 @@
 import unittest
 from types import SimpleNamespace
 
-from subtitles.cli import Word, _reliable_segment, make_cues, to_srt
+from subtitles.cli import Word, _reliable_segment, apply_replacements, make_cues, to_srt
 from subtitles.gigaam import _chunks
 
 
@@ -94,6 +94,21 @@ class SubtitleTests(unittest.TestCase):
         cues = make_cues([Word(1.0, 1.5, "Salom.")], fps=25,
                          start_pad=.08, end_pad=.12, min_duration=0)
         self.assertEqual((cues[0].start, cues[0].end), (.92, 1.64))
+
+    def test_fast_words_do_not_drift_from_audio(self):
+        words = [Word(i * .02, i * .02 + .015, str(i)) for i in range(5)]
+        cues = make_cues(words, fps=25, max_lines=1, words_per_line=1)
+        self.assertEqual([cue.start for cue in cues], [0, .04, .08])
+        self.assertEqual([cue.text for cue in cues], ["0 1", "2 3", "4"])
+        self.assertTrue(all(a.end <= b.start for a, b in zip(cues, cues[1:])))
+
+    def test_word_glossary_preserves_timing_and_punctuation(self):
+        words = [Word(.2, .5, " Turkiya,"), Word(.6, .9, "OʻZBEKCHA.")]
+        fixed = apply_replacements(words, ["turkiya=O‘zbekiston", "o'zbekcha=toza"])
+        self.assertEqual([w.text for w in fixed], ["O'zbekiston,", "TOZA."])
+        self.assertEqual([(w.start, w.end) for w in fixed], [(.2, .5), (.6, .9)])
+        with self.assertRaises(ValueError):
+            apply_replacements(words, ["ikki so‘z=bitta"])
 
 
 if __name__ == "__main__":
