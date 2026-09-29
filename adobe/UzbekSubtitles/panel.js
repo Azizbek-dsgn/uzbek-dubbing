@@ -10,6 +10,7 @@
   var aeScript = path.join(__dirname, 'host', 'after_effects.jsx');
   var python = document.getElementById('python');
   var model = document.getElementById('model');
+  var modelHint = document.getElementById('modelHint');
   var fps = document.getElementById('fps');
   var range = document.getElementById('range');
   var style = document.getElementById('style');
@@ -30,6 +31,7 @@
   var refresh = document.getElementById('refresh');
   var timeline = document.getElementById('timeline');
   var status = document.getElementById('status');
+  var advanced = document.getElementById('advanced');
   var localPython = path.join(root, '.venv', process.platform === 'win32' ? 'Scripts/python.exe' : 'bin/python');
   python.value = fs.existsSync(localPython) ? localPython : (process.platform === 'win32' ? 'python' : 'python3');
   if (fs.existsSync(path.join(root, 'models', 'navai-medium', 'model.bin'))) {
@@ -47,6 +49,47 @@
     model.insertBefore(gigaamOption, model.firstChild);
     model.value = 'gigaam-uzbek';
   }
+  var savedFields = {
+    range: range, model: model, style: style, lines: lines, words: words,
+    chars: chars, duration: duration, pause: pause, splitSentences: splitSentences,
+    splitCommas: splitCommas, splitPauses: splitPauses, startPad: startPad,
+    endPad: endPad, minCue: minCue, python: python
+  };
+  function saveSettings() {
+    var values = {};
+    Object.keys(savedFields).forEach(function (key) {
+      var field = savedFields[key];
+      values[key] = field.type === 'checkbox' ? field.checked : field.value;
+    });
+    values.advanced = advanced.open;
+    try { localStorage.setItem('uzbekSubtitles.settings.v1', JSON.stringify(values)); } catch (e) {}
+  }
+  try {
+    var saved = JSON.parse(localStorage.getItem('uzbekSubtitles.settings.v1') || '{}');
+    Object.keys(savedFields).forEach(function (key) {
+      var field = savedFields[key];
+      if (!Object.prototype.hasOwnProperty.call(saved, key)) return;
+      if (field.type === 'checkbox') field.checked = !!saved[key];
+      else if (field.tagName !== 'SELECT' || Array.prototype.some.call(field.options, function (item) { return item.value === saved[key]; })) {
+        field.value = saved[key];
+      }
+    });
+    advanced.open = !!saved.advanced;
+  } catch (e) {}
+  Object.keys(savedFields).forEach(function (key) {
+    savedFields[key].addEventListener('change', saveSettings);
+    if (savedFields[key].type !== 'checkbox') savedFields[key].addEventListener('input', saveSettings);
+  });
+  advanced.addEventListener('toggle', saveSettings);
+  function updateModelHint() {
+    modelHint.textContent = model.value === 'gigaam-uzbek'
+      ? 'Tabiiy nutq uchun. So‘z va tinish belgilari vaqtini aniqlaydi.'
+      : model.value === 'navai-medium'
+        ? 'O‘zbekchaga mos NavAI modeli. Natijalarni GigaAM bilan solishtirish mumkin.'
+        : 'Umumiy Whisper modeli. Birinchi ishlatishda model yuklanishi mumkin.';
+  }
+  model.addEventListener('change', updateModelHint);
+  updateModelHint();
 
   var styles = {
     short: [1, 4, 36, 3.0, 0.45],
@@ -81,12 +124,14 @@
     if (!values) return;
     [lines, words, chars, duration, pause].forEach(function (field, i) { field.value = values[i]; });
     updatePreview();
+    saveSettings();
   }
   style.onchange = applyStyle;
   [lines, words, chars, duration, pause].forEach(function (field) {
-    field.oninput = function () { style.value = 'custom'; updatePreview(); };
+    field.oninput = function () { style.value = 'custom'; updatePreview(); saveSettings(); };
   });
   splitPauses.onchange = function () { pause.disabled = !splitPauses.checked; };
+  pause.disabled = !splitPauses.checked;
   splitSentences.onchange = updatePreview;
   splitCommas.onchange = updatePreview;
   updatePreview();
