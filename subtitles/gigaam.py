@@ -47,7 +47,7 @@ def _chunks(audio, rate: int, maximum: float = 22.0):
         start = limit
 
 
-def transcribe(path: Path, base_dir: Path, checkpoint: Path, device: str):
+def transcribe(path: Path, base_dir: Path, checkpoint: Path, device: str, progress=None):
     """Return (start, end, text) tuples, using the model's CTC timing."""
     os.environ.setdefault("HF_HOME", str(base_dir.parent / ".hf-cache"))
     import numpy as np
@@ -100,8 +100,10 @@ def transcribe(path: Path, base_dir: Path, checkpoint: Path, device: str):
             "cpu" if device == "auto" else device)
         model.to(target)
         output = []
-        for offset, chunk in _chunks(audio, rate):
+        chunks = list(_chunks(audio, rate))
+        for index, (offset, chunk) in enumerate(chunks, 1):
             if len(chunk) < rate // 5:
+                if progress: progress(index, len(chunks))
                 continue
             signal = torch.from_numpy(np.ascontiguousarray(chunk)).to(target).unsqueeze(0)
             length = torch.tensor([signal.shape[-1]], device=target)
@@ -111,6 +113,7 @@ def transcribe(path: Path, base_dir: Path, checkpoint: Path, device: str):
             for word in words or []:
                 if word.text.strip() and math.isfinite(word.start) and math.isfinite(word.end):
                     output.append((offset + float(word.start), offset + float(word.end), word.text))
+            if progress: progress(index, len(chunks))
         sentence_start = True
         polished = []
         for start, end, text in output:
