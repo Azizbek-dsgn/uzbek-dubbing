@@ -5,11 +5,11 @@ function uzIsAE() {
     try { return app.name.indexOf("After Effects") !== -1; } catch (e) { return false; }
 }
 function uzRange(mode) {
-    var start = 0, duration = 0, total = 0, marked = false, fps = 25, name = "";
+    var start = 0, duration = 0, total = 0, marked = false, fps = 25, name = "", identity = "";
     if (uzIsAE()) {
         var comp = app.project.activeItem;
         if (!comp || !(comp instanceof CompItem)) throw new Error("Faol kompozitsiyani oching.");
-        name = comp.name; total = Number(comp.duration); fps = Number(comp.frameRate);
+        name = comp.name; identity = String(comp.id); total = Number(comp.duration); fps = Number(comp.frameRate);
         var ws = Number(comp.workAreaStart), wd = Number(comp.workAreaDuration);
         marked = wd > 0.05 && (ws > 0.05 || wd < total - 0.05);
         if (mode === "inout" && !marked) throw new Error("Work Area belgilanmagan.");
@@ -19,6 +19,7 @@ function uzRange(mode) {
         var seq = app.project.activeSequence;
         if (!seq) throw new Error("Faol sequence’ni oching.");
         name = seq.name;
+        try { identity = seq.sequenceID ? String(seq.sequenceID) : ""; } catch (e) {}
         total = (Number(seq.end) - Number(seq.zeroPoint)) / 254016000000;
         try { fps = 254016000000 / Number(seq.timebase); } catch (e) {}
         var inside = -1, outside = -1;
@@ -32,13 +33,14 @@ function uzRange(mode) {
     }
     if (!(duration > 0)) throw new Error("Timeline’da audio uzunligi topilmadi.");
     if (!(fps > 0) || !isFinite(fps)) fps = 25;
-    return {start:start, duration:duration, total:total, marked:marked && mode !== "full", fps:fps, name:name};
+    return {start:start, duration:duration, total:total, marked:marked && mode !== "full", fps:fps, name:name, identity:identity};
 }
 function uzTimelineInfo(mode) {
     try {
         var r = uzRange(mode);
         return '{"start":' + r.start + ',"duration":' + r.duration + ',"marked":' + r.marked +
-            ',"fps":' + r.fps + ',"name":"' + uzJson(r.name) + '","host":"' + (uzIsAE() ? "AEFT" : "PPRO") + '"}';
+            ',"fps":' + r.fps + ',"name":"' + uzJson(r.name) + '","identity":"' + uzJson(r.identity) +
+            '","host":"' + (uzIsAE() ? "AEFT" : "PPRO") + '"}';
     } catch (e) { return '{"error":"' + uzJson(e.toString()) + '"}'; }
 }
 function uzExportAudio(mode, outputPath, presetPath) {
@@ -71,7 +73,8 @@ function uzExportAudio(mode, outputPath, presetPath) {
             seq.exportAsMediaDirect(out.fsName, preset.fsName, r.marked ? 1 : 0);
         }
         if (!out.exists || out.length < 1000) throw new Error("Timeline audiosi eksport qilinmadi.");
-        return '{"path":"' + uzJson(out.fsName) + '","name":"' + uzJson(r.name) + '"}';
+        return '{"path":"' + uzJson(out.fsName) + '","name":"' + uzJson(r.name) +
+            '","identity":"' + uzJson(r.identity) + '"}';
     } catch (e) { return '{"error":"' + uzJson(e.toString()) + '"}'; }
 }
 function uzFindSrt(item, nativePath) {
@@ -85,11 +88,13 @@ function uzFindSrt(item, nativePath) {
     } catch (e) {}
     return null;
 }
-function uzImportCaptions(srtPath, offset, expectedName) {
+function uzImportCaptions(srtPath, offset, expectedName, expectedIdentity) {
     try {
         var seq = app.project.activeSequence, file = new File(srtPath);
         if (!seq || !file.exists) throw new Error("Sequence yoki SRT topilmadi.");
         if (seq.name !== expectedName) throw new Error("Faol sequence o'zgargan. Avvalgi sequence'ni oching.");
+        if (expectedIdentity && String(seq.sequenceID) !== expectedIdentity)
+            throw new Error("Faol sequence o'zgargan. Avvalgi sequence'ni oching.");
         var item = uzFindSrt(app.project.rootItem, file.fsName);
         if (!item) {
             if (!app.project.importFiles([file.fsName], true, app.project.rootItem, false))
