@@ -25,13 +25,25 @@
   var startPad = document.getElementById('startPad');
   var endPad = document.getElementById('endPad');
   var minCue = document.getElementById('minCue');
+  var glossary = document.getElementById('glossary');
   var preview = document.getElementById('preview');
   var boundaryPreview = document.getElementById('boundaryPreview');
   var run = document.getElementById('run');
+  var reviewRun = document.getElementById('reviewRun');
+  var cancel = document.getElementById('cancel');
+  var reviewSection = document.getElementById('reviewSection');
+  var reviewInfo = document.getElementById('reviewInfo');
+  var srtEditor = document.getElementById('srtEditor');
+  var applyReview = document.getElementById('applyReview');
+  var discardReview = document.getElementById('discardReview');
+  var mainActions = document.getElementById('mainActions');
+  var workActions = document.getElementById('workActions');
+  var reviewActions = document.getElementById('reviewActions');
   var refresh = document.getElementById('refresh');
   var timeline = document.getElementById('timeline');
   var status = document.getElementById('status');
   var advanced = document.getElementById('advanced');
+  var activeRun = null;
   var localPython = path.join(root, '.venv', process.platform === 'win32' ? 'Scripts/python.exe' : 'bin/python');
   python.value = fs.existsSync(localPython) ? localPython : (process.platform === 'win32' ? 'python' : 'python3');
   if (fs.existsSync(path.join(root, 'models', 'navai-medium', 'model.bin'))) {
@@ -53,7 +65,7 @@
     range: range, model: model, style: style, lines: lines, words: words,
     chars: chars, duration: duration, pause: pause, splitSentences: splitSentences,
     splitCommas: splitCommas, splitPauses: splitPauses, startPad: startPad,
-    endPad: endPad, minCue: minCue, python: python
+    endPad: endPad, minCue: minCue, glossary: glossary, python: python
   };
   function saveSettings() {
     var values = {};
@@ -139,6 +151,22 @@
     var value = Number(field.value);
     return isFinite(value) && value >= minimum && value <= maximum ? value : null;
   }
+  function glossaryRules() {
+    var rules = [];
+    glossary.value.replace(/\r/g, '').split('\n').forEach(function (raw, index) {
+      var line = raw.trim();
+      if (!line) return;
+      var separator = line.indexOf('=>') !== -1 ? '=>' : '=';
+      var position = line.indexOf(separator);
+      var source = position >= 0 ? line.slice(0, position).trim() : '';
+      var target = position >= 0 ? line.slice(position + separator.length).trim() : '';
+      if (!source || !target || /\s/.test(source) || /\s/.test(target)) {
+        throw new Error('Lug‘atning ' + (index + 1) + '-qatorini tekshiring: bitta so‘z = bitta so‘z.');
+      }
+      rules.push(source + '=' + target);
+    });
+    return rules;
+  }
 
   function show(message) { status.textContent = message; }
   function hostCall(script, expression, callback) {
@@ -156,11 +184,12 @@
       } catch (e) { callback(new Error('Adobe javobi o‘qilmadi: ' + raw)); }
     });
   }
-  function getInfo(callback) {
-    jsonCall('uzTimelineInfo(' + JSON.stringify(range.value) + ')', callback);
+  function getInfo(callback, selectedRange) {
+    jsonCall('uzTimelineInfo(' + JSON.stringify(selectedRange || range.value) + ')', callback);
   }
   function refreshTimeline() {
     getInfo(function (err, info) {
+      if (activeRun) return;
       if (err) { timeline.textContent = err.message; return; }
       timeline.textContent = info.name + ' · ' + info.duration.toFixed(2) + ' s · ' +
         (info.marked ? ('boshlanish ' + info.start.toFixed(2) + ' s') : 'to‘liq') +
@@ -181,23 +210,81 @@
     }
     return '';
   }
-  function finish(message) { run.disabled = false; refresh.disabled = false; show(message); }
-  function removeTemp(filename) { try { fs.unlinkSync(filename); } catch (e) {} }
+  function setPhase(phase) {
+    mainActions.hidden = phase !== 'idle';
+    workActions.hidden = phase !== 'working';
+    reviewActions.hidden = phase !== 'review';
+    reviewSection.hidden = phase !== 'review';
+    refresh.disabled = phase !== 'idle';
+    Object.keys(savedFields).forEach(function (key) {
+      savedFields[key].disabled = phase !== 'idle' || (key === 'pause' && !splitPauses.checked);
+    });
+    cancel.disabled = false;
+  }
+  function finish(message) { activeRun = null; setPhase('idle'); show(message); }
+  function removeTemp(filename) { if (!filename) return; try { fs.unlinkSync(filename); } catch (e) {} }
+  function validateSrt(input) {
+    var blocks = input.replace(/^\uFEFF/, '').replace(/\r\n?/g, '\n').trim().split(/\n\s*\n/);
+    if (!blocks.length || !blocks[0]) throw new Error('SRT bo‘sh.');
+    var result = [], previousEnd = 0;
+    function millis(stamp) {
+      var m = /^(\d{2}):(\d{2}):(\d{2}),(\d{3})$/.exec(stamp);
+      if (!m || Number(m[2]) > 59 || Number(m[3]) > 59) return null;
+      return ((Number(m[1]) * 60 + Number(m[2])) * 60 + Number(m[3])) * 1000 + Number(m[4]);
+    }
+    blocks.forEach(function (block, index) {
+      var lines = block.split('\n');
+      var span = lines.length > 1 && /^(\S+) --> (\S+)$/.exec(lines[1]);
+      var start = span && millis(span[1]), end = span && millis(span[2]);
+      if (!/^\d+$/.test(lines[0]) || start === null || end === null || !span ||
+          end <= start || start < previousEnd || !lines.slice(2).join('').trim()) {
+        throw new Error((index + 1) + '-subtitrning raqami, vaqti yoki matnini tekshiring.');
+      }
+      previousEnd = end;
+      result.push((index + 1) + '\n' + span[1] + ' --> ' + span[2] + '\n' + lines.slice(2).join('\n').trim());
+    });
+    return {text: result.join('\n\n') + '\n\n', count: result.length};
+  }
+  function prepareReview(srt, info, audio) {
+    removeTemp(audio);
+    if (activeRun) activeRun.audio = null;
+    try {
+      srtEditor.value = fs.readFileSync(srt, 'utf8').replace(/^\uFEFF/, '');
+      reviewInfo.textContent = validateSrt(srtEditor.value).count + ' ta subtitr tayyor. Matn va vaqtni tahrirlashingiz mumkin.';
+    } catch (e) { finish('SRT ko‘rib chiqilmadi: ' + e.message); return; }
+    activeRun.srt = srt;
+    activeRun.info = info;
+    activeRun.review = true;
+    setPhase('review');
+    show('Subtitrlarni tekshirib, keyin timeline’ga joylang.');
+  }
+  function importProblem(message, srt) {
+    if (activeRun && activeRun.review) {
+      setPhase('review');
+      show(message + '\nSRT saqlandi: ' + srt);
+    } else finish(message + '\nSRT saqlandi: ' + srt);
+  }
   function importCaptions(srt, info, audio) {
     var expression = info.host === 'AEFT'
-      ? 'importUzbekSrt(' + JSON.stringify(srt) + ',' + Number(info.start) + ')'
-      : 'uzImportCaptions(' + JSON.stringify(srt) + ',' + Number(info.start) + ')';
+      ? 'importUzbekSrt(' + JSON.stringify(srt) + ',' + Number(info.start) + ',' + JSON.stringify(info.name) + ')'
+      : 'uzImportCaptions(' + JSON.stringify(srt) + ',' + Number(info.start) + ',' + JSON.stringify(info.name) + ')';
     hostCall(info.host === 'AEFT' ? aeScript : hostScript, expression, function (err, raw) {
       removeTemp(audio);
-      if (err) { finish(err.message + '\nSRT saqlandi: ' + srt); return; }
-      if (info.host === 'AEFT') { finish(raw + '\nSRT: ' + srt); return; }
+      if (err) { importProblem(err.message, srt); return; }
+      if (info.host === 'AEFT') {
+        var aeResult = /^(\d+) ta vaqtli matn qatlami yaratildi\.$/.exec(String(raw).trim());
+        if (aeResult && Number(aeResult[1]) > 0) finish(raw + '\nSRT: ' + srt);
+        else importProblem('After Effects importi tasdiqlanmadi: ' + raw, srt);
+        return;
+      }
       try {
         var result = JSON.parse(raw);
-        finish(result.error ? result.error + '\nSRT saqlandi: ' + srt : 'Caption track timeline’ga qo‘shildi.\nSRT: ' + srt);
-      } catch (e) { finish('Import javobi o‘qilmadi: ' + raw + '\nSRT: ' + srt); }
+        if (result.error) importProblem(result.error, srt);
+        else finish('Caption track timeline’ga qo‘shildi.\nSRT: ' + srt);
+      } catch (e) { importProblem('Import javobi o‘qilmadi: ' + raw, srt); }
     });
   }
-  function transcribe(audio, srt, info) {
+  function transcribe(audio, srt, info, reviewFirst, runState) {
     var script = path.join(root, 'subtitles', 'cli.py');
     if (!fs.existsSync(script)) { removeTemp(audio); finish('Python moduli topilmadi.'); return; }
     show('O‘zbekcha nutq va so‘z vaqtlarini aniqlayapman...');
@@ -208,24 +295,43 @@
     if (!splitSentences.checked) args.push('--no-sentence-split');
     if (splitCommas.checked) args.push('--split-commas');
     if (!splitPauses.checked) args.push('--no-pause-split');
+    runState.rules.forEach(function (rule) { args.push('--replace', rule); });
     var child = spawn(python.value.trim(), args, {cwd: root});
+    runState.child = child;
     var stderr = '', ended = false;
-    child.stderr.on('data', function (data) { stderr += String(data); show(stderr.slice(-1500)); });
+    child.stderr.on('data', function (data) {
+      stderr = (stderr + String(data)).slice(-5000);
+      if (runState.cancelled) return;
+      var matches = stderr.match(/UZPROGRESS (\d+)\/(\d+)/g);
+      if (matches && matches.length) {
+        var last = /UZPROGRESS (\d+)\/(\d+)/.exec(matches[matches.length - 1]);
+        show('Nutq aniqlanmoqda: ' + Math.min(100, Math.round(Number(last[1]) / Number(last[2]) * 100)) + '%');
+      } else show('Model ishga tushmoqda va audio tayyorlanmoqda...');
+    });
     child.on('error', function (err) {
       if (ended) return;
-      ended = true; removeTemp(audio); finish('Python ishga tushmadi: ' + err.message);
+      ended = true; removeTemp(audio); finish(runState.cancelled ? 'Bekor qilindi.' : 'Python ishga tushmadi: ' + err.message);
     });
     child.on('close', function (code) {
       if (ended) return;
       ended = true;
+      runState.child = null;
+      if (runState.cancelled) {
+        removeTemp(audio);
+        removeTemp(srt);
+        finish('Bekor qilindi.');
+        return;
+      }
       if (code !== 0 || !fs.existsSync(srt)) {
         removeTemp(audio); finish('Transkripsiya xatosi: ' + stderr.slice(-2500)); return;
       }
+      if (reviewFirst) { prepareReview(srt, info, audio); return; }
+      setPhase('importing');
       show('Subtitrlar timeline’ga qo‘yilmoqda...');
       importCaptions(srt, info, audio);
     });
   }
-  run.onclick = function () {
+  function start(reviewFirst) {
     var rate = Number(fps.value);
     if (!isFinite(rate) || rate <= 0 || rate > 120) { show('FPS 1–120 oralig‘ida bo‘lsin.'); return; }
     if (validNumber(lines, 1, 3) === null || validNumber(words, 1, 8) === null ||
@@ -237,12 +343,20 @@
       show('Qator, so‘z, belgi va vaqt sozlamalarini tekshiring.'); return;
     }
     if (!python.value.trim()) { show('Python yo‘lini kiriting.'); return; }
-    run.disabled = true; refresh.disabled = true;
+    var rules;
+    try { rules = glossaryRules(); }
+    catch (e) { show(e.message); return; }
+    var requestedRange = range.value;
+    activeRun = {cancelled:false, child:null, audio:null, srt:null, info:null, rules:rules};
+    var runState = activeRun;
+    setPhase('working');
     show('Faol timeline tekshirilmoqda...');
     getInfo(function (err, info) {
+      if (runState.cancelled) { finish('Bekor qilindi.'); return; }
       if (err) { finish(err.message); return; }
       var unique = Date.now() + '-' + Math.random().toString(36).slice(2, 8);
       var audio = path.join(os.tmpdir(), 'uzbek-subtitles-' + unique + '.wav');
+      runState.audio = audio;
       var exportDir = path.join(root, 'exports');
       try { fs.mkdirSync(exportDir, {recursive: true}); }
       catch (e) { finish('SRT papkasi yaratilmadi: ' + e.message); return; }
@@ -251,12 +365,41 @@
       var preset = info.host === 'PPRO' ? presetPath() : '';
       if (info.host === 'PPRO' && !preset) { finish('Premiere WAV eksport preset’i topilmadi.'); return; }
       show('Timeline ovozi eksport qilinmoqda...');
-      jsonCall('uzExportAudio(' + JSON.stringify(range.value) + ',' + JSON.stringify(audio) + ',' + JSON.stringify(preset) + ')',
+      jsonCall('uzExportAudio(' + JSON.stringify(requestedRange) + ',' + JSON.stringify(audio) + ',' + JSON.stringify(preset) + ')',
         function (exportError, result) {
+          if (runState.cancelled) { removeTemp(audio); finish('Bekor qilindi.'); return; }
           if (exportError) { removeTemp(audio); finish(exportError.message); return; }
-          transcribe(result.path, srt, info);
+          if (result.name !== info.name) { removeTemp(audio); finish('Faol timeline eksport vaqtida o‘zgargan. Qayta urinib ko‘ring.'); return; }
+          transcribe(result.path, srt, info, reviewFirst, runState);
         });
-    });
+    }, requestedRange);
+  }
+  run.onclick = function () { start(false); };
+  reviewRun.onclick = function () { start(true); };
+  cancel.onclick = function () {
+    if (!activeRun) return;
+    activeRun.cancelled = true;
+    cancel.disabled = true;
+    if (activeRun.child) {
+      activeRun.child.kill();
+      show('Transkripsiya bekor qilinmoqda...');
+    } else show('Audio eksporti tugagach bekor qilinadi...');
+  };
+  discardReview.onclick = function () {
+    var savedPath = activeRun && activeRun.srt;
+    finish('SRT saqlandi: ' + savedPath);
+  };
+  applyReview.onclick = function () {
+    if (!activeRun || !activeRun.srt) return;
+    var edited;
+    try { edited = validateSrt(srtEditor.value); }
+    catch (e) { show(e.message); return; }
+    try { fs.writeFileSync(activeRun.srt, '\uFEFF' + edited.text, 'utf8'); }
+    catch (e) { show('SRT saqlanmadi: ' + e.message); return; }
+    var srt = activeRun.srt, info = activeRun.info;
+    setPhase('importing');
+    show(edited.count + ' ta subtitr timeline’ga qo‘yilmoqda...');
+    importCaptions(srt, info, null);
   };
   refresh.onclick = refreshTimeline;
   range.onchange = refreshTimeline;
