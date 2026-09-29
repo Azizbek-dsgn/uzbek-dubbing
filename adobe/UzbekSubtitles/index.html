@@ -6,7 +6,7 @@
   <title>Uzbek Subtitles</title>
   <style>
     :root{color-scheme:dark;--bg:#1c1d20;--card:#292a2e;--field:#202125;--text:#f4f4f5;--muted:#a9abb2;--blue:#5b9cf5}
-    *{box-sizing:border-box}
+    *{box-sizing:border-box}[hidden]{display:none!important}
     html{background:var(--bg)}
     body{margin:0;min-width:250px;color:var(--text);font:13px/1.4 -apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif}
     button,input,select{font:inherit}button{cursor:pointer}button:disabled{cursor:default;opacity:.55}
@@ -32,6 +32,11 @@
     .boundary{margin-top:8px;padding:8px;border-radius:6px;background:#202125;color:#cfd0d4;white-space:pre-line;font-size:11px}.hint{margin:8px 0 0;color:var(--muted);font-size:10px}
     .footer{position:sticky;bottom:0;margin:0 -14px;padding:10px 14px 14px;border-top:1px solid #3c3e45;background:var(--bg);box-shadow:0 -8px 18px rgba(0,0,0,.2)}
     .run{width:100%;min-height:40px;border:0;border-radius:7px;background:#357ddd;color:#fff;font-size:13px;font-weight:700}.run:hover:not(:disabled){background:#458bec}
+    .secondary{width:100%;min-height:34px;margin-top:6px;border:1px solid #50535b;border-radius:7px;background:#34363c;color:#e8e9ec;font-weight:600}.secondary:hover:not(:disabled){background:#40434b}
+    .action-row{display:flex;gap:7px}.action-row .secondary{margin-top:0;flex:1}.action-row .run{flex:2}
+    .review-editor{display:block;width:100%;min-height:220px;max-height:45vh;resize:vertical;margin-top:10px;padding:10px;border:1px solid #50535b;border-radius:7px;outline:0;background:#1e1f23;color:#f1f2f4;font:12px/1.55 ui-monospace,SFMono-Regular,Menlo,monospace}
+    .review-editor:focus{border-color:var(--blue)}.review-info{margin:0;color:var(--muted);font-size:11px}
+    .glossary{display:block;width:100%;min-height:78px;resize:vertical;padding:8px;border:1px solid #4c4e55;border-radius:6px;background:var(--field);color:var(--text);font:11px/1.5 ui-monospace,SFMono-Regular,Menlo,monospace}
     #status{max-height:110px;overflow:auto;margin:0 0 8px;padding:8px 9px;border-radius:6px;background:#263342;color:#d5e7ff;white-space:pre-wrap;overflow-wrap:anywhere;font-size:11px}#status:empty{display:none}
     @media(max-width:310px){.app{padding-left:10px;padding-right:10px}.section{padding:11px}.footer{margin:0 -10px;padding-left:10px;padding-right:10px}.grid{gap:0 7px}}
   </style>
@@ -63,6 +68,9 @@
         <div class="checks"><label><input id="splitSentences" type="checkbox" checked> Nuqta, ! yoki ? dan keyin</label><label><input id="splitCommas" type="checkbox"> Vergul, ; yoki : dan keyin</label><label><input id="splitPauses" type="checkbox" checked> Pauza bo‘lganda</label></div>
         <label class="field" for="pause"><span class="field-label">Pauza chegarasi · s</span><input id="pause" type="number" min="0.1" max="2" step="0.05" value="0.65"></label>
         <div id="boundaryPreview" class="boundary"></div>
+        <h3 class="subhead">Atamalar lug‘ati</h3>
+        <textarea id="glossary" class="glossary" spellcheck="false" placeholder="noto‘g‘ri = to‘g‘ri"></textarea>
+        <p class="hint">Har qatorda bitta so‘z: xato = to‘g‘ri. Almashtirish so‘z vaqtini o‘zgartirmaydi.</p>
         <h3 class="subhead">Timing</h3>
         <div class="grid"><label class="field" for="startPad"><span class="field-label">Boshini oldinroq · ms</span><input id="startPad" type="number" min="0" max="500" step="20" value="0"></label><label class="field" for="endPad"><span class="field-label">Oxirini keyinroq · ms</span><input id="endPad" type="number" min="0" max="500" step="20" value="0"></label><label class="field" for="minCue"><span class="field-label">Minimal ko‘rinish · s</span><input id="minCue" type="number" min="0" max="3" step="0.1" value="0.8"></label><label class="field" for="fps"><span class="field-label">Timeline FPS</span><input id="fps" type="number" min="1" max="120" step="0.001" value="25"></label></div>
         <h3 class="subhead">Dastur yo‘li</h3>
@@ -70,7 +78,18 @@
         <p class="hint">Tinish belgisi noto‘g‘ri topilsa, subtitrlarni keyin qo‘lda tuzatish mumkin.</p>
       </div>
     </details>
-    <div class="footer"><div id="status" role="status" aria-live="polite"></div><button id="run" class="run" type="button">Timeline’ga subtitr qo‘shish</button></div>
+    <section class="section" id="reviewSection" hidden aria-labelledby="reviewTitle">
+      <div class="section-head"><h2 class="section-title" id="reviewTitle">Subtitrlarni tekshirish</h2></div>
+      <p id="reviewInfo" class="review-info"></p>
+      <textarea id="srtEditor" class="review-editor" spellcheck="false" aria-label="SRT subtitr matni"></textarea>
+      <p class="hint">Matn va vaqt kodlarini tuzating. Har bir subtitr raqami, vaqt oralig‘i va matnini saqlang.</p>
+    </section>
+    <div class="footer">
+      <div id="status" role="status" aria-live="polite"></div>
+      <div id="mainActions"><button id="run" class="run" type="button">Timeline’ga subtitr qo‘shish</button><button id="reviewRun" class="secondary" type="button">Avval matnni tekshirish</button></div>
+      <div id="workActions" hidden><button id="cancel" class="secondary" type="button">Bekor qilish</button></div>
+      <div id="reviewActions" class="action-row" hidden><button id="discardReview" class="secondary" type="button">Keyinroq</button><button id="applyReview" class="run" type="button">Timeline’ga joylash</button></div>
+    </div>
   </main>
   <script src="panel.js"></script>
 </body>
