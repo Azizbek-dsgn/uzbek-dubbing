@@ -9,6 +9,8 @@ Premiere Pro va After Effects uchun bepul, lokal CEP panel. U faol sequence yoki
 3. **Window → Extensions → Uzbek Subtitles** panelini oching, oraliq va modelni tanlang. Qisqa, O‘rta yoki Uzun uslubini tanlang yoki qatorlar soni, har qatordagi so‘z, belgi va davomiylikni qo‘lda kiriting. Nuqta/undov/so‘roq, vergul va pauza bo‘yicha bo‘lishni alohida yoqing. Boshlanish/oxir vaqtini millisekundlarda surish va minimal ko‘rinish vaqtini ham sozlash mumkin.
 4. **Timeline’ga subtitr qo‘shish** tugmasini bosing. Premiere’da caption track, AE’da vaqtli matn qatlamlari yaratiladi. SRT nusxasi `exports/` papkasida qoladi.
 
+Panelning asosiy qismida timeline, model, uslub, qator va so‘z soni ko‘rinadi. Gap bo‘linishi, pauza, timing, FPS va Python yo‘li **Batafsil sozlamalar** ichida. Tanlangan sozlamalar panel qayta ochilganda saqlanadi.
+
 Oraliq tanlovida **Faqat In/Out** belgilar bo‘lmasa xato beradi; **To‘liq timeline** belgilarni e’tiborsiz qoldiradi. GigaAM Uzbek o‘rnatilgan bo‘lsa panel uni dastlab tanlaydi. NavAI va umumiy `large-v3`, `medium`, `small` modellari ham qoladi. GigaAM tinish belgilarini va so‘z vaqtlarini o‘z CTC chiqishidan oladi. Qator va so‘z chegaralari transkripsiya matnini bo‘ladi; xato eshitilgan so‘zni o‘zi tuzatmaydi.
 
 ## Suhbat nutqi uchun GigaAM Uzbek
