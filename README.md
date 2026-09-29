@@ -13,7 +13,7 @@ Panelning asosiy qismida timeline, model, uslub, qator va so‘z soni ko‘rinad
 
 **Atamalar lug‘ati**da takroriy tanish xatolarini har qatorda `xato = to‘g‘ri` shaklida kiriting. Har bir qoida bitta so‘zni almashtiradi; so‘zning audio vaqti o‘zgarmaydi. Gap yoki iboralarni tuzatish uchun **Avval matnni tekshirish** rejimidan foydalaning.
 
-Ko‘rib chiqish oynasidagi SRT formatini saqlang: har bir blokda raqam, `00:00:00,000 --> 00:00:01,000` shaklidagi vaqt va matn bo‘lishi kerak. Panel bo‘sh yoki ustma-ust vaqtlarni import qilishdan oldin bildiradi. Faol timeline transkripsiya vaqtida almashtirilsa, panel boshqa loyihaga subtitr qo‘yishdan saqlaydi.
+Ko‘rib chiqish oynasidagi SRT formatini saqlang: har bir blokda raqam, `00:00:00,000 --> 00:00:01,000` shaklidagi vaqt va matn bo‘lishi kerak. Panel bo‘sh yoki ustma-ust vaqtlarni import qilishdan oldin bildiradi. Faol timeline transkripsiya vaqtida almashtirilsa, panel uning identifikatorini tekshirib, boshqa sequence yoki kompozitsiyaga subtitr qo‘yishdan saqlaydi.
 
 Oraliq tanlovida **Faqat In/Out** belgilar bo‘lmasa xato beradi; **To‘liq timeline** belgilarni e’tiborsiz qoldiradi. GigaAM Uzbek o‘rnatilgan bo‘lsa panel uni dastlab tanlaydi. NavAI va umumiy `large-v3`, `medium`, `small` modellari ham qoladi. GigaAM tinish belgilarini va so‘z vaqtlarini o‘z CTC chiqishidan oladi. Qator va so‘z chegaralari transkripsiya matnini bo‘ladi; xato eshitilgan so‘zni o‘zi tuzatmaydi.
 
