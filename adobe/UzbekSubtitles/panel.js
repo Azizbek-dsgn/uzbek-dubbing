@@ -266,8 +266,8 @@
   }
   function importCaptions(srt, info, audio) {
     var expression = info.host === 'AEFT'
-      ? 'importUzbekSrt(' + JSON.stringify(srt) + ',' + Number(info.start) + ',' + JSON.stringify(info.name) + ')'
-      : 'uzImportCaptions(' + JSON.stringify(srt) + ',' + Number(info.start) + ',' + JSON.stringify(info.name) + ')';
+      ? 'importUzbekSrt(' + JSON.stringify(srt) + ',' + Number(info.start) + ',' + JSON.stringify(info.name) + ',' + JSON.stringify(info.identity || '') + ')'
+      : 'uzImportCaptions(' + JSON.stringify(srt) + ',' + Number(info.start) + ',' + JSON.stringify(info.name) + ',' + JSON.stringify(info.identity || '') + ')';
     hostCall(info.host === 'AEFT' ? aeScript : hostScript, expression, function (err, raw) {
       removeTemp(audio);
       if (err) { importProblem(err.message, srt); return; }
@@ -369,7 +369,9 @@
         function (exportError, result) {
           if (runState.cancelled) { removeTemp(audio); finish('Bekor qilindi.'); return; }
           if (exportError) { removeTemp(audio); finish(exportError.message); return; }
-          if (result.name !== info.name) { removeTemp(audio); finish('Faol timeline eksport vaqtida o‘zgargan. Qayta urinib ko‘ring.'); return; }
+          if (result.name !== info.name || result.identity !== info.identity) {
+            removeTemp(audio); finish('Faol timeline eksport vaqtida o‘zgargan. Qayta urinib ko‘ring.'); return;
+          }
           transcribe(result.path, srt, info, reviewFirst, runState);
         });
     }, requestedRange);
