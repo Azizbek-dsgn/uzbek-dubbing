@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import json
 import math
+import os
 import re
 import sys
 import tempfile
@@ -285,6 +286,9 @@ def diarize(path: Path, model_dir: Path, count: int | None = None) -> list[dict]
     """Run the installed local pyannote pipeline and return speaker turns."""
     if not (model_dir / "config.yaml").is_file():
         raise RuntimeError("So‘zlovchilar modeli o‘rnatilmagan")
+    cache = model_dir.parent / ".mpl-cache"
+    cache.mkdir(exist_ok=True)
+    os.environ.setdefault("MPLCONFIGDIR", str(cache))
     try:
         from pyannote.audio import Pipeline
     except ImportError as exc:

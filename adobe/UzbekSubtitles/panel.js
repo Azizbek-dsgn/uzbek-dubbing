@@ -414,7 +414,7 @@
       stamp.textContent = cue.start.toFixed(2) + '–' + cue.end.toFixed(2);
       var label = document.createElement('span'); label.textContent = cue.text;
       var speakerName = metadata && metadata.cues && metadata.cues[index] && metadata.cues[index].speaker;
-      if (speakerName) label.textContent = speakerName.replace('SPEAKER_0', 'S') + ' · ' + cue.text;
+      if (speakerName) label.textContent = 'S' + (Number(String(speakerName).replace(/\D/g, '')) + 1) + ' · ' + cue.text;
       if ((score !== null && score < 0.55) ||
           (other && other.toLowerCase().replace(/[^a-z0-9']/g, '') !==
            cue.text.toLowerCase().replace(/[^a-z0-9']/g, ''))) label.className = 'weak';
