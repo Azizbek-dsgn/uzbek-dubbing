@@ -1,4 +1,4 @@
-function importUzbekSrt(srtPath, offsetSeconds, expectedName) {
+function importUzbekSrt(srtPath, offsetSeconds, expectedName, expectedIdentity) {
     if (!app.project || !app.project.activeItem || !(app.project.activeItem instanceof CompItem)) {
         return "Avval After Effects kompozitsiyasini oching. SRT: " + srtPath;
     }
@@ -10,6 +10,9 @@ function importUzbekSrt(srtPath, offsetSeconds, expectedName) {
     file.close();
     var comp = app.project.activeItem;
     if (comp.name !== expectedName) { return "Faol kompozitsiya o'zgargan. Avvalgi kompozitsiyani oching."; }
+    if (expectedIdentity && String(comp.id) !== expectedIdentity) {
+        return "Faol kompozitsiya o'zgargan. Avvalgi kompozitsiyani oching.";
+    }
     var blocks = contents.split(/\n\s*\n/);
     var count = 0;
     function seconds(stamp) {
