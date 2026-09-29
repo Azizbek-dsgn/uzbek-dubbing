@@ -41,6 +41,13 @@ python3 -c 'from huggingface_hub import snapshot_download; snapshot_download("ai
 python3 -c 'from huggingface_hub import hf_hub_download; hf_hub_download("rustam1221/uzbek-asr-gigaam", "checkpoints/large_full_600m/best.pt", local_dir="models/gigaam-uzbek")'
 ```
 
+[`zafarrr/uzbek-stt-fastconformer-v1.2`](https://huggingface.co/zafarrr/uzbek-stt-fastconformer-v1.2) Apache-2.0 litsenziyali qo‘shimcha mahalliy model. So‘z vaqtlarini NeMo orqali beradi. Model kartasidagi 8,31% WER boshqa testga tegishli; bizning 6 ta FLEURS namunamizda 12/50 xato qildi (GigaAM 8/50). Shu sabab panelda **tajriba** deb ko‘rsatiladi va GigaAM o‘rniga avtomatik tanlanmaydi. Alohida solishtirish yoki ayrim qatorlarni qayta tanish uchun ishlating. O‘rnatish:
+
+```sh
+python3 -m pip install -r subtitles/requirements-fastconformer.txt huggingface_hub
+python3 -c 'from huggingface_hub import snapshot_download; snapshot_download("zafarrr/uzbek-stt-fastconformer-v1.2", local_dir="models/zafar-fastconformer", allow_patterns=["uzbek_stt_v12.nemo", "README.md"])'
+```
+
 Taxminan 2.3 GB checkpoint yuklanadi. Mavjud o‘rnatilgan plagin uchun Python paketlarini uning `.venv/bin/python` fayli bilan o‘rnating. Model bir marta yuklangach internet talab qilmaydi. Boshqa ovozlar, shevalar va shovqinda sifat o‘zgaradi; yakuniy subtitrni tekshiring.
 
 ## O‘zbekchaga maxsus model

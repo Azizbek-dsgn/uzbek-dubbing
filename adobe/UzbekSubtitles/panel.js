@@ -84,8 +84,14 @@
     model.insertBefore(gigaamOption, model.firstChild);
     model.value = 'gigaam-uzbek';
   }
+  if (fs.existsSync(path.join(root, 'models', 'zafar-fastconformer', 'uzbek_stt_v12.nemo'))) {
+    var fastOption = document.createElement('option');
+    fastOption.value = 'zafar-fastconformer';
+    fastOption.textContent = 'FastConformer Uzbek — tajriba';
+    model.appendChild(fastOption);
+  }
   Array.prototype.forEach.call(model.options, function (item) {
-    if (['navai-small', 'navai-medium', 'gigaam-uzbek'].indexOf(item.value) < 0) return;
+    if (['navai-small', 'navai-medium', 'gigaam-uzbek', 'zafar-fastconformer'].indexOf(item.value) < 0) return;
     var second = document.createElement('option');
     second.value = item.value; second.textContent = item.textContent;
     compareModel.appendChild(second);
@@ -131,6 +137,8 @@
   function updateModelHint() {
     modelHint.textContent = model.value === 'gigaam-uzbek'
       ? 'Tabiiy nutq uchun. So‘z va tinish belgilari vaqtini aniqlaydi.'
+      : model.value === 'zafar-fastconformer'
+        ? 'Tajriba modeli. GigaAM bilan solishtirib, kerakli joyini tanlang.'
       : model.value === 'navai-medium' || model.value === 'navai-small'
         ? 'O‘zbekchaga mos NavAI modeli. Natijalarni GigaAM bilan solishtirish mumkin.'
         : 'Umumiy Whisper modeli. Birinchi ishlatishda model yuklanishi mumkin.';

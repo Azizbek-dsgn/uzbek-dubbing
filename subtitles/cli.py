@@ -178,6 +178,15 @@ def apply_replacements(words: list[Word], rules: list[str]) -> list[Word]:
 
 
 def transcribe(path: Path, model_name: str, device: str, progress=None) -> list[Word]:
+    if model_name == "zafar-fastconformer":
+        if __package__:
+            from .fastconformer import transcribe as fastconformer_transcribe
+        else:
+            from fastconformer import transcribe as fastconformer_transcribe
+        checkpoint = (Path(__file__).resolve().parent.parent / "models" /
+                      "zafar-fastconformer" / "uzbek_stt_v12.nemo")
+        return [Word(start, end, value) for start, end, value in
+                fastconformer_transcribe(path, checkpoint, device, progress)]
     if model_name == "gigaam-uzbek":
         if __package__:
             from .gigaam import transcribe as gigaam_transcribe
@@ -323,8 +332,8 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Offline o'zbekcha SRT subtitr yaratuvchi")
     parser.add_argument("--input", required=True, type=Path)
     parser.add_argument("--output", required=True, type=Path)
-    parser.add_argument("--model", default="gigaam-uzbek", choices=["small", "medium", "large-v3", "navai-small", "navai-medium", "gigaam-uzbek"])
-    parser.add_argument("--compare-model", choices=["navai-small", "navai-medium", "gigaam-uzbek"])
+    parser.add_argument("--model", default="gigaam-uzbek", choices=["small", "medium", "large-v3", "navai-small", "navai-medium", "gigaam-uzbek", "zafar-fastconformer"])
+    parser.add_argument("--compare-model", choices=["navai-small", "navai-medium", "gigaam-uzbek", "zafar-fastconformer"])
     parser.add_argument("--script", choices=["latin", "cyrillic"], default="latin")
     parser.add_argument("--export-vtt", action="store_true")
     parser.add_argument("--export-ass", action="store_true")
