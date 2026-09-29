@@ -71,7 +71,7 @@ function uzExportAudio(mode, outputPath, presetPath) {
             seq.exportAsMediaDirect(out.fsName, preset.fsName, r.marked ? 1 : 0);
         }
         if (!out.exists || out.length < 1000) throw new Error("Timeline audiosi eksport qilinmadi.");
-        return '{"path":"' + uzJson(out.fsName) + '"}';
+        return '{"path":"' + uzJson(out.fsName) + '","name":"' + uzJson(r.name) + '"}';
     } catch (e) { return '{"error":"' + uzJson(e.toString()) + '"}'; }
 }
 function uzFindSrt(item, nativePath) {
@@ -85,10 +85,11 @@ function uzFindSrt(item, nativePath) {
     } catch (e) {}
     return null;
 }
-function uzImportCaptions(srtPath, offset) {
+function uzImportCaptions(srtPath, offset, expectedName) {
     try {
         var seq = app.project.activeSequence, file = new File(srtPath);
         if (!seq || !file.exists) throw new Error("Sequence yoki SRT topilmadi.");
+        if (seq.name !== expectedName) throw new Error("Faol sequence o'zgargan. Avvalgi sequence'ni oching.");
         var item = uzFindSrt(app.project.rootItem, file.fsName);
         if (!item) {
             if (!app.project.importFiles([file.fsName], true, app.project.rootItem, false))
