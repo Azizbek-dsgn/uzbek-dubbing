@@ -36,6 +36,11 @@
     .action-row{display:flex;gap:7px}.action-row .secondary{margin-top:0;flex:1}.action-row .run{flex:2}
     .review-editor{display:block;width:100%;min-height:220px;max-height:45vh;resize:vertical;margin-top:10px;padding:10px;border:1px solid #50535b;border-radius:7px;outline:0;background:#1e1f23;color:#f1f2f4;font:12px/1.55 ui-monospace,SFMono-Regular,Menlo,monospace}
     .review-editor:focus{border-color:var(--blue)}.review-info{margin:0;color:var(--muted);font-size:11px}
+    .waveform{display:block;width:100%;height:72px;margin:10px 0;border:1px solid #444d5b;border-radius:6px;background:#141d29;cursor:crosshair}
+    .cue-list{max-height:200px;overflow:auto;margin:8px 0;border:1px solid #41434a;border-radius:7px}
+    .cue-item{display:flex;align-items:center;gap:7px;width:100%;padding:7px 9px;border:0;border-bottom:1px solid #353841;background:#22252b;color:var(--text);text-align:left;font-size:11px}
+    .cue-item:last-child{border-bottom:0}.cue-item:hover,.cue-item.selected{background:#354964}.cue-item .time{flex:none;color:#a8c8ee}.cue-item .weak{color:#ffc16e}
+    .review-tools{display:flex;gap:7px;align-items:end;margin:9px 0}.review-tools .field{flex:1;margin:0}.review-tools button{height:33px;margin:0;padding:0 9px;white-space:nowrap}
     .glossary{display:block;width:100%;min-height:78px;resize:vertical;padding:8px;border:1px solid #4c4e55;border-radius:6px;background:var(--field);color:var(--text);font:11px/1.5 ui-monospace,SFMono-Regular,Menlo,monospace}
     #status{max-height:110px;overflow:auto;margin:0 0 8px;padding:8px 9px;border-radius:6px;background:#263342;color:#d5e7ff;white-space:pre-wrap;overflow-wrap:anywhere;font-size:11px}#status:empty{display:none}
     @media(max-width:310px){.app{padding-left:10px;padding-right:10px}.section{padding:11px}.footer{margin:0 -10px;padding-left:10px;padding-right:10px}.grid{gap:0 7px}}
@@ -48,11 +53,13 @@
       <div class="section-head"><h2 class="section-title" id="sourceTitle"><span class="step">1</span>Timeline</h2><button id="refresh" class="refresh" type="button">↻ Yangilash</button></div>
       <div id="timeline" class="timeline" aria-live="polite">Timeline tekshirilmoqda…</div>
       <label class="field" for="range"><span class="field-label">Qaysi qismdan subtitr</span><select id="range"><option value="auto">In/Out bo‘lsa shu, aks holda to‘liq</option><option value="inout">Faqat In/Out · AE Work Area</option><option value="full">Butun timeline</option></select></label>
+      <label class="field" for="audioTrack"><span class="field-label">Audio trek · Premiere</span><select id="audioTrack"><option value="all">Barcha eshitiladigan treklar</option></select></label>
     </section>
     <section class="section" aria-labelledby="recognitionTitle">
       <div class="section-head"><h2 class="section-title" id="recognitionTitle"><span class="step">2</span>Nutqni tanish</h2></div>
       <label class="field" for="model"><span class="field-label">O‘zbekcha model</span><select id="model"><option value="large-v3">Whisper large-v3</option><option value="medium">Whisper medium</option><option value="small">Whisper small</option></select></label>
       <span id="modelHint" class="field-hint">Model qurilmada ishlaydi.</span>
+      <label class="field" for="compareModel"><span class="field-label">Ikkinchi model bilan solishtirish</span><select id="compareModel"><option value="">O‘chirilgan</option></select></label>
     </section>
     <section class="section" aria-labelledby="layoutTitle">
       <div class="section-head"><h2 class="section-title" id="layoutTitle"><span class="step">3</span>Subtitr ko‘rinishi</h2></div>
@@ -71,16 +78,29 @@
         <h3 class="subhead">Atamalar lug‘ati</h3>
         <textarea id="glossary" class="glossary" spellcheck="false" placeholder="noto‘g‘ri = to‘g‘ri"></textarea>
         <p class="hint">Har qatorda bitta so‘z: xato = to‘g‘ri. Almashtirish so‘z vaqtini o‘zgartirmaydi.</p>
+        <div class="grid"><label class="field" for="script"><span class="field-label">Yozuv</span><select id="script"><option value="latin">Lotin</option><option value="cyrillic">Kirill</option></select></label><label class="field" for="captionMode"><span class="field-label">Ko‘rinish</span><select id="captionMode"><option value="normal">Oddiy subtitr</option><option value="word">So‘zma-so‘z</option></select></label></div>
+        <div class="checks" style="margin-top:11px"><label><input id="detectSpeakers" type="checkbox"> So‘zlovchilarni avtomatik ajratish</label></div>
+        <label class="field" for="speakerCount"><span class="field-label">So‘zlovchilar soni</span><select id="speakerCount"><option value="auto">Avtomatik</option><option value="2">2 kishi</option><option value="3">3 kishi</option><option value="4">4 kishi</option></select></label>
+        <div class="checks" style="margin-top:11px"><label><input id="exportVtt" type="checkbox" checked> VTT fayl ham yaratish</label><label><input id="exportAss" type="checkbox" checked> ASS fayl ham yaratish</label></div>
         <h3 class="subhead">Timing</h3>
         <div class="grid"><label class="field" for="startPad"><span class="field-label">Boshini oldinroq · ms</span><input id="startPad" type="number" min="0" max="500" step="20" value="0"></label><label class="field" for="endPad"><span class="field-label">Oxirini keyinroq · ms</span><input id="endPad" type="number" min="0" max="500" step="20" value="0"></label><label class="field" for="minCue"><span class="field-label">Minimal ko‘rinish · s</span><input id="minCue" type="number" min="0" max="3" step="0.1" value="0.8"></label><label class="field" for="fps"><span class="field-label">Timeline FPS</span><input id="fps" type="number" min="1" max="120" step="0.001" value="25"></label></div>
         <h3 class="subhead">Dastur yo‘li</h3>
         <label class="field" for="python"><span class="field-label">Python</span><input id="python" value="python3" spellcheck="false"></label>
         <p class="hint">Tinish belgisi noto‘g‘ri topilsa, subtitrlarni keyin qo‘lda tuzatish mumkin.</p>
+        <h3 class="subhead">Bir nechta media fayl</h3>
+        <label class="field" for="batchDir"><span class="field-label">Audio/video papkasi</span><input id="batchDir" placeholder="/Users/.../media" spellcheck="false"></label>
+        <button id="batchRun" class="secondary" type="button">Papkadagi fayllar uchun SRT yaratish</button>
+        <p class="hint">Natijalar exports/batch papkasiga yoziladi. Timeline’ga avtomatik qo‘yilmaydi.</p>
       </div>
     </details>
     <section class="section" id="reviewSection" hidden aria-labelledby="reviewTitle">
       <div class="section-head"><h2 class="section-title" id="reviewTitle">Subtitrlarni tekshirish</h2></div>
       <p id="reviewInfo" class="review-info"></p>
+      <canvas id="waveform" class="waveform" width="520" height="72" aria-label="Audio to‘lqini va subtitr vaqtlari"></canvas>
+      <div id="cueList" class="cue-list" aria-label="Subtitrlar ro‘yxati"></div>
+      <div class="review-tools"><label class="field" for="retryModel"><span class="field-label">Tanlangan subtitrni qayta tanish</span><select id="retryModel"></select></label><button id="retryCue" class="secondary" type="button">Qayta tanish</button></div>
+      <div class="review-tools"><label class="field" for="speakerChoice"><span class="field-label">Tanlangan subtitr so‘zlovchisi</span><select id="speakerChoice"><option value="">Belgilanmagan</option><option value="SPEAKER_00">So‘zlovchi 1</option><option value="SPEAKER_01">So‘zlovchi 2</option><option value="SPEAKER_02">So‘zlovchi 3</option><option value="SPEAKER_03">So‘zlovchi 4</option></select></label><button id="assignSpeaker" class="secondary" type="button">Belgilash</button></div>
+      <p id="compareText" class="hint"></p>
       <textarea id="srtEditor" class="review-editor" spellcheck="false" aria-label="SRT subtitr matni"></textarea>
       <p class="hint">Matn va vaqt kodlarini tuzating. Har bir subtitr raqami, vaqt oralig‘i va matnini saqlang.</p>
     </section>

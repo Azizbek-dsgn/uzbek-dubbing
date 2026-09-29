@@ -7,6 +7,8 @@ import json
 import math
 import re
 import sys
+import tempfile
+import subprocess
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -16,6 +18,7 @@ class Word:
     start: float
     end: float
     text: str
+    confidence: float | None = None
 
 
 @dataclass(frozen=True)
@@ -169,7 +172,7 @@ def apply_replacements(words: list[Word], rules: list[str]) -> list[Word]:
             replacement = replacement.upper()
         elif original[:1].isupper():
             replacement = replacement[:1].upper() + replacement[1:]
-        result.append(Word(word.start, word.end, match.group(1) + replacement + match.group(3)))
+        result.append(Word(word.start, word.end, match.group(1) + replacement + match.group(3), word.confidence))
     return result
 
 
@@ -197,8 +200,8 @@ def transcribe(path: Path, model_name: str, device: str, progress=None) -> list[
         except (FileNotFoundError, subprocess.TimeoutExpired):
             device = "cpu"
     local_model = Path(__file__).resolve().parent.parent / "models" / model_name
-    if model_name == "navai-medium" and not (local_model / "model.bin").is_file():
-        raise RuntimeError("NavAI o'zbekcha modeli o'rnatilmagan; models/navai-medium/model.bin topilmadi")
+    if model_name.startswith("navai-") and not (local_model / "model.bin").is_file():
+        raise RuntimeError(f"NavAI modeli o'rnatilmagan: models/{model_name}/model.bin")
     model_ref = str(local_model) if (local_model / "model.bin").is_file() else model_name
     model = WhisperModel(model_ref, device=device,
                          compute_type="float16" if device == "cuda" else "int8")
@@ -218,17 +221,114 @@ def transcribe(path: Path, model_name: str, device: str, progress=None) -> list[
         if segment.words:
             for word in segment.words:
                 if word.start is not None and word.end is not None:
-                    words.append(Word(float(word.start), float(word.end), word.word))
+                    words.append(Word(float(word.start), float(word.end), word.word,
+                                      float(word.probability) if word.probability is not None else None))
         elif segment.text.strip():
             words.append(Word(float(segment.start), float(segment.end), segment.text))
     return words
+
+
+def to_vtt(cues: list[Cue]) -> str:
+    return "WEBVTT\n\n" + "".join(
+        f"{_stamp(c.start).replace(',', '.')} --> {_stamp(c.end).replace(',', '.')}\n{c.text}\n\n"
+        for c in cues)
+
+
+def to_ass(cues: list[Cue], speakers: list[str | None] | None = None) -> str:
+    header = ("[Script Info]\nScriptType: v4.00+\nPlayResX: 1920\nPlayResY: 1080\n\n"
+              "[V4+ Styles]\nFormat: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, "
+              "OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, "
+              "ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, "
+              "MarginR, MarginV, Encoding\n"
+              "Style: Default,Arial,56,&H00FFFFFF,&H00FFFFFF,&H00000000,&H80000000,"
+              "0,0,0,0,100,100,0,0,1,2,1,2,80,80,75,1\n\n"
+              "[Events]\nFormat: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text\n")
+    def stamp(t: float) -> str:
+        hundredths = round(t * 100)
+        h, rest = divmod(hundredths, 360000)
+        m, rest = divmod(rest, 6000)
+        s, cs = divmod(rest, 100)
+        return f"{h}:{m:02}:{s:02}.{cs:02}"
+    return header + "".join(
+        f"Dialogue: 0,{stamp(c.start)},{stamp(c.end)},Default,{re.sub(r'[^A-Za-z0-9_-]', '', (speakers[i] or '')) if speakers else ''},0,0,0,,"
+        + c.text.replace("\\", "\\\\").replace("{", "\\{").replace("}", "\\}").replace("\n", "\\N")
+        + "\n" for i, c in enumerate(cues))
+
+
+_LATIN_TO_CYRILLIC = {
+    "sh": "ш", "ch": "ч", "ng": "нг", "yo": "ё", "yu": "ю", "ya": "я",
+    "o'": "ў", "g'": "ғ", "a": "а", "b": "б", "d": "д", "e": "е",
+    "f": "ф", "g": "г", "h": "ҳ", "i": "и", "j": "ж", "k": "к",
+    "l": "л", "m": "м", "n": "н", "o": "о", "p": "п", "q": "қ",
+    "r": "р", "s": "с", "t": "т", "u": "у", "v": "в", "x": "х",
+    "y": "й", "z": "з", "'": "ъ",
+}
+
+
+def to_cyrillic(text: str) -> str:
+    """Practical Uzbek transliteration; proper names may need manual review."""
+    source = _clean(text)
+    out: list[str] = []
+    index = 0
+    while index < len(source):
+        token = next((source[index:index + size] for size in (2, 1)
+                      if source[index:index + size].lower() in _LATIN_TO_CYRILLIC), None)
+        if token is None:
+            out.append(source[index]); index += 1; continue
+        mapped = _LATIN_TO_CYRILLIC[token.lower()]
+        out.append(mapped.upper() if token[0].isupper() else mapped)
+        index += len(token)
+    return "".join(out)
+
+
+def diarize(path: Path, model_dir: Path, count: int | None = None) -> list[dict]:
+    """Run the installed local pyannote pipeline and return speaker turns."""
+    if not (model_dir / "config.yaml").is_file():
+        raise RuntimeError("So‘zlovchilar modeli o‘rnatilmagan")
+    try:
+        from pyannote.audio import Pipeline
+    except ImportError as exc:
+        raise RuntimeError("So‘zlovchilar uchun pyannote.audio o‘rnatilmagan") from exc
+    import imageio_ffmpeg
+    import soundfile as sf
+    import torch
+    pipeline = Pipeline.from_pretrained(str(model_dir))
+    with tempfile.TemporaryDirectory() as directory:
+        wav = Path(directory) / "speech.wav"
+        subprocess.run([imageio_ffmpeg.get_ffmpeg_exe(), "-nostdin", "-y", "-loglevel", "error",
+                        "-i", str(path), "-ac", "1", "-ar", "16000", str(wav)], check=True)
+        signal, rate = sf.read(wav, dtype="float32")
+        waveform = torch.from_numpy(signal).unsqueeze(0)
+        result = pipeline({"waveform": waveform, "sample_rate": rate},
+                          **({"num_speakers": count} if count else {}))
+    annotation = getattr(result, "speaker_diarization", result)
+    return [{"start": round(float(turn.start), 3), "end": round(float(turn.end), 3),
+             "speaker": str(label)} for turn, _, label in annotation.itertracks(yield_label=True)]
+
+
+def cue_speaker(cue: Cue, turns: list[dict]) -> str | None:
+    scores: dict[str, float] = {}
+    for turn in turns:
+        overlap = max(0.0, min(cue.end, turn["end"]) - max(cue.start, turn["start"]))
+        if overlap:
+            scores[turn["speaker"]] = scores.get(turn["speaker"], 0) + overlap
+    return max(scores, key=scores.get) if scores else None
 
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Offline o'zbekcha SRT subtitr yaratuvchi")
     parser.add_argument("--input", required=True, type=Path)
     parser.add_argument("--output", required=True, type=Path)
-    parser.add_argument("--model", default="large-v3", choices=["small", "medium", "large-v3", "navai-medium", "gigaam-uzbek"])
+    parser.add_argument("--model", default="gigaam-uzbek", choices=["small", "medium", "large-v3", "navai-small", "navai-medium", "gigaam-uzbek"])
+    parser.add_argument("--compare-model", choices=["navai-small", "navai-medium", "gigaam-uzbek"])
+    parser.add_argument("--script", choices=["latin", "cyrillic"], default="latin")
+    parser.add_argument("--export-vtt", action="store_true")
+    parser.add_argument("--export-ass", action="store_true")
+    parser.add_argument("--word-mode", action="store_true")
+    parser.add_argument("--speakers", action="store_true")
+    parser.add_argument("--num-speakers", type=int, choices=[2, 3, 4])
+    parser.add_argument("--start-seconds", type=float, default=0)
+    parser.add_argument("--end-seconds", type=float)
     parser.add_argument("--device", default="auto", choices=["auto", "cpu", "cuda", "mps"])
     parser.add_argument("--fps", type=float, default=25.0)
     parser.add_argument("--max-chars", type=int, default=42)
@@ -250,20 +350,76 @@ def main(argv: list[str] | None = None) -> int:
         apply_replacements([], args.replace)
         def report(done: int, total: int) -> None:
             print(f"UZPROGRESS {done}/{total}", file=sys.stderr, flush=True)
-        words = apply_replacements(transcribe(args.input, args.model, args.device, report), args.replace)
+        if args.start_seconds < 0 or (args.end_seconds is not None and
+                                      args.end_seconds <= args.start_seconds):
+            raise ValueError("Qayta tanish vaqti noto'g'ri")
+        source = args.input
+        offset = 0.0
+        scratch = tempfile.TemporaryDirectory()
+        try:
+            if args.start_seconds or args.end_seconds is not None:
+                try:
+                    import imageio_ffmpeg
+                    ffmpeg = imageio_ffmpeg.get_ffmpeg_exe()
+                except ImportError as exc:
+                    raise RuntimeError("Oraliq uchun imageio-ffmpeg kerak") from exc
+                source = Path(scratch.name) / "selection.wav"
+                command = [ffmpeg, "-nostdin", "-y", "-loglevel", "error", "-ss",
+                           str(args.start_seconds), "-i", str(args.input)]
+                if args.end_seconds is not None:
+                    command.extend(["-t", str(args.end_seconds - args.start_seconds)])
+                command.extend(["-ac", "1", "-ar", "16000", str(source)])
+                subprocess.run(command, check=True)
+                offset = args.start_seconds
+            words = apply_replacements(transcribe(source, args.model, args.device, report), args.replace)
+            words = [Word(max(offset, w.start + offset),
+                          max(offset + 0.01, w.end + offset, w.start + offset + 0.01),
+                          w.text, w.confidence) for w in words]
+            comparison = None
+            if args.compare_model and args.compare_model != args.model:
+                alternative = apply_replacements(
+                    transcribe(source, args.compare_model, args.device, report), args.replace)
+                comparison = [{"start": round(w.start + offset, 3), "end": round(w.end + offset, 3),
+                               "text": w.text, "confidence": w.confidence} for w in alternative]
+            turns = diarize(source, Path(__file__).resolve().parent.parent / "models" / "speaker-diarization",
+                            args.num_speakers) if args.speakers else []
+            for turn in turns:
+                turn["start"] = round(turn["start"] + offset, 3)
+                turn["end"] = round(turn["end"] + offset, 3)
+        finally:
+            scratch.cleanup()
+        if args.script == "cyrillic":
+            words = [Word(w.start, w.end, to_cyrillic(w.text), w.confidence) for w in words]
+            if comparison is not None:
+                for item in comparison:
+                    item["text"] = to_cyrillic(item["text"])
         cues = make_cues(words, fps=args.fps, max_chars=args.max_chars,
                          max_duration=args.max_duration, gap=args.pause,
-                         max_lines=args.lines, words_per_line=args.words_per_line,
+                         max_lines=1 if args.word_mode else args.lines,
+                         words_per_line=1 if args.word_mode else args.words_per_line,
                          split_sentences=not args.no_sentence_split,
                          split_commas=args.split_commas,
                          split_pauses=not args.no_pause_split,
                          start_pad=args.start_pad_ms / 1000,
                          end_pad=args.end_pad_ms / 1000,
-                         min_duration=args.min_cue_duration)
+                         min_duration=0 if args.word_mode else args.min_cue_duration)
         if not cues:
             raise RuntimeError("Nutq topilmadi")
         args.output.parent.mkdir(parents=True, exist_ok=True)
         args.output.write_text(to_srt(cues), encoding="utf-8-sig")
+        if args.export_vtt:
+            args.output.with_suffix(".vtt").write_text(to_vtt(cues), encoding="utf-8")
+        if args.export_ass:
+            args.output.with_suffix(".ass").write_text(
+                to_ass(cues, [cue_speaker(c, turns) for c in cues]), encoding="utf-8")
+        metadata = {"model": args.model, "words": [
+            {"start": round(w.start, 3), "end": round(w.end, 3), "text": w.text,
+             "confidence": w.confidence} for w in words], "comparison_model": args.compare_model,
+            "comparison_words": comparison,
+            "speaker_turns": turns,
+            "cues": [{"start": c.start, "end": c.end, "text": c.text,
+                      "speaker": cue_speaker(c, turns)} for c in cues]}
+        args.output.with_suffix(".json").write_text(json.dumps(metadata, ensure_ascii=False), encoding="utf-8")
         print(json.dumps({"output": str(args.output.resolve()), "cues": len(cues)}, ensure_ascii=False))
         return 0
     except Exception as exc:

@@ -11,6 +11,20 @@ Premiere Pro va After Effects uchun bepul, lokal CEP panel. U faol sequence yoki
 
 Panelning asosiy qismida timeline, model, uslub, qator va so‘z soni ko‘rinadi. Gap bo‘linishi, pauza, timing, FPS va Python yo‘li **Batafsil sozlamalar** ichida. Tanlangan sozlamalar panel qayta ochilganda saqlanadi.
 
+## Yangi imkoniyatlar
+
+- **NavAI Uzbek small** mahalliy, yengilroq model sifatida o‘rnatilgan. Tabiiy suhbat uchun GigaAM Uzbek 600M dastlab tanlanadi; boshqa ovozlarda NavAI small va medium’ni sinab ko‘ring. **Ikkinchi model bilan solishtirish** yoqilsa, ikkala natija yaratiladi va tekshirish oynasida farqlari ko‘rsatiladi. Bu ish vaqtini taxminan ikki baravar oshiradi.
+- **Tekshirish oynasi** audio to‘lqini, subtitrlar ro‘yxati, past ishonchli so‘zlar va modellar kelishmagan joylarni ko‘rsatadi. Bitta subtitrni tanlab, boshqa model bilan faqat shu oralig‘ini qayta tanish mumkin. GigaAM CTC chiqishida ishonch ballari yo‘q; uning uchun ikkinchi model bilan kelishmovchilik belgilanadi.
+- **So‘zlovchilarni ajratish** lokal model bilan ixtiyoriy ishlaydi. So‘zlovchilar sonini avtomatik, 2, 3 yoki 4 ga sozlash, tekshirish oynasida har bir subtitr belgisini qo‘lda tuzatish mumkin. Belgilar JSON va ASS faylida saqlanadi; After Effects’da matn ranglari farqlanadi. Premiere caption track individual ranglarni skript orqali qo‘ymaydi.
+- **So‘zma-so‘z** rejimi har so‘z uchun alohida caption yaratadi. After Effects’da so‘z boshlanishida yengil kattalashish/opacity animatsiyasi qo‘shiladi. Premiere’da har so‘z alohida caption bo‘ladi.
+- **Lotin/Kirill**, **VTT**, **ASS** chiqishi mavjud. SRT tekshirish oynasida tahrirlansa, VTT/ASS ham qayta yoziladi. Kirill transliteratsiyasi qoida asosida ishlaydi; atoqli otlarni tekshiring.
+- Premiere’da **bitta audio trekni** tanlash mumkin. Eksport vaqtida boshqa treklar vaqtincha o‘chiriladi va avvalgi holati tiklanadi. AE’da kompozitsiya ovozi olinadi.
+- **Bir nechta media fayl** bo‘limida papka yo‘lini kiriting; har bir audio/video uchun SRT (tanlangan bo‘lsa VTT/ASS ham) `exports/batch/` ichida yaratiladi. Bu bo‘lim fayllarni timeline’ga import qilmaydi.
+
+Yangi model va speaker fayllari o‘rnatilgan runtime `models/` papkasida. Faqat source ZIP’ni boshqa kompyuterga ko‘chirsangiz, modellarni alohida o‘rnatishingiz kerak. Speaker modeli [`pyannote-community/speaker-diarization-community-1`](https://huggingface.co/pyannote-community/speaker-diarization-community-1), CC BY 4.0 litsenziyasi bilan. Uni ishlatish uchun `pip install -r subtitles/requirements-speakers.txt` va model snapshot’ini `models/speaker-diarization/` ga yuklang. Audio torchcodec ishlamaydigan macOS’da ffmpeg orqali xotiraga o‘qiladi.
+
+Bizning 6 ta qisqa FLEURS o‘qib aytilgan nutq sinovimizda (jami 50 referens so‘z) NavAI small 6, GigaAM 8, NavAI medium 9 so‘z xatosi berdi. Bu juda kichik namuna va real suhbatdagi ustunlikni isbotlamaydi. Mualliflar natijalari ham turli benchmarklarda olingan. Sizning audiongiz berilmagani uchun o‘sha nutqda aniqlikni baholay olmadik.
+
 **Atamalar lug‘ati**da takroriy tanish xatolarini har qatorda `xato = to‘g‘ri` shaklida kiriting. Har bir qoida bitta so‘zni almashtiradi; so‘zning audio vaqti o‘zgarmaydi. Gap yoki iboralarni tuzatish uchun **Avval matnni tekshirish** rejimidan foydalaning.
 
 Ko‘rib chiqish oynasidagi SRT formatini saqlang: har bir blokda raqam, `00:00:00,000 --> 00:00:01,000` shaklidagi vaqt va matn bo‘lishi kerak. Panel bo‘sh yoki ustma-ust vaqtlarni import qilishdan oldin bildiradi. Faol timeline transkripsiya vaqtida almashtirilsa, panel uning identifikatorini tekshirib, boshqa sequence yoki kompozitsiyaga subtitr qo‘yishdan saqlaydi.

@@ -1,7 +1,8 @@
 import unittest
 from types import SimpleNamespace
 
-from subtitles.cli import Word, _reliable_segment, apply_replacements, make_cues, to_srt
+from subtitles.cli import (Word, _reliable_segment, apply_replacements,
+                           make_cues, to_srt, to_vtt, to_ass, to_cyrillic, cue_speaker)
 from subtitles.gigaam import _chunks
 
 
@@ -109,6 +110,23 @@ class SubtitleTests(unittest.TestCase):
         self.assertEqual([(w.start, w.end) for w in fixed], [(.2, .5), (.6, .9)])
         with self.assertRaises(ValueError):
             apply_replacements(words, ["ikki so‘z=bitta"])
+
+    def test_exports_and_cyrillic_keep_timing(self):
+        cues = make_cues([Word(.12, .5, "O'zbekcha"), Word(.5, 1.0, "shahar.")])
+        self.assertIn("00:00:00.120 --> 00:00:01.000", to_vtt(cues))
+        self.assertIn("Dialogue: 0,0:00:00.12,0:00:01.00", to_ass(cues))
+        self.assertEqual(to_cyrillic("O'zbekcha shahar."), "Ўзбекча шаҳар.")
+
+    def test_glossary_keeps_confidence(self):
+        word = Word(0, .5, "xato", .42)
+        self.assertEqual(apply_replacements([word], ["xato=to'g'ri"])[0].confidence, .42)
+
+    def test_speaker_overlap_uses_dominant_voice(self):
+        cue = make_cues([Word(1, 2, "Salom")], min_duration=0)[0]
+        turns = [{"start": 1, "end": 1.2, "speaker": "SPEAKER_00"},
+                 {"start": 1.2, "end": 2, "speaker": "SPEAKER_01"}]
+        self.assertEqual(cue_speaker(cue, turns), "SPEAKER_01")
+        self.assertIn("SPEAKER_01", to_ass([cue], ["SPEAKER_01"]))
 
 
 if __name__ == "__main__":

@@ -5,7 +5,7 @@ function uzIsAE() {
     try { return app.name.indexOf("After Effects") !== -1; } catch (e) { return false; }
 }
 function uzRange(mode) {
-    var start = 0, duration = 0, total = 0, marked = false, fps = 25, name = "", identity = "";
+    var start = 0, duration = 0, total = 0, marked = false, fps = 25, name = "", identity = "", trackCount = 0;
     if (uzIsAE()) {
         var comp = app.project.activeItem;
         if (!comp || !(comp instanceof CompItem)) throw new Error("Faol kompozitsiyani oching.");
@@ -19,6 +19,7 @@ function uzRange(mode) {
         var seq = app.project.activeSequence;
         if (!seq) throw new Error("Faol sequence’ni oching.");
         name = seq.name;
+        try { trackCount = Number(seq.audioTracks.numTracks); } catch (e) {}
         try { identity = seq.sequenceID ? String(seq.sequenceID) : ""; } catch (e) {}
         total = (Number(seq.end) - Number(seq.zeroPoint)) / 254016000000;
         try { fps = 254016000000 / Number(seq.timebase); } catch (e) {}
@@ -33,17 +34,17 @@ function uzRange(mode) {
     }
     if (!(duration > 0)) throw new Error("Timeline’da audio uzunligi topilmadi.");
     if (!(fps > 0) || !isFinite(fps)) fps = 25;
-    return {start:start, duration:duration, total:total, marked:marked && mode !== "full", fps:fps, name:name, identity:identity};
+    return {start:start, duration:duration, total:total, marked:marked && mode !== "full", fps:fps, name:name, identity:identity, trackCount:trackCount};
 }
 function uzTimelineInfo(mode) {
     try {
         var r = uzRange(mode);
         return '{"start":' + r.start + ',"duration":' + r.duration + ',"marked":' + r.marked +
-            ',"fps":' + r.fps + ',"name":"' + uzJson(r.name) + '","identity":"' + uzJson(r.identity) +
+            ',"fps":' + r.fps + ',"trackCount":' + r.trackCount + ',"name":"' + uzJson(r.name) + '","identity":"' + uzJson(r.identity) +
             '","host":"' + (uzIsAE() ? "AEFT" : "PPRO") + '"}';
     } catch (e) { return '{"error":"' + uzJson(e.toString()) + '"}'; }
 }
-function uzExportAudio(mode, outputPath, presetPath) {
+function uzExportAudio(mode, outputPath, presetPath, selectedTrack) {
     try {
         var r = uzRange(mode), out = new File(outputPath);
         if (out.exists) out.remove();
@@ -70,7 +71,23 @@ function uzExportAudio(mode, outputPath, presetPath) {
         } else {
             var seq = app.project.activeSequence, preset = new File(presetPath);
             if (!preset.exists) throw new Error("Premiere WAV eksport preset’i topilmadi.");
-            seq.exportAsMediaDirect(out.fsName, preset.fsName, r.marked ? 1 : 0);
+            var trackIndex = Number(selectedTrack), states = [];
+            if (selectedTrack !== "all") {
+                if (!isFinite(trackIndex) || trackIndex < 0 || trackIndex >= seq.audioTracks.numTracks)
+                    throw new Error("Tanlangan audio trek topilmadi.");
+                try {
+                    for (var a = 0; a < seq.audioTracks.numTracks; a++) {
+                        var track = seq.audioTracks[a];
+                        states.push([track, track.isMuted()]);
+                        track.setMute(a === trackIndex ? 0 : 1);
+                    }
+                    seq.exportAsMediaDirect(out.fsName, preset.fsName, r.marked ? 1 : 0);
+                } finally {
+                    for (var b = 0; b < states.length; b++) {
+                        states[b][0].setMute(states[b][1] ? 1 : 0);
+                    }
+                }
+            } else seq.exportAsMediaDirect(out.fsName, preset.fsName, r.marked ? 1 : 0);
         }
         if (!out.exists || out.length < 1000) throw new Error("Timeline audiosi eksport qilinmadi.");
         return '{"path":"' + uzJson(out.fsName) + '","name":"' + uzJson(r.name) +

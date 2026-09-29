@@ -1,4 +1,4 @@
-function importUzbekSrt(srtPath, offsetSeconds, expectedName, expectedIdentity) {
+function importUzbekSrt(srtPath, offsetSeconds, expectedName, expectedIdentity, captionMode, speakerLabels) {
     if (!app.project || !app.project.activeItem || !(app.project.activeItem instanceof CompItem)) {
         return "Avval After Effects kompozitsiyasini oching. SRT: " + srtPath;
     }
@@ -36,7 +36,10 @@ function importUzbekSrt(srtPath, offsetSeconds, expectedName, expectedIdentity) 
             var layer = comp.layers.addText(lines.slice(2).join("\r"));
             var text = layer.property("Source Text").value;
             text.fontSize = Math.max(28, Math.round(comp.width / 32));
-            text.fillColor = [1, 1, 1];
+            var speaker = speakerLabels && speakerLabels[i];
+            var palette = [[1, 1, 1], [1, 0.77, 0.37], [0.58, 0.83, 1], [0.73, 1, 0.7]];
+            var colorIndex = speaker ? Number(String(speaker).replace(/\D/g, "")) + 1 : 0;
+            text.fillColor = palette[isFinite(colorIndex) ? colorIndex % palette.length : 0];
             text.applyFill = true;
             text.applyStroke = false;
             text.justification = ParagraphJustification.CENTER_JUSTIFY;
@@ -45,6 +48,15 @@ function importUzbekSrt(srtPath, offsetSeconds, expectedName, expectedIdentity) 
             layer.startTime = 0;
             layer.inPoint = start;
             layer.outPoint = Math.min(end, comp.duration);
+            if (captionMode === "word" && end - start > 0.08) {
+                var popEnd = Math.min(end - 0.01, start + 0.12);
+                var scale = layer.property("Transform").property("Scale");
+                var opacity = layer.property("Transform").property("Opacity");
+                scale.setValueAtTime(start, [82, 82]);
+                scale.setValueAtTime(popEnd, [100, 100]);
+                opacity.setValueAtTime(start, 35);
+                opacity.setValueAtTime(Math.min(end - 0.005, start + 0.08), 100);
+            }
             count++;
         }
     } finally { app.endUndoGroup(); }
