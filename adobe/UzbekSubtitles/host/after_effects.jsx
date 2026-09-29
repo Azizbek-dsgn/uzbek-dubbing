@@ -1,4 +1,4 @@
-function importUzbekSrt(srtPath, offsetSeconds, expectedName, expectedIdentity, captionMode, speakerLabels) {
+function importUzbekSrt(srtPath, offsetSeconds, expectedName, expectedIdentity, captionMode, speakerLabels, selectForComposer) {
     if (!app.project || !app.project.activeItem || !(app.project.activeItem instanceof CompItem)) {
         return "Avval After Effects kompozitsiyasini oching. SRT: " + srtPath;
     }
@@ -22,6 +22,7 @@ function importUzbekSrt(srtPath, offsetSeconds, expectedName, expectedIdentity, 
     }
     app.beginUndoGroup("O'zbekcha subtitr importi");
     try {
+        var composerLayers = [];
         for (var i = 0; i < blocks.length; i++) {
             var lines = blocks[i].split("\n");
             if (lines.length < 3) { continue; }
@@ -48,7 +49,7 @@ function importUzbekSrt(srtPath, offsetSeconds, expectedName, expectedIdentity, 
             layer.startTime = 0;
             layer.inPoint = start;
             layer.outPoint = Math.min(end, comp.duration);
-            if (captionMode === "word" && end - start > 0.08) {
+            if (captionMode === "word" && !selectForComposer && end - start > 0.08) {
                 var popEnd = Math.min(end - 0.01, start + 0.12);
                 var scale = layer.property("Transform").property("Scale");
                 var opacity = layer.property("Transform").property("Opacity");
@@ -57,7 +58,13 @@ function importUzbekSrt(srtPath, offsetSeconds, expectedName, expectedIdentity, 
                 opacity.setValueAtTime(start, 35);
                 opacity.setValueAtTime(Math.min(end - 0.005, start + 0.08), 100);
             }
+            if (selectForComposer) composerLayers.push(layer);
             count++;
+        }
+        if (selectForComposer) {
+            var previouslySelected = comp.selectedLayers;
+            for (var p = 0; p < previouslySelected.length; p++) previouslySelected[p].selected = false;
+            for (var q = 0; q < composerLayers.length; q++) composerLayers[q].selected = true;
         }
     } finally { app.endUndoGroup(); }
     return count + " ta vaqtli matn qatlami yaratildi.";

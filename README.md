@@ -6,10 +6,12 @@ Premiere Pro va After Effects uchun bepul, lokal CEP panel. U faol sequence yoki
 
 1. Premiere Pro’da sequence’ni yoki After Effects’da kompozitsiyani oching.
 2. Kerakli joyga In/Out nuqtalarini qo‘ying. AE’da Work Area belgilang. Belgilanmagan bo‘lsa butun timeline olinadi.
-3. **Window → Extensions → Uzbek Subtitles** panelini oching, oraliq va modelni tanlang. Qisqa, O‘rta yoki Uzun uslubini tanlang yoki qatorlar soni, har qatordagi so‘z, belgi va davomiylikni qo‘lda kiriting. Nuqta/undov/so‘roq, vergul va pauza bo‘yicha bo‘lishni alohida yoqing. Boshlanish/oxir vaqtini millisekundlarda surish va minimal ko‘rinish vaqtini ham sozlash mumkin.
-4. **Timeline’ga subtitr qo‘shish** tugmasi bir bosishda import qiladi. **Avval matnni tekshirish** tugmasi SRT matni va vaqtlarini tahrirlash oynasini ochadi; tekshirgach timeline’ga joylang. Transkripsiya foizi panelda ko‘rinadi va **Bekor qilish** mumkin; Adobe audio eksporti boshlangan bo‘lsa bekor qilish eksport tugagach yakunlanadi. Premiere’da caption track, AE’da vaqtli matn qatlamlari yaratiladi. SRT nusxasi `exports/` papkasida qoladi.
+3. **Window → Extensions → Uzbek Subtitles** panelini oching. Asosiy ekranda oraliq, qator va so‘z sonini tanlang. Model, gap bo‘linishi, timing va boshqa tanlovlar **Qo‘shimcha sozlamalar** ichida.
+4. **Subtitr yaratish** tugmasini bosing. Natija qisqa ro‘yxatda ochiladi: qatorni tanlab, matnini oddiy maydonda tuzating. So‘ng **Timeline’ga qo‘shish** ni bosing. Premiere’da caption track, AE’da vaqtli matn qatlamlari yaratiladi. SRT nusxasi `exports/` papkasida qoladi. **SRT saqlansin** tugmasi timeline’ga qo‘ymasdan faylni saqlaydi.
 
-Panelning asosiy qismida timeline, model, uslub, qator va so‘z soni ko‘rinadi. Gap bo‘linishi, pauza, timing, FPS va Python yo‘li **Batafsil sozlamalar** ichida. Tanlangan sozlamalar panel qayta ochilganda saqlanadi.
+After Effects’da **Animatsiya → Animation Composer’da ochish** tanlansa, yaratilgan matn qatlamlari tanlanadi va o‘rnatilgan Mister Horse paneli ochiladi. Presetni Composer ichida tanlang. Composer presetini boshqa paneldan avtomatik qo‘llash uchun ochiq API topilmadi. Premiere caption treki AE matn qatlami bo‘lmagani uchun bu tanlov Premiere’da o‘chiriladi.
+
+Tanlangan sozlamalar panel qayta ochilganda saqlanadi. Batafsil SRT vaqt kodlari va qayta tanish **Vaqt va qo‘shimcha tahrir** ichida qoladi.
 
 ## Yangi imkoniyatlar
 
@@ -25,7 +27,7 @@ Yangi model va speaker fayllari o‘rnatilgan runtime `models/` papkasida. Faqat
 
 Bizning 6 ta qisqa FLEURS o‘qib aytilgan nutq sinovimizda (jami 50 referens so‘z) NavAI small 6, GigaAM 8, NavAI medium 9 so‘z xatosi berdi. Bu juda kichik namuna va real suhbatdagi ustunlikni isbotlamaydi. Mualliflar natijalari ham turli benchmarklarda olingan. Sizning audiongiz berilmagani uchun o‘sha nutqda aniqlikni baholay olmadik.
 
-**Atamalar lug‘ati**da takroriy tanish xatolarini har qatorda `xato = to‘g‘ri` shaklida kiriting. Har bir qoida bitta so‘zni almashtiradi; so‘zning audio vaqti o‘zgarmaydi. Gap yoki iboralarni tuzatish uchun **Avval matnni tekshirish** rejimidan foydalaning.
+**Atamalar lug‘ati**da takroriy tanish xatolarini har qatorda `xato = to‘g‘ri` shaklida kiriting. Har bir qoida bitta so‘zni almashtiradi; so‘zning audio vaqti o‘zgarmaydi. Gap yoki iboralarni natija oynasida tuzating.
 
 Ko‘rib chiqish oynasidagi SRT formatini saqlang: har bir blokda raqam, `00:00:00,000 --> 00:00:01,000` shaklidagi vaqt va matn bo‘lishi kerak. Panel bo‘sh yoki ustma-ust vaqtlarni import qilishdan oldin bildiradi. Faol timeline transkripsiya vaqtida almashtirilsa, panel uning identifikatorini tekshirib, boshqa sequence yoki kompozitsiyaga subtitr qo‘yishdan saqlaydi.
 

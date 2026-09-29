@@ -43,33 +43,46 @@
     .review-tools{display:flex;gap:7px;align-items:end;margin:9px 0}.review-tools .field{flex:1;margin:0}.review-tools button{height:33px;margin:0;padding:0 9px;white-space:nowrap}
     .glossary{display:block;width:100%;min-height:78px;resize:vertical;padding:8px;border:1px solid #4c4e55;border-radius:6px;background:var(--field);color:var(--text);font:11px/1.5 ui-monospace,SFMono-Regular,Menlo,monospace}
     #status{max-height:110px;overflow:auto;margin:0 0 8px;padding:8px 9px;border-radius:6px;background:#263342;color:#d5e7ff;white-space:pre-wrap;overflow-wrap:anywhere;font-size:11px}#status:empty{display:none}
-    @media(max-width:310px){.app{padding-left:10px;padding-right:10px}.section{padding:11px}.footer{margin:0 -10px;padding-left:10px;padding-right:10px}.grid{gap:0 7px}}
+    /* Quiet, compact layout: one visible task, optional detail below. */
+    :root{--bg:#181a1b;--card:#222526;--field:#191c1d;--text:#f4f5f2;--muted:#a7adaa;--blue:#98c9b8}
+    .app{padding:20px 16px 0}.header{margin-bottom:23px}.mark{width:32px;height:32px;background:#2b4038;color:#c2e2d2;font-size:11px}.subtitle{font-size:11px}
+    .section{padding:0;border:0;border-radius:0;background:none;margin-bottom:19px}.section-head{margin-bottom:7px}.section-title{color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.08em}.step{display:none}
+    .timeline{min-height:45px;padding:12px 13px;border:1px solid #383e3b;border-radius:9px;background:var(--card);color:var(--text)}.timeline:before{color:var(--blue)}
+    .refresh{border:0;background:transparent;color:var(--blue)}.refresh:hover{background:transparent;text-decoration:underline}
+    input:not([type=checkbox]),select,.glossary,.review-editor{border-color:#3a403d;border-radius:8px}.field-label{color:#dbdfdc}
+    .caption-stage{padding:17px 10px;background:#141817;border-color:#363e39;border-radius:9px}.stage-label{color:var(--muted)}
+    details.section{border-top:1px solid #3a403d}summary{padding:13px 0;color:#dce0de}.details-body{padding:0 0 15px;border:0}
+    .checks label{border:0;background:none;padding:4px 0}.boundary{border-left:2px solid #638f80}.footer{border-color:#3a403d;background:#181a1bf2;backdrop-filter:blur(12px)}
+    .run{background:var(--blue);color:#10231b}.run:hover:not(:disabled){background:#b4dccc}.secondary{background:#292d2b;border-color:#48514c}.secondary:hover:not(:disabled){background:#343b37}
+    .cue-item{background:#252a27}.cue-item:hover,.cue-item.selected{background:#34483e}.cue-item .weak{color:#f2bd7d}
+    .cue-text{display:block;width:100%;min-height:68px;resize:vertical;padding:9px;border:1px solid #49514c;border-radius:8px;background:var(--field);color:var(--text)}
+    #status{background:transparent;color:#b7d8ca;padding:0}.review-editor{min-height:190px}
+    @media(max-width:310px){.app{padding-left:10px;padding-right:10px}.footer{margin:0 -10px;padding-left:10px;padding-right:10px}.grid{gap:0 7px}}
   </style>
 </head>
 <body>
   <main class="app">
-    <header class="header"><div class="mark" aria-hidden="true">UZ</div><div><h1>O‘zbekcha subtitr</h1><p class="subtitle">Premiere Pro va After Effects uchun lokal panel</p></div></header>
+    <header class="header"><div class="mark" aria-hidden="true">UZ</div><div><h1>O‘zbekcha subtitr</h1><p class="subtitle">Timeline’dan tayyor matnga</p></div></header>
     <section class="section" aria-labelledby="sourceTitle">
-      <div class="section-head"><h2 class="section-title" id="sourceTitle"><span class="step">1</span>Timeline</h2><button id="refresh" class="refresh" type="button">↻ Yangilash</button></div>
+      <div class="section-head"><h2 class="section-title" id="sourceTitle">Faol timeline</h2><button id="refresh" class="refresh" type="button">Yangilash</button></div>
       <div id="timeline" class="timeline" aria-live="polite">Timeline tekshirilmoqda…</div>
-      <label class="field" for="range"><span class="field-label">Qaysi qismdan subtitr</span><select id="range"><option value="auto">In/Out bo‘lsa shu, aks holda to‘liq</option><option value="inout">Faqat In/Out · AE Work Area</option><option value="full">Butun timeline</option></select></label>
-      <label class="field" for="audioTrack"><span class="field-label">Audio trek · Premiere</span><select id="audioTrack"><option value="all">Barcha eshitiladigan treklar</option></select></label>
-    </section>
-    <section class="section" aria-labelledby="recognitionTitle">
-      <div class="section-head"><h2 class="section-title" id="recognitionTitle"><span class="step">2</span>Nutqni tanish</h2></div>
-      <label class="field" for="model"><span class="field-label">O‘zbekcha model</span><select id="model"><option value="large-v3">Whisper large-v3</option><option value="medium">Whisper medium</option><option value="small">Whisper small</option></select></label>
-      <span id="modelHint" class="field-hint">Model qurilmada ishlaydi.</span>
-      <label class="field" for="compareModel"><span class="field-label">Ikkinchi model bilan solishtirish</span><select id="compareModel"><option value="">O‘chirilgan</option></select></label>
+      <label class="field" for="range"><span class="field-label">Qaysi qism?</span><select id="range"><option value="auto">In/Out bo‘lsa shu, aks holda to‘liq</option><option value="inout">Faqat In/Out · AE Work Area</option><option value="full">Butun timeline</option></select></label>
+      <label class="field" for="audioTrack"><span class="field-label">Ovoz · Premiere</span><select id="audioTrack"><option value="all">Barcha eshitiladigan treklar</option></select></label>
     </section>
     <section class="section" aria-labelledby="layoutTitle">
-      <div class="section-head"><h2 class="section-title" id="layoutTitle"><span class="step">3</span>Subtitr ko‘rinishi</h2></div>
-      <label class="field" for="style"><span class="field-label">Uslub</span><select id="style"><option value="short">Qisqa · Reels</option><option value="medium" selected>O‘rta · odatiy</option><option value="long">Uzun · podkast</option><option value="custom">O‘zim sozlayman</option></select></label>
+      <div class="section-head"><h2 class="section-title" id="layoutTitle">Subtitr</h2></div>
       <div class="grid"><label class="field" for="lines"><span class="field-label">Qatorlar</span><input id="lines" type="number" min="1" max="3" step="1" value="2"></label><label class="field" for="words"><span class="field-label">So‘z / qator</span><input id="words" type="number" min="1" max="8" step="1" value="3"></label></div>
-      <div class="caption-stage"><span class="stage-label">Ko‘rinish namunasi</span><div id="preview"></div></div>
+      <div class="caption-stage"><span class="stage-label">Taxminiy ko‘rinish</span><div id="preview">Bugun o‘zbekcha subtitrlar<br>aniq vaqt bilan chiqadi</div></div>
+      <div id="animationField" hidden><label class="field" for="animation"><span class="field-label">Animatsiya · After Effects</span><select id="animation"><option value="none">Yo‘q</option><option value="composer">Animation Composer’da ochish</option></select></label>
+      <span id="animationHint" class="field-hint">AE’da subtitr qatlamlari tanlanib, Composer ochiladi.</span></div>
     </section>
     <details class="section" id="advanced">
-      <summary>Batafsil sozlamalar · gap bo‘linishi va timing</summary>
+      <summary>Qo‘shimcha sozlamalar</summary>
       <div class="details-body">
+        <label class="field" for="model"><span class="field-label">Nutq modeli</span><select id="model"><option value="large-v3">Whisper large-v3</option><option value="medium">Whisper medium</option><option value="small">Whisper small</option></select></label>
+        <span id="modelHint" class="field-hint">Model qurilmada ishlaydi.</span>
+        <label class="field" for="compareModel"><span class="field-label">Ikkinchi model bilan solishtirish</span><select id="compareModel"><option value="">O‘chirilgan</option></select></label>
+        <label class="field" for="style"><span class="field-label">Matn uzunligi</span><select id="style"><option value="short">Qisqa</option><option value="medium" selected>O‘rtacha</option><option value="long">Uzun</option><option value="custom">Qo‘lda sozlangan</option></select></label>
         <div class="grid"><label class="field" for="chars"><span class="field-label">Belgi / qator</span><input id="chars" type="number" min="8" max="80" step="1" value="42"></label><label class="field" for="duration"><span class="field-label">Eng uzun subtitr · s</span><input id="duration" type="number" min="1" max="10" step="0.1" value="5"></label></div>
         <h3 class="subhead">Gaplarni qayerda bo‘lish</h3>
         <div class="checks"><label><input id="splitSentences" type="checkbox" checked> Nuqta, ! yoki ? dan keyin</label><label><input id="splitCommas" type="checkbox"> Vergul, ; yoki : dan keyin</label><label><input id="splitPauses" type="checkbox" checked> Pauza bo‘lganda</label></div>
@@ -81,6 +94,7 @@
         <div class="grid"><label class="field" for="script"><span class="field-label">Yozuv</span><select id="script"><option value="latin">Lotin</option><option value="cyrillic">Kirill</option></select></label><label class="field" for="captionMode"><span class="field-label">Ko‘rinish</span><select id="captionMode"><option value="normal">Oddiy subtitr</option><option value="word">So‘zma-so‘z</option></select></label></div>
         <div class="checks" style="margin-top:11px"><label><input id="detectSpeakers" type="checkbox"> So‘zlovchilarni avtomatik ajratish</label></div>
         <label class="field" for="speakerCount"><span class="field-label">So‘zlovchilar soni</span><select id="speakerCount"><option value="auto">Avtomatik</option><option value="2">2 kishi</option><option value="3">3 kishi</option><option value="4">4 kishi</option></select></label>
+        <details><summary>Fayl va texnik sozlamalar</summary><div class="details-body">
         <div class="checks" style="margin-top:11px"><label><input id="exportVtt" type="checkbox" checked> VTT fayl ham yaratish</label><label><input id="exportAss" type="checkbox" checked> ASS fayl ham yaratish</label></div>
         <h3 class="subhead">Timing</h3>
         <div class="grid"><label class="field" for="startPad"><span class="field-label">Boshini oldinroq · ms</span><input id="startPad" type="number" min="0" max="500" step="20" value="0"></label><label class="field" for="endPad"><span class="field-label">Oxirini keyinroq · ms</span><input id="endPad" type="number" min="0" max="500" step="20" value="0"></label><label class="field" for="minCue"><span class="field-label">Minimal ko‘rinish · s</span><input id="minCue" type="number" min="0" max="3" step="0.1" value="0.8"></label><label class="field" for="fps"><span class="field-label">Timeline FPS</span><input id="fps" type="number" min="1" max="120" step="0.001" value="25"></label></div>
@@ -91,24 +105,28 @@
         <label class="field" for="batchDir"><span class="field-label">Audio/video papkasi</span><input id="batchDir" placeholder="/Users/.../media" spellcheck="false"></label>
         <button id="batchRun" class="secondary" type="button">Papkadagi fayllar uchun SRT yaratish</button>
         <p class="hint">Natijalar exports/batch papkasiga yoziladi. Timeline’ga avtomatik qo‘yilmaydi.</p>
+        </div></details>
       </div>
     </details>
     <section class="section" id="reviewSection" hidden aria-labelledby="reviewTitle">
       <div class="section-head"><h2 class="section-title" id="reviewTitle">Subtitrlarni tekshirish</h2></div>
       <p id="reviewInfo" class="review-info"></p>
-      <canvas id="waveform" class="waveform" width="520" height="72" aria-label="Audio to‘lqini va subtitr vaqtlari"></canvas>
       <div id="cueList" class="cue-list" aria-label="Subtitrlar ro‘yxati"></div>
+      <label class="field" for="cueText"><span class="field-label">Tanlangan subtitr matni</span><textarea id="cueText" class="cue-text" spellcheck="false"></textarea></label>
+      <p id="compareText" class="hint"></p>
+      <details><summary>Vaqt va qo‘shimcha tahrir</summary><div class="details-body">
+      <canvas id="waveform" class="waveform" width="520" height="72" aria-label="Audio to‘lqini va subtitr vaqtlari"></canvas>
       <div class="review-tools"><label class="field" for="retryModel"><span class="field-label">Tanlangan subtitrni qayta tanish</span><select id="retryModel"></select></label><button id="retryCue" class="secondary" type="button">Qayta tanish</button></div>
       <div class="review-tools"><label class="field" for="speakerChoice"><span class="field-label">Tanlangan subtitr so‘zlovchisi</span><select id="speakerChoice"><option value="">Belgilanmagan</option><option value="SPEAKER_00">So‘zlovchi 1</option><option value="SPEAKER_01">So‘zlovchi 2</option><option value="SPEAKER_02">So‘zlovchi 3</option><option value="SPEAKER_03">So‘zlovchi 4</option></select></label><button id="assignSpeaker" class="secondary" type="button">Belgilash</button></div>
-      <p id="compareText" class="hint"></p>
       <textarea id="srtEditor" class="review-editor" spellcheck="false" aria-label="SRT subtitr matni"></textarea>
       <p class="hint">Matn va vaqt kodlarini tuzating. Har bir subtitr raqami, vaqt oralig‘i va matnini saqlang.</p>
+      </div></details>
     </section>
     <div class="footer">
       <div id="status" role="status" aria-live="polite"></div>
-      <div id="mainActions"><button id="run" class="run" type="button">Timeline’ga subtitr qo‘shish</button><button id="reviewRun" class="secondary" type="button">Avval matnni tekshirish</button></div>
+      <div id="mainActions"><button id="run" class="run" type="button">Subtitr yaratish</button></div>
       <div id="workActions" hidden><button id="cancel" class="secondary" type="button">Bekor qilish</button></div>
-      <div id="reviewActions" class="action-row" hidden><button id="discardReview" class="secondary" type="button">Keyinroq</button><button id="applyReview" class="run" type="button">Timeline’ga joylash</button></div>
+      <div id="reviewActions" class="action-row" hidden><button id="discardReview" class="secondary" type="button">SRT saqlansin</button><button id="applyReview" class="run" type="button">Timeline’ga qo‘shish</button></div>
     </div>
   </main>
   <script src="panel.js"></script>

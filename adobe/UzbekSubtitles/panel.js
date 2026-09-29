@@ -16,6 +16,9 @@
   var retryModel = document.getElementById('retryModel');
   var scriptChoice = document.getElementById('script');
   var captionMode = document.getElementById('captionMode');
+  var animation = document.getElementById('animation');
+  var animationField = document.getElementById('animationField');
+  var animationHint = document.getElementById('animationHint');
   var exportVtt = document.getElementById('exportVtt');
   var exportAss = document.getElementById('exportAss');
   var detectSpeakers = document.getElementById('detectSpeakers');
@@ -42,11 +45,11 @@
   var preview = document.getElementById('preview');
   var boundaryPreview = document.getElementById('boundaryPreview');
   var run = document.getElementById('run');
-  var reviewRun = document.getElementById('reviewRun');
   var cancel = document.getElementById('cancel');
   var reviewSection = document.getElementById('reviewSection');
   var reviewInfo = document.getElementById('reviewInfo');
   var srtEditor = document.getElementById('srtEditor');
+  var cueText = document.getElementById('cueText');
   var cueList = document.getElementById('cueList');
   var waveform = document.getElementById('waveform');
   var retryCue = document.getElementById('retryCue');
@@ -106,7 +109,7 @@
     endPad: endPad, minCue: minCue, glossary: glossary, python: python,
     compareModel: compareModel, script: scriptChoice, captionMode: captionMode,
     exportVtt: exportVtt, exportAss: exportAss, detectSpeakers: detectSpeakers,
-    speakerCount: speakerCount, batchDir: batchDir
+    speakerCount: speakerCount, batchDir: batchDir, animation: animation
   };
   function saveSettings() {
     var values = {};
@@ -251,6 +254,9 @@
         return o.value === wanted;
       }) ? wanted : 'all';
       audioTrack.disabled = info.host !== 'PPRO';
+      animationField.hidden = info.host !== 'AEFT';
+      animation.disabled = info.host !== 'AEFT';
+      animationHint.textContent = 'Subtitr qatlamlari tanlanadi va Animation Composer ochiladi.';
     });
   }
   function presetPath() {
@@ -274,7 +280,8 @@
     refresh.disabled = phase !== 'idle';
     batchRun.disabled = phase !== 'idle';
     Object.keys(savedFields).forEach(function (key) {
-      savedFields[key].disabled = phase !== 'idle' || (key === 'pause' && !splitPauses.checked);
+      savedFields[key].disabled = phase !== 'idle' || (key === 'pause' && !splitPauses.checked) ||
+        (key === 'animation' && animationField.hidden);
     });
     cancel.disabled = false;
   }
@@ -446,12 +453,21 @@
     speakerChoice.value = metadata && metadata.cues && metadata.cues[selectedCue] &&
       metadata.cues[selectedCue].speaker || '';
     var cue = cues[selectedCue], alternatives = metadata && metadata.comparison_words;
+    cueText.value = cue ? cue.text : '';
     var alternativeText = cue && alternatives ? alternatives.filter(function (w) {
       return w.start < cue.end && w.end > cue.start;
     }).map(function (w) { return w.text.trim(); }).join(' ') : '';
     compareText.textContent = alternativeText ? (metadata.comparison_model + ': ' + alternativeText) : '';
     drawWaveform();
   }
+  cueText.oninput = function () {
+    var blocks = cueBlocks();
+    if (!blocks[selectedCue]) return;
+    var lines = blocks[selectedCue].split('\n');
+    blocks[selectedCue] = lines.slice(0, 2).concat(cueText.value.replace(/\r/g, '').split('\n')).join('\n');
+    srtEditor.value = blocks.join('\n\n') + '\n\n';
+  };
+  cueText.onchange = renderCues;
   if (waveform) waveform.onclick = function (event) {
     var cues = cueData(); if (!cues.length) return;
     var bounds = waveform.getBoundingClientRect();
@@ -475,6 +491,7 @@
     activeRun.review = true;
     setPhase('review');
     selectedCue = 0; retryModel.value = model.value; renderCues();
+    if (reviewSection.scrollIntoView) reviewSection.scrollIntoView({block:'start', behavior:'smooth'});
     show('Subtitrlarni tekshirib, keyin timeline’ga joylang.');
   }
   function importProblem(message, srt) {
@@ -487,14 +504,20 @@
     var speakerLabels = activeRun && activeRun.metadata && activeRun.metadata.cues ?
       activeRun.metadata.cues.map(function (cue) { return cue.speaker || ''; }) : [];
     var expression = info.host === 'AEFT'
-      ? 'importUzbekSrt(' + JSON.stringify(srt) + ',' + Number(info.start) + ',' + JSON.stringify(info.name) + ',' + JSON.stringify(info.identity || '') + ',' + JSON.stringify(captionMode.value) + ',' + JSON.stringify(speakerLabels) + ')'
+      ? 'importUzbekSrt(' + JSON.stringify(srt) + ',' + Number(info.start) + ',' + JSON.stringify(info.name) + ',' + JSON.stringify(info.identity || '') + ',' + JSON.stringify(captionMode.value) + ',' + JSON.stringify(speakerLabels) + ',' + (animation.value === 'composer') + ')'
       : 'uzImportCaptions(' + JSON.stringify(srt) + ',' + Number(info.start) + ',' + JSON.stringify(info.name) + ',' + JSON.stringify(info.identity || '') + ')';
     hostCall(info.host === 'AEFT' ? aeScript : hostScript, expression, function (err, raw) {
       removeTemp(audio);
       if (err) { importProblem(err.message, srt); return; }
       if (info.host === 'AEFT') {
         var aeResult = /^(\d+) ta vaqtli matn qatlami yaratildi\.$/.exec(String(raw).trim());
-        if (aeResult && Number(aeResult[1]) > 0) finish(raw + '\nSRT: ' + srt);
+        if (aeResult && Number(aeResult[1]) > 0) {
+          if (animation.value === 'composer' && typeof __adobe_cep__.requestOpenExtension === 'function') {
+            try { __adobe_cep__.requestOpenExtension('com.misterhorse.animationcomposer.browser', ''); }
+            catch (e) { finish(raw + '\nAnimation Composer’ni Window > Extensions menyusidan oching.\nSRT: ' + srt); return; }
+            finish(raw + '\nTanlangan qatlamlarga Animation Composer’dan preset tanlang.\nSRT: ' + srt);
+          } else finish(raw + '\nSRT: ' + srt);
+        }
         else importProblem('After Effects importi tasdiqlanmadi: ' + raw, srt);
         return;
       }
@@ -611,8 +634,7 @@
         });
     }, requestedRange);
   }
-  run.onclick = function () { start(false); };
-  reviewRun.onclick = function () { start(true); };
+  run.onclick = function () { start(true); };
   batchRun.onclick = function () {
     var input = batchDir.value.trim();
     if (!input || !fs.existsSync(input) || !fs.statSync(input).isDirectory()) {
@@ -661,6 +683,12 @@
   };
   discardReview.onclick = function () {
     var savedPath = activeRun && activeRun.srt;
+    if (!savedPath) return;
+    try {
+      var edited = validateSrt(srtEditor.value);
+      fs.writeFileSync(savedPath, '\uFEFF' + edited.text, 'utf8');
+      writeEditedFormats(savedPath);
+    } catch (e) { show('SRT saqlanmadi: ' + e.message); return; }
     finish('SRT saqlandi: ' + savedPath);
   };
   applyReview.onclick = function () {
