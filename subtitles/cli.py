@@ -6,6 +6,7 @@ import argparse
 import json
 import math
 import os
+import platform
 import re
 import sys
 import tempfile
@@ -199,6 +200,13 @@ def transcribe(path: Path, model_name: str, device: str, progress=None) -> list[
         return [Word(max(0.0, start), max(start + 0.01, end), text)
                 for start, end, text in rows]
     try:
+        if sys.platform == "darwin" and platform.machine().lower() == "x86_64":
+            # Initialize PyTorch's native libraries first when both ASR engines
+            # are installed (including comparisons that start with NavAI).
+            try:
+                import torch
+            except ImportError:
+                pass
         from faster_whisper import WhisperModel
     except ImportError as exc:
         raise RuntimeError("faster-whisper topilmadi; subtitles/requirements.txt ni o'rnating") from exc

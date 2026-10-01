@@ -118,6 +118,8 @@ with tempfile.TemporaryDirectory(prefix="uzscribe-check-") as temporary:
         output.setsampwidth(2)
         output.setframerate(16000)
         output.writeframes(b"\0\0" * 16000)
+    from subtitles.cli import transcribe as caption_transcribe
+    caption_transcribe(audio, "navai-small", "cpu")
     transcribe(audio, runtime / "models" / "gigaam-base-large",
                runtime / "models" / "gigaam-uzbek" / "checkpoints" /
                "large_full_600m" / "best.pt", "cpu")
