@@ -89,7 +89,8 @@ class InstallerTests(unittest.TestCase):
     def test_gigaam_installer_uses_uv_and_downloads_into_runtime(self):
         runtime = Path('C:/Users/Test/AppData/Local/UzbekSubtitles')
         python = runtime / '.venv/Scripts/python.exe'
-        with patch('install_online.subprocess.run') as run:
+        with patch('install_online.subprocess.run') as run, \
+             patch('install_online._intel_mac', return_value=False):
             _install_gigaam(runtime, python, Path('C:/uv/uv.exe'))
         self.assertEqual(run.call_count, 3)
         self.assertEqual(run.call_args_list[0].args[0][:5],
