@@ -4,6 +4,24 @@ Bu beta paket. macOS’da lokal transkripsiya sinovdan o‘tgan; Windows’da av
 
 **Talab:** Premiere Pro yoki After Effects, internet (birinchi o‘rnatishda Python paketlari uchun), Python 3.10–3.12, taxminan 1 GB bo‘sh joy. NavAI small modeli ZIP ichida; nutq fayllari kompyuteringizda ishlanadi.
 
+## GitHub’dan terminal orqali o‘rnatish
+
+Git va Python 3.10–3.12 o‘rnatilgan bo‘lsin. Hozir repo private: GitHub ruxsati berilgan hisob bilan Git’ga kirgan foydalanuvchilar bu buyruqlarni ishlata oladi. Repo public bo‘lsa, kirish talab qilinmaydi. Birinchi o‘rnatishda kod GitHub’dan, NavAI modeli [Hugging Face’dan](https://huggingface.co/navai-uz/whisper-small-uzbek) olinadi va kompyuterda CTranslate2 formatiga o‘giriladi. Bunga bir necha gigabayt vaqtinchalik disk joyi va internet kerak; keyingi transkripsiya offline ishlaydi.
+
+macOS Terminal:
+
+```sh
+git clone --depth 1 --branch feat/uzbek-subtitles-adobe https://github.com/Azizbek-dsgn/uzbek-dubbing.git "$HOME/UzScribe" && zsh "$HOME/UzScribe/Install-mac-online.command"
+```
+
+Windows PowerShell:
+
+```powershell
+git clone --depth 1 --branch feat/uzbek-subtitles-adobe https://github.com/Azizbek-dsgn/uzbek-dubbing.git "$env:USERPROFILE\UzScribe"; if ($LASTEXITCODE -eq 0) { powershell -ExecutionPolicy Bypass -File "$env:USERPROFILE\UzScribe\Install-Windows-online.ps1" }
+```
+
+Yangilash uchun shu papkada `git pull --ff-only` bajaring, keyin online o‘rnatish skriptini qayta ishga tushiring. Panel imzosiz beta bo‘lgani uchun skript joriy foydalanuvchida Adobe CEP debug rejimini yoqadi. Adobe dasturlarini qayta oching: **Window → Extensions → UzScribe**.
+
 ## macOS
 
 1. ZIP’ni oching. Python 3.10–3.12 o‘rnatilgan bo‘lsin.

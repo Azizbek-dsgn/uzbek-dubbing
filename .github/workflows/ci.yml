@@ -34,5 +34,7 @@ jobs:
         run: |
           $tokens = $null
           $errors = $null
-          [System.Management.Automation.Language.Parser]::ParseFile((Resolve-Path .\Install-Windows.ps1).Path, [ref]$tokens, [ref]$errors) | Out-Null
+          foreach ($script in @('Install-Windows.ps1', 'Install-Windows-online.ps1')) {
+            [System.Management.Automation.Language.Parser]::ParseFile((Resolve-Path $script).Path, [ref]$tokens, [ref]$errors) | Out-Null
+          }
           if ($errors.Count -gt 0) { $errors | ForEach-Object { Write-Error $_ }; exit 1 }

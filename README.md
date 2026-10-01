@@ -4,6 +4,8 @@ Premiere Pro va After Effects uchun lokal CEP panel. U faol sequence yoki kompoz
 
 **Boshqa foydalanuvchilar uchun:** `tools/build_release.py` yordamida NavAI small modeli bilan macOS/Windows beta ZIP yaratiladi. Xaridor ko‘rsatmasi [README-INSTALL.md](README-INSTALL.md), sotuvdan oldingi majburiy tekshiruvlar [SELLER-RELEASE.md](SELLER-RELEASE.md) faylida. Imzolangan ZXP va haqiqiy Windows sinovi tugamaguncha paketni yakuniy sotuv versiyasi deb belgilamang.
 
+**Terminaldan o‘rnatish:** GitHub checkoutidan `Install-mac-online.command` yoki `Install-Windows-online.ps1` ishga tushadi. Ko‘chirib ishlatadigan buyruqlar [README-INSTALL.md](README-INSTALL.md)da. Kod GitHub’dan, birinchi o‘rnatishdagi NavAI modeli Hugging Face’dan olinadi. Repo hozir private; boshqalarga GitHub ruxsati kerak.
+
 ## Ishlatish
 
 1. Premiere Pro’da sequence’ni yoki After Effects’da kompozitsiyani oching.

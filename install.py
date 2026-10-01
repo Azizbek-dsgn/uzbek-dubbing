@@ -24,7 +24,7 @@ def destinations(system: str, home: Path, environment: dict[str, str]) -> tuple[
     raise RuntimeError("Faqat macOS va Windows qo‘llanadi")
 
 
-def _copy_runtime(package: Path, target: Path) -> None:
+def _copy_runtime(package: Path, target: Path, model_source: Path | None = None) -> None:
     target.mkdir(parents=True, exist_ok=True)
     source = package / "subtitles"
     if not (source / "cli.py").is_file():
@@ -34,13 +34,13 @@ def _copy_runtime(package: Path, target: Path) -> None:
     for path in source.iterdir():
         if path.is_file() and path.suffix in {".py", ".txt"}:
             shutil.copy2(path, dest / path.name)
-    model = package / "models" / "navai-small"
+    model = model_source or package / "models" / "navai-small"
     if not (model / "model.bin").is_file():
         raise FileNotFoundError("NavAI small modeli paketda yo‘q")
     model_target = target / "models" / "navai-small"
     model_target.mkdir(parents=True, exist_ok=True)
     for path in model.iterdir():
-        if path.is_file():
+        if path.is_file() and path.resolve() != (model_target / path.name).resolve():
             shutil.copy2(path, model_target / path.name)
 
 
@@ -65,7 +65,9 @@ def _copy_panel(package: Path, target: Path) -> None:
     if not (source / "CSXS" / "manifest.xml").is_file():
         raise FileNotFoundError("Adobe panel paketda yo‘q")
     if target.is_symlink():
-        raise RuntimeError(f"Eski panel symlink: {target}. Uni qo‘lda olib tashlang.")
+        existing_manifest = target / "CSXS" / "manifest.xml"
+        if not existing_manifest.is_file() or "uz.azizbek.subtitles.panel" not in existing_manifest.read_text(encoding="utf-8"):
+            raise RuntimeError(f"Boshqa panel symlink: {target}. Uni qo‘lda tekshiring.")
     target.mkdir(parents=True, exist_ok=True)
     for folder in ("CSXS", "host"):
         shutil.copytree(source / folder, target / folder, dirs_exist_ok=True)
@@ -87,10 +89,11 @@ def _enable_debug(system: str) -> None:
 
 
 def install(package: Path, system: str, home: Path, environment: dict[str, str],
-            *, developer: bool, skip_dependencies: bool = False) -> tuple[Path, Path]:
+            *, developer: bool, skip_dependencies: bool = False,
+            model_source: Path | None = None) -> tuple[Path, Path]:
     runtime, panel = destinations(system, home, environment)
     _verify_package(package)
-    _copy_runtime(package, runtime)
+    _copy_runtime(package, runtime, model_source)
     venv_python = runtime / ".venv" / ("Scripts/python.exe" if system == "win32" else "bin/python")
     if not skip_dependencies:
         if not venv_python.is_file():

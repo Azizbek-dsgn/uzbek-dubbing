@@ -1,10 +1,12 @@
 import json
+import ast
 import tempfile
 import unittest
 from pathlib import Path
 from unittest.mock import patch
 
 from install import destinations, install
+from install_online import CONVERT
 
 
 class InstallerTests(unittest.TestCase):
@@ -38,6 +40,13 @@ class InstallerTests(unittest.TestCase):
             self.assertEqual((runtime / 'models/navai-small/model.bin').read_bytes(), b'test')
             self.assertEqual((panel / 'panel.js').read_text(), 'panel.js')
             debug.assert_called_once_with('darwin')
+            with patch('install._enable_debug'):
+                install(package, 'darwin', base / 'home', {}, developer=True,
+                        skip_dependencies=True, model_source=runtime / 'models/navai-small')
+            self.assertEqual((runtime / 'models/navai-small/model.bin').read_bytes(), b'test')
+
+    def test_online_converter_script_is_valid_python(self):
+        ast.parse(CONVERT)
 
     def test_checksum_rejects_corrupt_package(self):
         with tempfile.TemporaryDirectory() as temp:
