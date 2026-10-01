@@ -1,10 +1,10 @@
 <!doctype html>
 <html lang="uz">
 <head><meta charset="utf-8"><title>UzScribe</title>
-<style>body{box-sizing:border-box;margin:0;padding:24px 16px;background:#08080b;color:#fafafa;font:13px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif}h2{margin:0;font-size:27px;letter-spacing:-.05em}p{padding:16px;border:1px solid #303036;border-radius:18px;background:#1c1c20;line-height:1.55;color:#d6d6dc}.brand{margin:2px 0 20px;padding:0;border:0;background:none;color:#92929c;font-size:11px}button{width:100%;min-height:44px;border:0;border-radius:12px;background:#f6f6f8;color:#111115;font-size:13px;font-weight:700;font-family:inherit;cursor:pointer}button:hover{background:#dedee4}#status{margin-top:15px;white-space:pre-wrap;color:#d1d1d9}</style>
+<style>body{box-sizing:border-box;margin:0;padding:24px 16px;background:#08080b;color:#fafafa;font:13px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif}.header{display:flex;align-items:center;gap:12px;margin-bottom:20px}.mark{width:42px;height:42px;border:1px solid #44444b;border-radius:11px;object-fit:cover}h2{margin:0;font-size:27px;letter-spacing:-.05em}p{padding:16px;border:1px solid #303036;border-radius:18px;background:#1c1c20;line-height:1.55;color:#d6d6dc}.brand{margin:2px 0 0;padding:0;border:0;background:none;color:#92929c;font-size:11px}button{width:100%;min-height:44px;border:0;border-radius:12px;background:#f6f6f8;color:#111115;font-size:13px;font-weight:700;font-family:inherit;cursor:pointer}button:hover{background:#dedee4}#status{margin-top:15px;white-space:pre-wrap;color:#d1d1d9}</style>
 </head>
 <body>
-<h2>UzScribe</h2><p class="brand">by Meyor vision</p>
+<header class="header"><img class="mark" src="assets/uzscribe-logo.jpg" alt="" aria-hidden="true"><div><h2>UzScribe</h2><p class="brand">by Meyor Vision</p></div></header>
 <p>Ovozdan SRT yaratish uchun repo ichida <code>python3 subtitles/cli.py --input video.mp4 --output video.uz.srt</code> ni ishga tushiring. So‘ng SRT’ni import qiling.</p>
 <button id="import">SRT import qilish</button>
 <div id="status" role="status"></div>

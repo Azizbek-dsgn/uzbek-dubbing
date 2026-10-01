@@ -11,7 +11,7 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[1]
-PANEL = ("CSXS/manifest.xml", "index.html", "panel.js",
+PANEL = ("CSXS/manifest.xml", "index.html", "panel.js", "assets/uzscribe-logo.jpg",
          "host/editor.jsx", "host/after_effects.jsx")
 RUNTIME = ("__init__.py", "cli.py", "batch.py", "sentences.py", "gigaam.py",
            "fastconformer.py", "requirements.txt", "requirements-release.txt",

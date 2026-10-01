@@ -31,6 +31,8 @@ class InstallerTests(unittest.TestCase):
             (package / 'models/navai-small/model.bin').write_bytes(b'test')
             (package / 'adobe/UzbekSubtitles/CSXS').mkdir(parents=True)
             (package / 'adobe/UzbekSubtitles/host').mkdir()
+            (package / 'adobe/UzbekSubtitles/assets').mkdir()
+            (package / 'adobe/UzbekSubtitles/assets/uzscribe-logo.jpg').write_bytes(b'logo')
             (package / 'adobe/UzbekSubtitles/CSXS/manifest.xml').write_text('<root/>')
             for name in ('index.html', 'panel.js'):
                 (package / 'adobe/UzbekSubtitles' / name).write_text(name)
@@ -40,6 +42,7 @@ class InstallerTests(unittest.TestCase):
                                          developer=True, skip_dependencies=True)
             self.assertEqual((runtime / 'models/navai-small/model.bin').read_bytes(), b'test')
             self.assertEqual((panel / 'panel.js').read_text(), 'panel.js')
+            self.assertEqual((panel / 'assets/uzscribe-logo.jpg').read_bytes(), b'logo')
             debug.assert_called_once_with('darwin')
             with patch('install._enable_debug'):
                 install(package, 'darwin', base / 'home', {}, developer=True,

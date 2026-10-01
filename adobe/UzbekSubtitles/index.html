@@ -64,7 +64,7 @@
     body{min-width:250px;background:var(--bg);color:var(--text);font-size:13px;line-height:1.45}
     .app{max-width:580px;padding:24px 16px 0}
     .header{align-items:center;margin:0 0 22px;gap:12px}
-    .mark{width:35px;height:35px;border:1px solid #44444b;border-radius:11px;background:#25252b;color:#fff;font-size:12px;letter-spacing:-.07em}
+    .mark{display:block;width:42px;height:42px;border:1px solid #44444b;border-radius:11px;object-fit:cover;background:#25252b}
     h1{font-size:27px;line-height:1.1;letter-spacing:-.055em;font-weight:760;margin:0 0 4px}
     .subtitle{color:#92929c;font-size:11px}
     .section{margin:0 0 10px;padding:16px;border:1px solid #303036;border-radius:20px;background:var(--card)}
@@ -105,7 +105,7 @@
 </head>
 <body>
   <main class="app">
-    <header class="header"><div class="mark" aria-hidden="true">Uz</div><div><h1>UzScribe</h1><p class="subtitle">by Meyor vision</p></div></header>
+    <header class="header"><img class="mark" src="assets/uzscribe-logo.jpg" alt="" aria-hidden="true"><div><h1>UzScribe</h1><p class="subtitle">by Meyor Vision</p></div></header>
     <section class="section" aria-labelledby="sourceTitle">
       <div class="section-head"><h2 class="section-title" id="sourceTitle">Faol timeline</h2><button id="refresh" class="refresh" type="button">Yangilash</button></div>
       <div id="timeline" class="timeline" aria-live="polite">Timeline tekshirilmoqda…</div>

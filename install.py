@@ -71,6 +71,8 @@ def _copy_panel(package: Path, target: Path) -> None:
     target.mkdir(parents=True, exist_ok=True)
     for folder in ("CSXS", "host"):
         shutil.copytree(source / folder, target / folder, dirs_exist_ok=True)
+    if (source / "assets").is_dir():
+        shutil.copytree(source / "assets", target / "assets", dirs_exist_ok=True)
     for name in ("index.html", "panel.js"):
         shutil.copy2(source / name, target / name)
 
