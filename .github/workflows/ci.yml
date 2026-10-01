@@ -49,7 +49,7 @@ jobs:
           $env:UZSCRIBE_ARCHIVE_PATH = Join-Path $fixture 'source.zip'
           Compress-Archive -Path $source -DestinationPath $env:UZSCRIBE_ARCHIVE_PATH
           $env:UZSCRIBE_FORCE_MANAGED_PYTHON = '1'
-          . ./bootstrap-windows.ps1
+          & ./bootstrap-windows.ps1
           Remove-Item Env:UZSCRIBE_FORCE_MANAGED_PYTHON
           Remove-Item Env:UZSCRIBE_ARCHIVE_PATH
           $env:UZSCRIBE_SOURCE_DIR = $source
