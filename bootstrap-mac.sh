@@ -2,8 +2,22 @@
 set -euo pipefail
 
 SOURCE_URL="https://codeload.github.com/Azizbek-dsgn/uzbek-dubbing/tar.gz/refs/heads/feat/uzbek-subtitles-adobe"
+log_root="$HOME/Library/Application Support/UzbekSubtitles"
+mkdir -p "$log_root"
+log_path="$log_root/install.log"
+exec > >(tee -a "$log_path") 2>&1
 work=$(mktemp -d "${TMPDIR:-/tmp}/uzscribe.XXXXXX")
-trap 'rm -rf "$work"' EXIT
+finish() {
+  result=$?
+  if [[ "$result" -eq 0 ]]; then
+    echo "UzScribe o‘rnatildi. Jurnal: $log_path"
+  else
+    echo "UzScribe o‘rnatish tugamadi (kod $result). Jurnal: $log_path" >&2
+  fi
+  rm -rf "$work"
+  exit "$result"
+}
+trap finish EXIT
 
 if [[ -n "${UZSCRIBE_SOURCE_DIR:-}" ]]; then
   source_dir="$UZSCRIBE_SOURCE_DIR"

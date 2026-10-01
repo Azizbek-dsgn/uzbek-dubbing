@@ -7,10 +7,12 @@ import os
 import subprocess
 import sys
 import tempfile
+import time
+import uuid
 import venv
 from pathlib import Path
 
-from install import destinations, install
+from install import destinations, install, _copy_panel, _enable_debug
 
 
 ROOT = Path(__file__).resolve().parent
@@ -51,8 +53,10 @@ if not (output / "model.bin").is_file() or not (output / "tokenizer.json").is_fi
 """
 
 DOWNLOAD_GIGAAM = r"""
+import os
 import sys
 from pathlib import Path
+os.environ.setdefault("HF_HUB_DISABLE_XET", "1")
 from huggingface_hub import hf_hub_download
 
 runtime = Path(sys.argv[1])
@@ -72,19 +76,71 @@ if not checkpoint.is_file() or checkpoint.stat().st_size < 100_000_000:
     raise RuntimeError("GigaAM Uzbek 600M modeli yuklanmadi")
 """
 
+VERIFY_RUNTIME = r"""
+import gc
+import sys
+import tempfile
+import wave
+from pathlib import Path
+
+runtime = Path(sys.argv[1])
+sys.path.insert(0, str(runtime))
+from faster_whisper import WhisperModel
+model = WhisperModel(str(runtime / "models" / "navai-small"),
+                     device="cpu", compute_type="int8", local_files_only=True)
+del model
+gc.collect()
+from subtitles.gigaam import transcribe
+with tempfile.TemporaryDirectory(prefix="uzscribe-check-") as temporary:
+    audio = Path(temporary) / "silence.wav"
+    with wave.open(str(audio), "wb") as output:
+        output.setnchannels(1)
+        output.setsampwidth(2)
+        output.setframerate(16000)
+        output.writeframes(b"\0\0" * 16000)
+    transcribe(audio, runtime / "models" / "gigaam-base-large",
+               runtime / "models" / "gigaam-uzbek" / "checkpoints" /
+               "large_full_600m" / "best.pt", "cpu")
+print("NavAI, GigaAM va audio ishlov berish tekshiruvi o'tdi.", flush=True)
+"""
+
+
+def _retry_download(command: list[str]) -> None:
+    for attempt in range(3):
+        try:
+            subprocess.run(command, check=True)
+            return
+        except subprocess.CalledProcessError:
+            if attempt == 2:
+                raise
+            print("Yuklash uzildi. Qayta urinilmoqda…", flush=True)
+            time.sleep(2 * (attempt + 1))
+
 
 def _python_for(runtime: Path, system: str) -> Path:
     return runtime / ".venv" / ("Scripts/python.exe" if system == "win32" else "bin/python")
 
 
 def _navai_ready(directory: Path) -> bool:
-    return all((directory / name).is_file()
-               for name in ("model.bin", "config.json", "tokenizer.json"))
+    return (all((directory / name).is_file()
+                for name in ("model.bin", "config.json", "tokenizer.json"))
+            and (directory / "model.bin").stat().st_size >= 100_000_000)
 
 
 def _prepare_environment(runtime: Path, system: str, *, convert: bool,
                          uv: Path | None = None) -> Path:
     python = _python_for(runtime, system)
+    if python.is_file():
+        try:
+            healthy = subprocess.run(
+                [str(python), "-c", "import sys; assert (3,10) <= sys.version_info[:2] < (3,13)"],
+                stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL).returncode == 0
+        except OSError:
+            healthy = False
+        if not healthy:
+            backup = runtime / (".venv-backup-" + uuid.uuid4().hex)
+            (runtime / ".venv").rename(backup)
+            print(f"Python muhiti qayta yaratilmoqda. Eski nusxa: {backup}", flush=True)
     if not python.is_file():
         if uv:
             subprocess.run([str(uv), "venv", "--python", sys.executable,
@@ -112,7 +168,7 @@ def _install_gigaam(runtime: Path, python: Path, uv: Path | None) -> None:
     subprocess.run([str(python), "-c", "import torch, torchaudio, hydra, soundfile, transformers, huggingface_hub"],
                    check=True)
     print("GigaAM Uzbek 600M yuklanmoqda (taxminan 2.3 GB)…", flush=True)
-    subprocess.run([str(python), "-c", DOWNLOAD_GIGAAM, str(runtime)], check=True)
+    _retry_download([str(python), "-c", DOWNLOAD_GIGAAM, str(runtime)])
 
 
 def _verify_installation(runtime: Path, panel: Path, python: Path) -> None:
@@ -151,16 +207,20 @@ def main() -> int:
         if model is None:
             with tempfile.TemporaryDirectory(prefix="uzscribe-model-") as temporary:
                 print("NavAI o‘zbekcha modeli yuklanmoqda va tayyorlanmoqda…", flush=True)
-                subprocess.run([str(python), "-c", CONVERT, MODEL_REPO,
-                                MODEL_REVISION, temporary], check=True)
+                _retry_download([str(python), "-c", CONVERT, MODEL_REPO,
+                                 MODEL_REVISION, temporary])
                 install(ROOT, sys.platform, Path.home(), dict(os.environ),
-                        developer=True, skip_dependencies=True,
+                        developer=False, skip_dependencies=True,
                         model_source=Path(temporary) / "converted")
         else:
             install(ROOT, sys.platform, Path.home(), dict(os.environ),
-                    developer=True, skip_dependencies=True, model_source=model)
+                    developer=False, skip_dependencies=True, model_source=model)
         subprocess.run([str(python), "-c", "import faster_whisper, imageio_ffmpeg"], check=True)
         _install_gigaam(runtime, python, uv)
+        print("Modellar amalda ishga tushirib tekshirilmoqda…", flush=True)
+        subprocess.run([str(python), "-c", VERIFY_RUNTIME, str(runtime)], check=True)
+        _copy_panel(ROOT, panel)
+        _enable_debug(sys.platform)
         _verify_installation(runtime, panel, python)
     except (OSError, RuntimeError, subprocess.CalledProcessError) as exc:
         print(f"UzScribe o‘rnatilmadi: {exc}", file=sys.stderr)

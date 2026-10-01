@@ -136,6 +136,7 @@
     Object.keys(savedFields).forEach(function (key) {
       var field = savedFields[key];
       if (!Object.prototype.hasOwnProperty.call(saved, key)) return;
+      if (key === 'python' && fs.existsSync(localPython) && !fs.existsSync(saved[key] || '')) return;
       if (field.type === 'checkbox') field.checked = !!saved[key];
       else if (field.tagName !== 'SELECT' || Array.prototype.some.call(field.options, function (item) { return item.value === saved[key]; })) {
         field.value = saved[key];

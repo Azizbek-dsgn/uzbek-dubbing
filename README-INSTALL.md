@@ -32,6 +32,8 @@ Yangilash uchun o‘sha buyruqni qayta ishga tushiring; mavjud model qayta yukla
 
 Windows’da xato bo‘lsa PowerShell oynasi ochiq qoladi. Jurnal `%LOCALAPPDATA%\UzbekSubtitles\install.log` faylida saqlanadi; o‘rnatish tugamaganda shu faylning oxirgi qatorlarini yuboring. Xatoni ko‘rmasdan eski o‘rnatmani o‘chirmang.
 
+macOS’da jurnal `~/Library/Application Support/UzbekSubtitles/install.log` faylida saqlanadi. O‘rnatgich uzilgan model yuklashini uch marta urinib ko‘radi, buzilgan Python muhitini eski nusxasini saqlagan holda qayta yaratadi. Yakunda NavAI va GigaAM’ni CPU’da amalda ochib, audio ishlov berish sinovini bajaradi. Faqat shu tekshiruv o‘tganda o‘rnatish muvaffaqiyatli deb ko‘rsatiladi. Bu tekshiruv model ishlashini tasdiqlaydi; nutq aniqligi va Adobe ichidagi integratsiya alohida sinov talab qiladi.
+
 ## macOS
 
 1. ZIP’ni oching. Python o‘rnatish shart emas; internetni yoqing.

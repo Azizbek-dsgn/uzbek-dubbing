@@ -1,6 +1,7 @@
 import json
 import ast
 import tempfile
+import subprocess
 import unittest
 import xml.etree.ElementTree as ET
 from pathlib import Path
@@ -9,7 +10,7 @@ from unittest.mock import patch
 from install import destinations, install
 from install_online import (CONVERT, DOWNLOAD_GIGAAM, _navai_ready,
                             _prepare_environment, _install_gigaam,
-                            _verify_installation)
+                            _verify_installation, VERIFY_RUNTIME, _retry_download)
 
 
 class InstallerTests(unittest.TestCase):
@@ -54,6 +55,7 @@ class InstallerTests(unittest.TestCase):
     def test_online_converter_script_is_valid_python(self):
         ast.parse(CONVERT)
         ast.parse(DOWNLOAD_GIGAAM)
+        ast.parse(VERIFY_RUNTIME)
 
     def test_incomplete_navai_install_is_not_treated_as_ready(self):
         with tempfile.TemporaryDirectory() as temp:
@@ -62,6 +64,9 @@ class InstallerTests(unittest.TestCase):
             self.assertFalse(_navai_ready(model))
             (model / 'config.json').write_text('{}')
             (model / 'tokenizer.json').write_text('{}')
+            self.assertFalse(_navai_ready(model))
+            with (model / 'model.bin').open('wb') as output:
+                output.truncate(100_000_000)
             self.assertTrue(_navai_ready(model))
 
     def test_uv_installs_into_windows_runtime_when_bootstrap_provides_it(self):
@@ -71,11 +76,12 @@ class InstallerTests(unittest.TestCase):
             python.parent.mkdir(parents=True)
             python.touch()
             with patch('install_online.subprocess.run') as run:
+                run.return_value.returncode = 0
                 result = _prepare_environment(runtime, 'win32', convert=True,
                                               uv=Path('C:/uv/uv.exe'))
             self.assertEqual(result, python)
-            self.assertEqual(run.call_count, 2)
-            for call in run.call_args_list:
+            self.assertEqual(run.call_count, 3)
+            for call in run.call_args_list[1:]:
                 self.assertEqual(call.args[0][:5],
                                  [str(Path('C:/uv/uv.exe')), 'pip', 'install',
                                   '--python', str(python)])
@@ -105,6 +111,32 @@ class InstallerTests(unittest.TestCase):
             self.assertEqual(run.call_args_list[1].args[0][:5],
                              [str(Path('C:/uv/uv.exe')), 'pip', 'install', '--python', str(python)])
 
+    def test_broken_python_is_preserved_and_environment_recreated(self):
+        with tempfile.TemporaryDirectory() as temp:
+            runtime = Path(temp)
+            python = runtime / '.venv/Scripts/python.exe'
+            python.parent.mkdir(parents=True)
+            python.write_bytes(b'broken')
+            with patch('install_online.subprocess.run') as run:
+                run.return_value.returncode = 1
+                _prepare_environment(runtime, 'win32', convert=False, uv=Path('uv.exe'))
+            backup = list(runtime.glob('.venv-backup-*'))
+            self.assertEqual(len(backup), 1)
+            self.assertEqual((backup[0] / 'Scripts/python.exe').read_bytes(), b'broken')
+            self.assertEqual(run.call_args_list[1].args[0][1], 'venv')
+
+    def test_interrupted_download_retries_and_persistent_failure_is_reported(self):
+        failure = subprocess.CalledProcessError(1, ['download'])
+        with patch('install_online.subprocess.run', side_effect=[failure, None]) as run, \
+             patch('install_online.time.sleep'):
+            _retry_download(['download'])
+            self.assertEqual(run.call_count, 2)
+        with patch('install_online.subprocess.run', side_effect=failure) as run, \
+             patch('install_online.time.sleep'):
+            with self.assertRaises(subprocess.CalledProcessError):
+                _retry_download(['download'])
+            self.assertEqual(run.call_count, 3)
+
     def test_post_install_check_requires_both_models_and_panel(self):
         with tempfile.TemporaryDirectory() as temp:
             runtime = Path(temp) / 'runtime'
@@ -121,6 +153,8 @@ class InstallerTests(unittest.TestCase):
             for path in files:
                 path.parent.mkdir(parents=True, exist_ok=True)
                 path.touch()
+            with (runtime / 'models/navai-small/model.bin').open('wb') as output:
+                output.truncate(100_000_000)
             checkpoint = (runtime / 'models/gigaam-uzbek/checkpoints/'
                           'large_full_600m/best.pt')
             checkpoint.parent.mkdir(parents=True)
