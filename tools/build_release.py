@@ -16,6 +16,7 @@ PANEL = ("CSXS/manifest.xml", "index.html", "panel.js", "assets/uzscribe-logo.jp
 RUNTIME = ("__init__.py", "cli.py", "batch.py", "sentences.py", "gigaam.py",
            "fastconformer.py", "requirements.txt", "requirements-release.txt",
            "requirements-gigaam.txt", "requirements-fastconformer.txt",
+           "requirements-intel-mac.txt",
            "requirements-speakers.txt")
 MODEL = ("model.bin", "config.json", "preprocessor_config.json", "tokenizer.json",
          "vocabulary.json", "LICENSE", "NOTICE")

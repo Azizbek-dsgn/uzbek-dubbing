@@ -111,6 +111,14 @@ class InstallerTests(unittest.TestCase):
             self.assertEqual(run.call_args_list[1].args[0][:5],
                              [str(Path('C:/uv/uv.exe')), 'pip', 'install', '--python', str(python)])
 
+    def test_intel_mac_uses_compatible_dependencies_for_conversion_too(self):
+        with tempfile.TemporaryDirectory() as temp, \
+             patch('install_online.platform.machine', return_value='x86_64'), \
+             patch('install_online.subprocess.run') as run:
+            _prepare_environment(Path(temp), 'darwin', convert=True, uv=Path('uv'))
+            self.assertEqual(run.call_count, 2)
+            self.assertTrue(run.call_args_list[1].args[0][-1].endswith('requirements-intel-mac.txt'))
+
     def test_broken_python_is_preserved_and_environment_recreated(self):
         with tempfile.TemporaryDirectory() as temp:
             runtime = Path(temp)

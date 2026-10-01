@@ -1,5 +1,7 @@
 # UzScribe — o‘rnatish
 
+O‘rnatish yoki yangilashdan oldin Premiere Pro va After Effects’ni yoping. Intel Mac va Apple Silicon uchun mos Python kutubxonalari avtomatik tanlanadi. GigaAM checkpointining yuklangan nusxasi SHA-256 bilan tekshiriladi.
+
 Bu beta paket. macOS’da lokal transkripsiya sinovdan o‘tgan; Windows’da avtomatik kod testlari o‘tgan, lekin Premiere Pro va After Effects ichida jonli import hali tekshirilmagan.
 
 **Talab:** avvaldan o‘rnatilgan Premiere Pro yoki After Effects va birinchi o‘rnatish uchun internet. Git, Python, `pip` yoki `uv`ni qo‘lda o‘rnatish shart emas. O‘rnatkich kerak bo‘lsa Python 3.12 ni, so‘ng NavAI small va GigaAM Uzbek 600M modellarini tayyorlaydi. GigaAM checkpointining o‘zi taxminan 2.3 GB; Python/PyTorch paketlari va vaqtinchalik fayllar uchun yana bir necha GB bo‘sh joy qoldiring. ZIP paketida NavAI small bor; nutq fayllari kompyuteringizda ishlanadi.

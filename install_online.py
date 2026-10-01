@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import os
+import platform
 import subprocess
 import sys
 import tempfile
@@ -44,7 +45,7 @@ if not (source / "model.safetensors").is_file():
     raise RuntimeError("NavAI model vaznlari yuklanmadi")
 converter = TransformersConverter(str(source),
                                   copy_files=["preprocessor_config.json"])
-converter.convert(str(output), quantization="int8")
+converter.convert(str(output), quantization="int8", force=True)
 AutoTokenizer.from_pretrained(str(source), use_fast=True).save_pretrained(str(output))
 for name in ("LICENSE", "NOTICE"):
     shutil.copy2(source / name, output / name)
@@ -53,6 +54,7 @@ if not (output / "model.bin").is_file() or not (output / "tokenizer.json").is_fi
 """
 
 DOWNLOAD_GIGAAM = r"""
+import hashlib
 import os
 import sys
 from pathlib import Path
@@ -65,14 +67,25 @@ uzbek = runtime / "models" / "gigaam-uzbek"
 for name in ("config.json", "modeling_gigaam.py"):
     if not (base / name).is_file():
         hf_hub_download("ai-sage/GigaAM-Multilingual", name,
-                        revision="large_ctc", local_dir=base)
+                        revision="3905cd51c3ed4e88c8edf33f3302969ba480a327", local_dir=base)
 checkpoint = uzbek / "checkpoints" / "large_full_600m" / "best.pt"
-if not checkpoint.is_file() or checkpoint.stat().st_size < 100_000_000:
+expected = "79847b8d139acb9cbc662329a0a52fe82676013a8c2b19ff2dad38b2906511a3"
+def valid_checkpoint():
+    if not checkpoint.is_file():
+        return False
+    digest = hashlib.sha256()
+    with checkpoint.open("rb") as source:
+        for block in iter(lambda: source.read(1024 * 1024), b""):
+            digest.update(block)
+    return digest.hexdigest() == expected
+if not valid_checkpoint():
     hf_hub_download("rustam1221/uzbek-asr-gigaam",
-                    "checkpoints/large_full_600m/best.pt", local_dir=uzbek)
+                    "checkpoints/large_full_600m/best.pt", local_dir=uzbek,
+                    revision="304f81948f40ae51a8f718926abd242f095edd84",
+                    force_download=checkpoint.is_file())
 if not all((base / name).is_file() for name in ("config.json", "modeling_gigaam.py")):
     raise RuntimeError("GigaAM asosiy fayllari yuklanmadi")
-if not checkpoint.is_file() or checkpoint.stat().st_size < 100_000_000:
+if not valid_checkpoint():
     raise RuntimeError("GigaAM Uzbek 600M modeli yuklanmadi")
 """
 
@@ -121,6 +134,10 @@ def _python_for(runtime: Path, system: str) -> Path:
     return runtime / ".venv" / ("Scripts/python.exe" if system == "win32" else "bin/python")
 
 
+def _intel_mac(system: str) -> bool:
+    return system == "darwin" and platform.machine().lower() in {"x86_64", "amd64"}
+
+
 def _navai_ready(directory: Path) -> bool:
     return (all((directory / name).is_file()
                 for name in ("model.bin", "config.json", "tokenizer.json"))
@@ -151,9 +168,9 @@ def _prepare_environment(runtime: Path, system: str, *, convert: bool,
         base_command = [str(uv), "pip", "install", "--python", str(python)]
     else:
         base_command = [str(python), "-m", "pip", "install", "--disable-pip-version-check"]
-    subprocess.run([*base_command, "-r",
-                    str(ROOT / "subtitles" / "requirements-release.txt")], check=True)
-    if convert:
+    requirements = "requirements-intel-mac.txt" if _intel_mac(system) else "requirements-release.txt"
+    subprocess.run([*base_command, "-r", str(ROOT / "subtitles" / requirements)], check=True)
+    if convert and not _intel_mac(system):
         subprocess.run([*base_command, *CONVERTER_DEPENDENCIES], check=True)
     return python
 
@@ -163,7 +180,8 @@ def _install_gigaam(runtime: Path, python: Path, uv: Path | None) -> None:
         command = [str(uv), "pip", "install", "--python", str(python)]
     else:
         command = [str(python), "-m", "pip", "install", "--disable-pip-version-check"]
-    subprocess.run([*command, "-r", str(ROOT / "subtitles" / "requirements-gigaam.txt"),
+    requirements = "requirements-intel-mac.txt" if _intel_mac(sys.platform) else "requirements-gigaam.txt"
+    subprocess.run([*command, "-r", str(ROOT / "subtitles" / requirements),
                     "huggingface_hub>=0.34,<2"], check=True)
     subprocess.run([str(python), "-c", "import torch, torchaudio, hydra, soundfile, transformers, huggingface_hub"],
                    check=True)
