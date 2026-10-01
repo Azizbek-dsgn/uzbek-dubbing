@@ -75,34 +75,20 @@
   if (fs.existsSync(path.join(root, 'models', 'navai-medium', 'model.bin'))) {
     var option = document.createElement('option');
     option.value = 'navai-medium';
-    option.textContent = 'NavAI Uzbek medium — o‘zbekchaga mos';
+    option.textContent = 'UzScribe Uzbek Studio';
     model.insertBefore(option, model.firstChild);
     model.value = 'navai-medium';
-  }
-  if (fs.existsSync(path.join(root, 'models', 'navai-small', 'model.bin'))) {
-    var smallOption = document.createElement('option');
-    smallOption.value = 'navai-small'; smallOption.textContent = 'NavAI Uzbek small — tezroq';
-    model.insertBefore(smallOption, model.firstChild);
-    if (!fs.existsSync(path.join(root, 'models', 'navai-medium', 'model.bin')))
-      model.value = 'navai-small';
   }
   if (fs.existsSync(path.join(root, 'models', 'gigaam-uzbek', 'checkpoints', 'large_full_600m', 'best.pt')) &&
       fs.existsSync(path.join(root, 'models', 'gigaam-base-large', 'config.json')) &&
       fs.existsSync(path.join(root, 'models', 'gigaam-base-large', 'modeling_gigaam.py'))) {
     var gigaamOption = document.createElement('option');
     gigaamOption.value = 'gigaam-uzbek';
-    gigaamOption.textContent = 'GigaAM Uzbek 600M — suhbat nutqi';
+    gigaamOption.textContent = 'UzScribe Uzbek';
     model.insertBefore(gigaamOption, model.firstChild);
     model.value = 'gigaam-uzbek';
   }
-  if (fs.existsSync(path.join(root, 'models', 'zafar-fastconformer', 'uzbek_stt_v12.nemo'))) {
-    var fastOption = document.createElement('option');
-    fastOption.value = 'zafar-fastconformer';
-    fastOption.textContent = 'FastConformer Uzbek — tajriba';
-    model.appendChild(fastOption);
-  }
   Array.prototype.forEach.call(model.options, function (item) {
-    if (['navai-small', 'navai-medium', 'gigaam-uzbek', 'zafar-fastconformer'].indexOf(item.value) < 0) return;
     var second = document.createElement('option');
     second.value = item.value; second.textContent = item.textContent;
     compareModel.appendChild(second);
@@ -151,12 +137,9 @@
   advanced.addEventListener('toggle', saveSettings);
   function updateModelHint() {
     modelHint.textContent = model.value === 'gigaam-uzbek'
-      ? 'Tabiiy nutq uchun. So‘z va tinish belgilari vaqtini aniqlaydi.'
-      : model.value === 'zafar-fastconformer'
-        ? 'Tajriba modeli. GigaAM bilan solishtirib, kerakli joyini tanlang.'
-      : model.value === 'navai-medium' || model.value === 'navai-small'
-        ? 'O‘zbekchaga mos NavAI modeli. Natijalarni GigaAM bilan solishtirish mumkin.'
-        : 'Umumiy Whisper modeli. Birinchi ishlatishda model yuklanishi mumkin.';
+      ? 'GigaAM Uzbek 600M · o‘zbekcha suhbat nutqi.'
+      : model.value === 'navai-medium' ? 'NavAI Uzbek medium · o‘zbekchaga moslashtirilgan.'
+      : 'Whisper large-v3 · katta ko‘p tilli model. Subtitr tili: o‘zbekcha.';
   }
   model.addEventListener('change', updateModelHint);
   updateModelHint();
@@ -242,6 +225,7 @@
       } catch (e) { callback(new Error('Adobe javobi o‘qilmadi: ' + raw)); }
     });
   }
+  document.uzscribe = {host:jsonCall, root:root, python:python};
   function getInfo(callback, selectedRange) {
     jsonCall('uzTimelineInfo(' + JSON.stringify(selectedRange || range.value) + ')', callback);
   }
@@ -298,6 +282,7 @@
     return '';
   }
   function setPhase(phase) {
+    document.uzscribeBusy = phase !== 'idle';
     mainActions.hidden = phase !== 'idle';
     workActions.hidden = phase !== 'working';
     reviewActions.hidden = phase !== 'review';

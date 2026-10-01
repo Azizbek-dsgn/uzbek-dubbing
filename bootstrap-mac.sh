@@ -61,7 +61,7 @@ if [[ -z "$python" ]]; then
 fi
 
 install_args=("$source_dir/install_online.py")
-if [[ -f "$source_dir/models/navai-small/model.bin" ]]; then
-  install_args+=(--model-dir "$source_dir/models/navai-small")
+if [[ -f "$source_dir/models/large-v3/model.bin" ]]; then
+  install_args+=(--model-dir "$source_dir/models/large-v3")
 fi
 "$python" "${install_args[@]}"

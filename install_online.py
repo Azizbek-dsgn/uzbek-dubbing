@@ -1,4 +1,4 @@
-"""Install UzScribe from source, preparing Python, NavAI and GigaAM."""
+"""Install UzScribe from source, preparing Python and strong offline speech models."""
 
 from __future__ import annotations
 
@@ -17,44 +17,23 @@ from install import destinations, install, _copy_panel, _enable_debug
 
 
 ROOT = Path(__file__).resolve().parent
-MODEL_REPO = "navai-uz/whisper-small-uzbek"
-MODEL_REVISION = "017136a1a50b2497ba94edeaac9fbb0a6c773c22"
-CONVERTER_DEPENDENCIES = (
-    "transformers>=4.47,<6",
-    "torch>=2.3,<3",
-    "huggingface_hub>=0.34,<2",
-)
+MODEL_REPO = "Systran/faster-whisper-large-v3"
+MODEL_REVISION = "edaa852ec7e145841d8ffdb056a99866b5f0a478"
+CONVERTER_DEPENDENCIES = ("huggingface_hub>=0.34,<2",)
+# Already converted, immutable model; no conversion toolchain is needed.
 CONVERT = r"""
-import faulthandler
 import os
-import shutil
 import sys
 from pathlib import Path
-faulthandler.enable()
-
-repo, revision, temporary = sys.argv[1:]
-os.environ.setdefault("HF_HOME", str(Path(temporary) / "hf-cache"))
 os.environ.setdefault("HF_HUB_DISABLE_XET", "1")
 from huggingface_hub import snapshot_download
-import torch
-from ctranslate2.converters import TransformersConverter
-from transformers import AutoTokenizer
-
-source = Path(temporary) / "source"
+repo, revision, temporary = sys.argv[1:]
 output = Path(temporary) / "converted"
-snapshot_download(repo_id=repo, revision=revision, local_dir=source,
-                  allow_patterns=["*.json", "*.safetensors", "merges.txt", "LICENSE", "NOTICE"])
-if not (source / "model.safetensors").is_file():
-    raise RuntimeError("NavAI model vaznlari yuklanmadi")
-converter = TransformersConverter(str(source),
-                                  copy_files=["preprocessor_config.json"])
-print("NavAI vaznlari CTranslate2 formatiga o'tkazilmoqda…", flush=True)
-converter.convert(str(output), quantization="int8", force=True)
-AutoTokenizer.from_pretrained(str(source), use_fast=True).save_pretrained(str(output))
-for name in ("LICENSE", "NOTICE"):
-    shutil.copy2(source / name, output / name)
-if not (output / "model.bin").is_file() or not (output / "tokenizer.json").is_file():
-    raise RuntimeError("CTranslate2 modeli yaratilmadi")
+snapshot_download(repo_id=repo, revision=revision, local_dir=output,
+                  allow_patterns=["model.bin", "config.json", "preprocessor_config.json",
+                                  "tokenizer.json", "vocabulary.json"])
+if not (output / "model.bin").is_file():
+    raise RuntimeError("UzScribe Global modeli yuklanmadi")
 """
 
 DOWNLOAD_GIGAAM = r"""
@@ -106,7 +85,7 @@ runtime = Path(sys.argv[1])
 sys.path.insert(0, str(runtime))
 import torch
 from faster_whisper import WhisperModel
-model = WhisperModel(str(runtime / "models" / "navai-small"),
+model = WhisperModel(str(runtime / "models" / "large-v3"),
                      device="cpu", compute_type="int8", local_files_only=True)
 del model
 gc.collect()
@@ -119,11 +98,11 @@ with tempfile.TemporaryDirectory(prefix="uzscribe-check-") as temporary:
         output.setframerate(16000)
         output.writeframes(b"\0\0" * 16000)
     from subtitles.cli import transcribe as caption_transcribe
-    caption_transcribe(audio, "navai-small", "auto")
+    caption_transcribe(audio, "large-v3", "auto")
     transcribe(audio, runtime / "models" / "gigaam-base-large",
                runtime / "models" / "gigaam-uzbek" / "checkpoints" /
                "large_full_600m" / "best.pt", "cpu")
-print("NavAI, GigaAM va audio ishlov berish tekshiruvi o'tdi.", flush=True)
+print("UzScribe Global, Uzbek va audio ishlov berish tekshiruvi o'tdi.", flush=True)
 """
 
 
@@ -201,8 +180,8 @@ def _install_gigaam(runtime: Path, python: Path, uv: Path | None) -> None:
 def _verify_installation(runtime: Path, panel: Path, python: Path) -> None:
     if not python.is_file():
         raise RuntimeError("UzScribe Python muhiti topilmadi")
-    if not _navai_ready(runtime / "models" / "navai-small"):
-        raise RuntimeError("NavAI modeli to‘liq o‘rnatilmadi")
+    if not _navai_ready(runtime / "models" / "large-v3"):
+        raise RuntimeError("UzScribe Global modeli to‘liq o‘rnatilmadi")
     base = runtime / "models" / "gigaam-base-large"
     if not all((base / name).is_file() for name in ("config.json", "modeling_gigaam.py")):
         raise RuntimeError("GigaAM asosiy fayllari to‘liq o‘rnatilmadi")
@@ -210,7 +189,7 @@ def _verify_installation(runtime: Path, panel: Path, python: Path) -> None:
                   "large_full_600m" / "best.pt")
     if not checkpoint.is_file() or checkpoint.stat().st_size < 100_000_000:
         raise RuntimeError("GigaAM Uzbek 600M checkpointi to‘liq o‘rnatilmadi")
-    for name in ("CSXS/manifest.xml", "index.html", "panel.js",
+    for name in ("CSXS/manifest.xml", "index.html", "panel.js", "podcast-panel.js",
                  "assets/uzscribe-logo.jpg"):
         if not (panel / name).is_file():
             raise RuntimeError(f"Adobe panel fayli yetishmayapti: {name}")
@@ -219,21 +198,21 @@ def _verify_installation(runtime: Path, panel: Path, python: Path) -> None:
 def main() -> int:
     parser = argparse.ArgumentParser(description="GitHub’dan UzScribe o‘rnatish")
     parser.add_argument("--model-dir", type=Path,
-                        help="Mavjud CTranslate2 NavAI small modeli; yuklashni o‘tkazib yuboradi")
+                        help="Mavjud CTranslate2 UzScribe Global modeli; yuklashni o‘tkazib yuboradi")
     args = parser.parse_args()
     if not (3, 10) <= sys.version_info[:2] < (3, 13):
         parser.error("Python 3.10, 3.11 yoki 3.12 kerak")
     try:
         runtime, panel = destinations(sys.platform, Path.home(), dict(os.environ))
-        existing = runtime / "models" / "navai-small"
+        existing = runtime / "models" / "large-v3"
         if args.model_dir and not _navai_ready(args.model_dir):
-            raise FileNotFoundError(f"NavAI modeli to‘liq emas: {args.model_dir}")
+            raise FileNotFoundError(f"UzScribe Global modeli to‘liq emas: {args.model_dir}")
         model = args.model_dir or (existing if _navai_ready(existing) else None)
         uv = Path(os.environ["UZSCRIBE_UV_BIN"]) if os.environ.get("UZSCRIBE_UV_BIN") else None
         python = _prepare_environment(runtime, sys.platform, convert=model is None, uv=uv)
         if model is None:
             with tempfile.TemporaryDirectory(prefix="uzscribe-model-") as temporary:
-                print("NavAI o‘zbekcha modeli yuklanmoqda va tayyorlanmoqda…", flush=True)
+                print("UzScribe Global yuklanmoqda (taxminan 3.1 GB)…", flush=True)
                 _retry_download([str(python), "-c", CONVERT, MODEL_REPO,
                                  MODEL_REVISION, temporary])
                 install(ROOT, sys.platform, Path.home(), dict(os.environ),
@@ -249,6 +228,12 @@ def main() -> int:
         _copy_panel(ROOT, panel)
         _enable_debug(sys.platform)
         _verify_installation(runtime, panel, python)
+        # Only plugin-owned weak models are removed after successful verification.
+        import shutil
+        for name in ("navai-small", "small", "tiny"):
+            old = runtime / "models" / name
+            if old.is_dir() and not old.is_symlink():
+                shutil.rmtree(old)
     except (OSError, RuntimeError, subprocess.CalledProcessError) as exc:
         print(f"UzScribe o‘rnatilmadi: {exc}", file=sys.stderr)
         return 1

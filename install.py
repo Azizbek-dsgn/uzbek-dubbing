@@ -34,10 +34,10 @@ def _copy_runtime(package: Path, target: Path, model_source: Path | None = None)
     for path in source.iterdir():
         if path.is_file() and path.suffix in {".py", ".txt"}:
             shutil.copy2(path, dest / path.name)
-    model = model_source or package / "models" / "navai-small"
+    model = model_source or package / "models" / "large-v3"
     if not (model / "model.bin").is_file():
-        raise FileNotFoundError("NavAI small modeli paketda yo‘q")
-    model_target = target / "models" / "navai-small"
+        raise FileNotFoundError("UzScribe Global modeli paketda yo‘q")
+    model_target = target / "models" / "large-v3"
     model_target.mkdir(parents=True, exist_ok=True)
     for path in model.iterdir():
         if path.is_file() and path.resolve() != (model_target / path.name).resolve():
@@ -73,7 +73,7 @@ def _copy_panel(package: Path, target: Path) -> None:
         shutil.copytree(source / folder, target / folder, dirs_exist_ok=True)
     if (source / "assets").is_dir():
         shutil.copytree(source / "assets", target / "assets", dirs_exist_ok=True)
-    for name in ("index.html", "panel.js"):
+    for name in ("index.html", "panel.js", "podcast-panel.js"):
         shutil.copy2(source / name, target / name)
 
 

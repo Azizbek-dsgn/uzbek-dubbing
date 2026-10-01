@@ -5,7 +5,7 @@ function uzIsAE() {
     try { return app.name.indexOf("After Effects") !== -1; } catch (e) { return false; }
 }
 function uzRange(mode) {
-    var start = 0, duration = 0, total = 0, marked = false, fps = 25, name = "", identity = "", trackCount = 0;
+    var start = 0, duration = 0, total = 0, marked = false, fps = 25, name = "", identity = "", trackCount = 0, videoCount = 0;
     if (uzIsAE()) {
         var comp = app.project.activeItem;
         if (!comp || !(comp instanceof CompItem)) throw new Error("Faol kompozitsiyani oching.");
@@ -19,7 +19,7 @@ function uzRange(mode) {
         var seq = app.project.activeSequence;
         if (!seq) throw new Error("Faol sequence’ni oching.");
         name = seq.name;
-        try { trackCount = Number(seq.audioTracks.numTracks); } catch (e) {}
+        try { trackCount = Number(seq.audioTracks.numTracks); videoCount = Number(seq.videoTracks.numTracks); } catch (e) {}
         try { identity = seq.sequenceID ? String(seq.sequenceID) : ""; } catch (e) {}
         total = (Number(seq.end) - Number(seq.zeroPoint)) / 254016000000;
         try { fps = 254016000000 / Number(seq.timebase); } catch (e) {}
@@ -34,13 +34,13 @@ function uzRange(mode) {
     }
     if (!(duration > 0)) throw new Error("Timeline’da audio uzunligi topilmadi.");
     if (!(fps > 0) || !isFinite(fps)) fps = 25;
-    return {start:start, duration:duration, total:total, marked:marked && mode !== "full", fps:fps, name:name, identity:identity, trackCount:trackCount};
+    return {start:start, duration:duration, total:total, marked:marked && mode !== "full", fps:fps, name:name, identity:identity, trackCount:trackCount, videoCount:videoCount};
 }
 function uzTimelineInfo(mode) {
     try {
         var r = uzRange(mode);
         return '{"start":' + r.start + ',"duration":' + r.duration + ',"marked":' + r.marked +
-            ',"fps":' + r.fps + ',"trackCount":' + r.trackCount + ',"name":"' + uzJson(r.name) + '","identity":"' + uzJson(r.identity) +
+            ',"fps":' + r.fps + ',"trackCount":' + r.trackCount + ',"videoCount":' + r.videoCount + ',"name":"' + uzJson(r.name) + '","identity":"' + uzJson(r.identity) +
             '","host":"' + (uzIsAE() ? "AEFT" : "PPRO") + '"}';
     } catch (e) { return '{"error":"' + uzJson(e.toString()) + '"}'; }
 }
@@ -121,6 +121,31 @@ function uzImportCaptions(srtPath, offset, expectedName, expectedIdentity) {
         if (!item) throw new Error("Import qilingan SRT topilmadi.");
         if (!seq.createCaptionTrack(item, Number(offset)))
             throw new Error("Caption track yaratilmagan.");
+        return '{"success":true}';
+    } catch (e) { return '{"error":"' + uzJson(e.toString()) + '"}'; }
+}
+
+function uzPodcastExport(outputPath, expectedName, expectedIdentity) {
+    try {
+        if (uzIsAE()) throw new Error("Podcast montaji Premiere Pro uchun.");
+        var seq = app.project.activeSequence, file = new File(outputPath);
+        if (!seq || seq.name !== expectedName || (expectedIdentity && String(seq.sequenceID) !== expectedIdentity))
+            throw new Error("Faol sequence o‘zgargan. Avvalgi sequence’ni oching.");
+        if (file.exists) file.remove();
+        if (!seq.exportAsFinalCutProXML(file.fsName) || !file.exists || file.length < 100)
+            throw new Error("Timeline XML eksport qilinmadi.");
+        return '{"success":true}';
+    } catch (e) { return '{"error":"' + uzJson(e.toString()) + '"}'; }
+}
+function uzPodcastImport(xmlPath, expectedName, expectedIdentity) {
+    try {
+        if (uzIsAE()) throw new Error("Podcast montaji Premiere Pro uchun.");
+        var seq = app.project.activeSequence, file = new File(xmlPath);
+        if (!seq || seq.name !== expectedName || (expectedIdentity && String(seq.sequenceID) !== expectedIdentity))
+            throw new Error("Faol sequence o‘zgargan. Avvalgi sequence’ni oching.");
+        if (!file.exists || file.length < 100) throw new Error("Montaj XML topilmadi.");
+        if (!app.project.importFiles([file.fsName], true, app.project.rootItem, false))
+            throw new Error("Yangi sequence import qilinmadi. XML faylni File > Import orqali tekshiring.");
         return '{"success":true}';
     } catch (e) { return '{"error":"' + uzJson(e.toString()) + '"}'; }
 }

@@ -1,0 +1,13 @@
+const assert=require('assert'),fs=require('fs'),vm=require('vm');
+let imported=0,exported=0,exists=true;
+const seq={name:'Podcast',sequenceID:'seq-1',audioTracks:{numTracks:3},videoTracks:{numTracks:4},end:String(10*254016000000),zeroPoint:0,timebase:10160640000,getInPointAsTime:()=>({seconds:0}),getOutPointAsTime:()=>({seconds:10}),exportAsFinalCutProXML:()=>{exported++;return true}};
+const context={app:{name:'Premiere Pro',project:{activeSequence:seq,rootItem:{},importFiles:()=>{imported++;return true}}},File:function(p){this.fsName=p;this.exists=exists;this.length=500;this.remove=()=>{this.exists=true}},Number,String,isFinite};
+vm.createContext(context);vm.runInContext(fs.readFileSync('adobe/UzbekSubtitles/host/editor.jsx','utf8'),context);
+assert.equal(JSON.parse(context.uzTimelineInfo('full')).videoCount,4);
+assert(JSON.parse(context.uzPodcastExport('/tmp/源.xml','Podcast','seq-1')).success);
+assert(JSON.parse(context.uzPodcastImport('/tmp/源.xml','Podcast','seq-1')).success);
+seq.sequenceID='another';assert(JSON.parse(context.uzPodcastImport('/tmp/edit.xml','Podcast','seq-1')).error);assert.equal(imported,1);
+assert(JSON.parse(context.uzPodcastExport('/tmp/source.xml','Podcast','seq-1')).error);assert.equal(exported,1);
+seq.sequenceID='seq-1';exists=false;assert(JSON.parse(context.uzPodcastImport('/tmp/edit.xml','Podcast','seq-1')).error);assert.equal(imported,1);
+context.app.name='After Effects';assert(JSON.parse(context.uzPodcastExport('/tmp/source.xml','Podcast','seq-1')).error);
+console.log('Podcast host identity guard, XML import/export, AE restriction OK');

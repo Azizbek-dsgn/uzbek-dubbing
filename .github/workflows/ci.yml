@@ -28,7 +28,10 @@ jobs:
       - name: Panel workflow and bundled model default
         run: node tests/test_panel_workflow.js --windows --buyer
       - name: After Effects host script
-        run: node tests/test_after_effects_composer.js
+        run: |
+          node tests/test_after_effects_composer.js
+          node tests/test_podcast_host.js
+          node tests/test_podcast_panel.js
       - name: Windows installer syntax
         if: runner.os == 'Windows'
         shell: pwsh
@@ -72,7 +75,12 @@ jobs:
           paths = lambda *args: (root / 'runtime', root / 'panel')
           os.environ['UZSCRIBE_UV_BIN'] = shutil.which('uv')
           with patch('install.destinations', paths), patch('install_online.destinations', paths), patch('install_online._enable_debug'):
-              sys.exit(install_online.main())
+              result = install_online.main()
+          if result:
+              sys.exit(result)
+          import subprocess
+          python = install_online._python_for(root / 'runtime', sys.platform)
+          subprocess.run([str(python), 'tools/verify_podcast.py'], check=True)
           PY
       - name: Windows failed uv download leaves PowerShell open and writes a log
         if: runner.os == 'Windows'

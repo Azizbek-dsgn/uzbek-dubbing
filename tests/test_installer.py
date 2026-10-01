@@ -30,27 +30,27 @@ class InstallerTests(unittest.TestCase):
             package = base / 'package'
             (package / 'subtitles').mkdir(parents=True)
             (package / 'subtitles/cli.py').write_text('print("ok")')
-            (package / 'models/navai-small').mkdir(parents=True)
-            (package / 'models/navai-small/model.bin').write_bytes(b'test')
+            (package / 'models/large-v3').mkdir(parents=True)
+            (package / 'models/large-v3/model.bin').write_bytes(b'test')
             (package / 'adobe/UzbekSubtitles/CSXS').mkdir(parents=True)
             (package / 'adobe/UzbekSubtitles/host').mkdir()
             (package / 'adobe/UzbekSubtitles/assets').mkdir()
             (package / 'adobe/UzbekSubtitles/assets/uzscribe-logo.jpg').write_bytes(b'logo')
             (package / 'adobe/UzbekSubtitles/CSXS/manifest.xml').write_text('<root/>')
-            for name in ('index.html', 'panel.js'):
+            for name in ('index.html', 'panel.js', 'podcast-panel.js'):
                 (package / 'adobe/UzbekSubtitles' / name).write_text(name)
             (package / 'adobe/UzbekSubtitles/host/editor.jsx').write_text('editor')
             with patch('install._enable_debug') as debug:
                 runtime, panel = install(package, 'darwin', base / 'home', {},
                                          developer=True, skip_dependencies=True)
-            self.assertEqual((runtime / 'models/navai-small/model.bin').read_bytes(), b'test')
+            self.assertEqual((runtime / 'models/large-v3/model.bin').read_bytes(), b'test')
             self.assertEqual((panel / 'panel.js').read_text(), 'panel.js')
             self.assertEqual((panel / 'assets/uzscribe-logo.jpg').read_bytes(), b'logo')
             debug.assert_called_once_with('darwin')
             with patch('install._enable_debug'):
                 install(package, 'darwin', base / 'home', {}, developer=True,
-                        skip_dependencies=True, model_source=runtime / 'models/navai-small')
-            self.assertEqual((runtime / 'models/navai-small/model.bin').read_bytes(), b'test')
+                        skip_dependencies=True, model_source=runtime / 'models/large-v3')
+            self.assertEqual((runtime / 'models/large-v3/model.bin').read_bytes(), b'test')
 
     def test_online_converter_script_is_valid_python(self):
         ast.parse(CONVERT)
@@ -152,17 +152,17 @@ class InstallerTests(unittest.TestCase):
             panel = Path(temp) / 'panel'
             python = runtime / '.venv/Scripts/python.exe'
             files = [python,
-                     *(runtime / 'models/navai-small' / name for name in
+                     *(runtime / 'models/large-v3' / name for name in
                        ('model.bin', 'config.json', 'tokenizer.json')),
                      *(runtime / 'models/gigaam-base-large' / name for name in
                        ('config.json', 'modeling_gigaam.py')),
                      *(panel / name for name in
-                       ('CSXS/manifest.xml', 'index.html', 'panel.js',
+                       ('CSXS/manifest.xml', 'index.html', 'panel.js', 'podcast-panel.js',
                         'assets/uzscribe-logo.jpg'))]
             for path in files:
                 path.parent.mkdir(parents=True, exist_ok=True)
                 path.touch()
-            with (runtime / 'models/navai-small/model.bin').open('wb') as output:
+            with (runtime / 'models/large-v3/model.bin').open('wb') as output:
                 output.truncate(100_000_000)
             checkpoint = (runtime / 'models/gigaam-uzbek/checkpoints/'
                           'large_full_600m/best.pt')

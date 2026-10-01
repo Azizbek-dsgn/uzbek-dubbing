@@ -1,4 +1,4 @@
-"""Build a clean buyer ZIP with the commercially licensed NavAI small model."""
+"""Build a clean buyer ZIP with the commercially licensed UzScribe Global model."""
 
 from __future__ import annotations
 
@@ -11,15 +11,15 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[1]
-PANEL = ("CSXS/manifest.xml", "index.html", "panel.js", "assets/uzscribe-logo.jpg",
+PANEL = ("CSXS/manifest.xml", "index.html", "panel.js", "podcast-panel.js", "assets/uzscribe-logo.jpg",
          "host/editor.jsx", "host/after_effects.jsx")
-RUNTIME = ("__init__.py", "cli.py", "batch.py", "sentences.py", "gigaam.py",
+RUNTIME = ("__init__.py", "podcast.py", "cli.py", "batch.py", "sentences.py", "gigaam.py",
            "fastconformer.py", "requirements.txt", "requirements-release.txt",
            "requirements-gigaam.txt", "requirements-fastconformer.txt",
            "requirements-intel-mac.txt",
            "requirements-speakers.txt")
 MODEL = ("model.bin", "config.json", "preprocessor_config.json", "tokenizer.json",
-         "vocabulary.json", "LICENSE", "NOTICE")
+         "vocabulary.json")
 
 
 def hash_file(path: Path) -> str:
@@ -37,6 +37,8 @@ def build(model_dir: Path, output: Path, signed_zxp: Path | None = None) -> None
         "README-INSTALL.md": ROOT / "README-INSTALL.md",
         "NOTICE-THIRD-PARTY.md": ROOT / "NOTICE-THIRD-PARTY.md",
         "APACHE-2.0.txt": ROOT / "APACHE-2.0.txt",
+        "WHISPER-LICENSE.txt": ROOT / "WHISPER-LICENSE.txt",
+        "docs/PODCAST-RESEARCH.md": ROOT / "docs/PODCAST-RESEARCH.md",
         "Install-mac.command": ROOT / "Install-mac.command",
         "Install-Windows.ps1": ROOT / "Install-Windows.ps1",
         "bootstrap-mac.sh": ROOT / "bootstrap-mac.sh",
@@ -45,7 +47,7 @@ def build(model_dir: Path, output: Path, signed_zxp: Path | None = None) -> None
     files.update({f"adobe/UzbekSubtitles/{name}": ROOT / "adobe" / "UzbekSubtitles" / name
                   for name in PANEL})
     files.update({f"subtitles/{name}": ROOT / "subtitles" / name for name in RUNTIME})
-    files.update({f"models/navai-small/{name}": model_dir / name for name in MODEL})
+    files.update({f"models/large-v3/{name}": model_dir / name for name in MODEL})
     if signed_zxp:
         files["UzScribe.zxp"] = signed_zxp
     missing = [name for name, path in files.items() if not path.is_file()]

@@ -84,7 +84,7 @@ try {
   }
 
   $installArgs = @((Join-Path $source.FullName 'install_online.py'))
-  $bundledModel = Join-Path $source.FullName 'models/navai-small'
+  $bundledModel = Join-Path $source.FullName 'models/large-v3'
   if (Test-Path (Join-Path $bundledModel 'model.bin')) {
     $installArgs += @('--model-dir', $bundledModel)
   }

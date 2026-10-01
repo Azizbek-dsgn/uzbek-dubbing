@@ -101,11 +101,14 @@
     .cue-item .time{color:#c9c9d1}
     #status{color:#d1d1d9}
     @media(max-width:310px){.app{padding:18px 10px 0}.section{padding:12px;border-radius:16px}.footer{margin:0 -10px;padding:10px}}
+    .mode-tabs{display:flex;gap:5px;padding:5px;background:#1c1c20;border-radius:13px;margin-bottom:16px}.mode-tabs button{flex:1;border:0;border-radius:9px;padding:9px;background:transparent;color:#a2a2aa}.mode-tabs button[aria-selected=true]{background:#38383f;color:#fff}.pod-row{display:grid;grid-template-columns:1fr 1fr 30px;gap:6px;margin-top:9px}.pod-row button{border:0;background:transparent;color:#aaa}.pod-row .field-label{grid-column:1/-1}#podStatus{white-space:pre-wrap;overflow-wrap:anywhere;font-size:11px}#podStatus:empty{display:none}
   </style>
 </head>
 <body>
   <main class="app">
     <header class="header"><img class="mark" src="assets/uzscribe-logo.jpg" alt="" aria-hidden="true"><div><h1>UzScribe</h1><p class="subtitle">by Meyor Vision</p></div></header>
+    <nav class="mode-tabs" aria-label="Ish turi"><button id="captionsTab" type="button" aria-selected="true">Subtitr</button><button id="podcastTab" type="button" aria-selected="false">Podcast</button></nav>
+    <div id="captionPage">
     <section class="section" aria-labelledby="sourceTitle">
       <div class="section-head"><h2 class="section-title" id="sourceTitle">Faol timeline</h2><button id="refresh" class="refresh" type="button">Yangilash</button></div>
       <div id="timeline" class="timeline" aria-live="polite">Timeline tekshirilmoqda…</div>
@@ -122,7 +125,7 @@
     <details class="section" id="advanced">
       <summary>Qo‘shimcha sozlamalar</summary>
       <div class="details-body">
-        <label class="field" for="model"><span class="field-label">Nutq modeli</span><select id="model"><option value="large-v3">Whisper large-v3</option><option value="medium">Whisper medium</option><option value="small">Whisper small</option></select></label>
+        <label class="field" for="model"><span class="field-label">Nutq modeli</span><select id="model"><option value="large-v3">UzScribe Global</option></select></label>
         <span id="modelHint" class="field-hint">Model qurilmada ishlaydi.</span>
         <div class="checks"><label><input id="literary" type="checkbox" checked> Adabiy yozuv</label></div>
         <p class="hint">So‘zlashuvdagi ayrim shakllarni to‘g‘rilaydi; matnni natija oynasida tekshiring.</p>
@@ -174,7 +177,39 @@
       <div id="workActions" hidden><button id="cancel" class="secondary" type="button">Bekor qilish</button></div>
       <div id="reviewActions" class="action-row" hidden><button id="discardReview" class="secondary" type="button">SRT saqlansin</button><button id="applyReview" class="run" type="button">Timeline’ga qo‘shish</button></div>
     </div>
+    </div>
+    <div id="podcastPage" hidden>
+      <section class="section">
+        <div class="section-head"><h2 class="section-title">Podcast · Premiere Pro</h2><button id="podRefresh" class="refresh" type="button">Yangilash</button></div>
+        <p id="podTimeline" class="timeline" aria-live="polite">Timeline’ni yangilang.</p>
+        <label class="field"><span class="field-label">Qaysi qism?</span><select id="podRange"><option value="auto">In/Out bo‘lsa shu, aks holda to‘liq</option><option value="full">Butun timeline</option><option value="inout">Faqat In/Out</option></select></label>
+        <label class="field"><span class="field-label">Montaj</span><select id="podMode"><option value="cameras">Kamera almashish + pauzalar</option><option value="silence">Faqat pauzalarni kesish</option></select></label>
+        <p class="hint">Kameralar va mikrofonlar timeline’da sinxron bo‘lsin. Har odamning mikrofoni alohida audio trekda. Umumiy audio bilan pauza rejimidan foydalaning. Til avtomatik nutq faolligi orqali ishlanadi.</p>
+      </section>
+      <section class="section">
+        <div class="section-head"><h2 class="section-title">Mikrofon → kamera</h2><button id="podAdd" class="refresh" type="button">+ Odam</button></div>
+        <div id="podMappings"></div>
+        <label class="field"><span class="field-label">Umumiy kamera</span><select id="podWide"><option value="">Yo‘q</option></select></label>
+      </section>
+      <details class="section"><summary>Montaj sozlamalari</summary><div class="details-body">
+        <div class="grid">
+          <label class="field"><span class="field-label">Eng qisqa kadr · s</span><input id="podShot" type="number" min="0.5" max="30" step="0.1" value="2.5"></label>
+          <label class="field"><span class="field-label">Nutqqa javob · s</span><input id="podReaction" type="number" min="0.1" max="3" step="0.05" value="0.35"></label>
+          <label class="field"><span class="field-label">Pauza chegarasi · s</span><input id="podSilence" type="number" min="0.3" max="10" step="0.1" value="1"></label>
+          <label class="field"><span class="field-label">Pauza yonida saqlash · s</span><input id="podPadding" type="number" min="0" max="1" step="0.05" value="0.2"></label>
+          <label class="field"><span class="field-label">Ovoz chegarasi · dB</span><input id="podThreshold" type="number" min="-80" max="-10" value="-42"></label>
+          <label class="field"><span class="field-label">Mikrofon farqi · dB</span><input id="podMargin" type="number" min="0" max="20" step="0.5" value="3"></label>
+        </div>
+        <label class="field"><span class="field-label">Umumiy kadr oralig‘i · s (0 = o‘chirilgan)</span><input id="podWideEvery" type="number" min="0" max="300" value="30"></label>
+        <div class="checks" style="margin-top:12px"><label><input id="podRemove" type="checkbox" checked>Pauzalarni kesish</label></div>
+        <label class="field"><span class="field-label">Natija formati</span><select id="podProfile"><option value="original">Asl o‘lcham</option><option value="vertical">9:16 · 1080 × 1920</option><option value="portrait">4:5 · 1080 × 1350</option><option value="square">1:1 · 1080 × 1080</option><option value="landscape">16:9 · 1920 × 1080</option></select></label>
+        <p class="hint">Yangi format markazdan crop qiladi; yuzni kuzatmaydi. Nested/multicam va tezligi o‘zgargan kliplarni avval flatten qiling. Transitionlarni montajdan keyin qo‘shing.</p>
+      </div></details>
+      <section id="podReview" class="section" hidden><h2 class="section-title">Montaj tayyor</h2><p id="podSummary"></p><div id="podCuts" class="cue-list"></div><p id="podFile" class="hint"></p></section>
+      <div class="footer"><p id="podStatus" role="status" aria-live="polite"></p><button id="podRun" class="run" type="button">Montaj tayyorlash</button><button id="podCancel" class="secondary" type="button" hidden>Bekor qilish</button><button id="podImport" class="run" type="button" hidden>Yangi sequence qo‘shish</button><button id="podReset" class="secondary" type="button" hidden>Yangi montaj</button><p class="hint">Natija alohida sequence bo‘ladi. Importdan keyin kesishlarni tekshiring.</p></div>
+    </div>
   </main>
   <script src="panel.js"></script>
+  <script src="podcast-panel.js"></script>
 </body>
 </html>
