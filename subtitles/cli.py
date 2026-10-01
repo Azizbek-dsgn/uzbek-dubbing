@@ -178,7 +178,7 @@ def apply_replacements(words: list[Word], rules: list[str]) -> list[Word]:
     return result
 
 
-def transcribe(path: Path, model_name: str, device: str, progress=None) -> list[Word]:
+def transcribe(path: Path, model_name: str, device: str, progress=None, *, preserve_repeats=False) -> list[Word]:
     if model_name == "zafar-fastconformer":
         if __package__:
             from .fastconformer import transcribe as fastconformer_transcribe
@@ -222,7 +222,8 @@ def transcribe(path: Path, model_name: str, device: str, progress=None) -> list[
                          compute_type="float16" if device == "cuda" else "int8")
     segments, info = model.transcribe(
         str(path), language="uz", task="transcribe", beam_size=5,
-        temperature=0, repetition_penalty=1.1, no_repeat_ngram_size=4,
+        temperature=0, repetition_penalty=1.0 if preserve_repeats else 1.1,
+        no_repeat_ngram_size=0 if preserve_repeats else 4,
         vad_filter=True,
         vad_parameters={"min_silence_duration_ms": 500, "speech_pad_ms": 300, "threshold": 0.35},
         word_timestamps=True, condition_on_previous_text=False,

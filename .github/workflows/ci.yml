@@ -32,6 +32,7 @@ jobs:
           node tests/test_after_effects_composer.js
           node tests/test_podcast_host.js
           node tests/test_podcast_panel.js
+          node tests/test_reels_panel.js
       - name: Windows installer syntax
         if: runner.os == 'Windows'
         shell: pwsh
@@ -81,6 +82,7 @@ jobs:
           import subprocess
           python = install_online._python_for(root / 'runtime', sys.platform)
           subprocess.run([str(python), 'tools/verify_podcast.py'], check=True)
+          subprocess.run([str(python), 'tools/verify_reels.py', '--runtime', str(root / 'runtime')], check=True)
           PY
       - name: Windows failed uv download leaves PowerShell open and writes a log
         if: runner.os == 'Windows'

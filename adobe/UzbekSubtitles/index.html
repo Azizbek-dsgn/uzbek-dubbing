@@ -101,13 +101,14 @@
     .cue-item .time{color:#c9c9d1}
     #status{color:#d1d1d9}
     @media(max-width:310px){.app{padding:18px 10px 0}.section{padding:12px;border-radius:16px}.footer{margin:0 -10px;padding:10px}}
+    #reelStatus{white-space:pre-wrap;overflow-wrap:anywhere;font-size:11px}.retake{padding:10px 0;border-bottom:1px solid #38383f}.retake p{margin:5px 0}.retake label{display:flex;gap:7px;align-items:center}
     .mode-tabs{display:flex;gap:5px;padding:5px;background:#1c1c20;border-radius:13px;margin-bottom:16px}.mode-tabs button{flex:1;border:0;border-radius:9px;padding:9px;background:transparent;color:#a2a2aa}.mode-tabs button[aria-selected=true]{background:#38383f;color:#fff}.pod-row{display:grid;grid-template-columns:1fr 1fr 30px;gap:6px;margin-top:9px}.pod-row button{border:0;background:transparent;color:#aaa}.pod-row .field-label{grid-column:1/-1}#podStatus{white-space:pre-wrap;overflow-wrap:anywhere;font-size:11px}#podStatus:empty{display:none}
   </style>
 </head>
 <body>
   <main class="app">
     <header class="header"><img class="mark" src="assets/uzscribe-logo.jpg" alt="" aria-hidden="true"><div><h1>UzScribe</h1><p class="subtitle">by Meyor Vision</p></div></header>
-    <nav class="mode-tabs" aria-label="Ish turi"><button id="captionsTab" type="button" aria-selected="true">Subtitr</button><button id="podcastTab" type="button" aria-selected="false">Podcast</button></nav>
+    <nav class="mode-tabs" aria-label="Ish turi"><button id="captionsTab" type="button" aria-selected="true">Subtitr</button><button id="podcastTab" type="button" aria-selected="false">Podcast</button><button id="reelsTab" type="button" aria-selected="false">Reels</button></nav>
     <div id="captionPage">
     <section class="section" aria-labelledby="sourceTitle">
       <div class="section-head"><h2 class="section-title" id="sourceTitle">Faol timeline</h2><button id="refresh" class="refresh" type="button">Yangilash</button></div>
@@ -208,8 +209,30 @@
       <section id="podReview" class="section" hidden><h2 class="section-title">Montaj tayyor</h2><p id="podSummary"></p><div id="podCuts" class="cue-list"></div><p id="podFile" class="hint"></p></section>
       <div class="footer"><p id="podStatus" role="status" aria-live="polite"></p><button id="podRun" class="run" type="button">Montaj tayyorlash</button><button id="podCancel" class="secondary" type="button" hidden>Bekor qilish</button><button id="podImport" class="run" type="button" hidden>Yangi sequence qo‘shish</button><button id="podReset" class="secondary" type="button" hidden>Yangi montaj</button><p class="hint">Natija alohida sequence bo‘ladi. Importdan keyin kesishlarni tekshiring.</p></div>
     </div>
+    <div id="reelsPage" hidden>
+      <section class="section">
+        <div class="section-head"><h2 class="section-title">Reels · Premiere Pro</h2><button id="reelRefresh" class="refresh" type="button">Yangilash</button></div>
+        <p id="reelTimeline" class="timeline" aria-live="polite">Timeline tekshirilmoqda…</p>
+        <label class="field"><span class="field-label">Nutq audiosi</span><select id="reelAudio"><option value="0">Audio 1</option></select></label>
+        <p class="hint">Bitta tugma: pauzalarni qisqartirish va takroriy dubllarni tozalash. Natija alohida sequence; asl montaj saqlanadi.</p>
+      </section>
+      <details class="section"><summary>Tozalash sozlamalari</summary><div class="details-body">
+        <label class="field"><span class="field-label">Qaysi qism?</span><select id="reelRange"><option value="auto">In/Out bo‘lsa shu, aks holda to‘liq</option><option value="full">Butun timeline</option><option value="inout">Faqat In/Out</option></select></label>
+        <label class="field"><span class="field-label">O‘zbekcha nutq modeli</span><select id="reelModel"></select></label>
+        <label class="field"><span class="field-label">Takrorni topish</span><select id="reelStrength"><option value="safe">Ehtiyotkor · aniq takrorlar</option><option value="balanced">Yumshoq farqli dubllar ham</option></select></label>
+        <label class="field"><span class="field-label">Qaysi dubl qolsin?</span><select id="reelKeep"><option value="complete">Eng to‘liq, teng bo‘lsa oxirgisi</option><option value="last">Oxirgi dubl</option></select></label>
+        <div class="grid"><label class="field"><span class="field-label">Pauza chegarasi · s</span><input id="reelSilence" type="number" min="0.3" max="10" step="0.1" value="0.7"></label><label class="field"><span class="field-label">Kesish yonida saqlash · s</span><input id="reelPadding" type="number" min="0.08" max="0.5" step="0.02" value="0.18"></label><label class="field"><span class="field-label">Gap pauzasi · s</span><input id="reelGap" type="number" min="0.2" max="3" step="0.05" value="0.65"></label><label class="field"><span class="field-label">Dubl qidirish oralig‘i · s</span><input id="reelWindow" type="number" min="3" max="120" value="45"></label></div>
+        <label class="field"><span class="field-label">Ovoz chegarasi · dB</span><input id="reelThreshold" type="number" min="-80" max="-10" value="-42"></label>
+        <div class="checks" style="margin-top:12px"><label><input id="reelRetakes" type="checkbox" checked>Takroriy dubllarni tozalash</label><label><input id="reelRemoveSilence" type="checkbox" checked>Pauzalarni qisqartirish</label><label><input id="reelPreviewFirst" type="checkbox">Avval natijani tekshirish</label></div>
+        <label class="field"><span class="field-label">Kadr formati</span><select id="reelProfile"><option value="original">Asl o‘lcham</option><option value="vertical">9:16 · markazdan crop</option><option value="portrait">4:5 · markazdan crop</option><option value="square">1:1 · markazdan crop</option></select></label>
+        <p class="hint">Til: o‘zbekcha. O‘xshash mazmundagi boshqa gaplar avtomatik kesilmaydi. Nutq tanish xato qilishi mumkin; kerakli dublni natijada saqlab qolish mumkin. Nested/multicam’ni flatten qiling; montajni transition, effekt va subtitrlardan oldin bajaring.</p>
+      </div></details>
+      <section id="reelReview" class="section" hidden><h2 class="section-title">Tozalash natijasi</h2><p id="reelSummary"></p><div id="reelTakes"></div><button id="reelRebuild" class="secondary" type="button">Tanlov bo‘yicha qayta tayyorlash</button><p id="reelFile" class="hint"></p></section>
+      <div class="footer"><p id="reelStatus" role="status" aria-live="polite"></p><button id="reelRun" class="run" type="button">Reels’ni tozalash</button><button id="reelCancel" class="secondary" type="button" hidden>Bekor qilish</button><button id="reelImport" class="secondary" type="button" hidden>Yangi sequence qo‘shish</button><p class="hint">Yaratilgan sequence’ni Project panelidan oching. Asl video va sequence o‘zgarmaydi.</p></div>
+    </div>
   </main>
   <script src="panel.js"></script>
   <script src="podcast-panel.js"></script>
+  <script src="reels-panel.js"></script>
 </body>
 </html>

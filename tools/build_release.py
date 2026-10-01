@@ -11,9 +11,9 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[1]
-PANEL = ("CSXS/manifest.xml", "index.html", "panel.js", "podcast-panel.js", "assets/uzscribe-logo.jpg",
+PANEL = ("CSXS/manifest.xml", "index.html", "panel.js", "podcast-panel.js", "reels-panel.js", "assets/uzscribe-logo.jpg",
          "host/editor.jsx", "host/after_effects.jsx")
-RUNTIME = ("__init__.py", "podcast.py", "cli.py", "batch.py", "sentences.py", "gigaam.py",
+RUNTIME = ("__init__.py", "podcast.py", "reels.py", "cli.py", "batch.py", "sentences.py", "gigaam.py",
            "fastconformer.py", "requirements.txt", "requirements-release.txt",
            "requirements-gigaam.txt", "requirements-fastconformer.txt",
            "requirements-intel-mac.txt",
@@ -39,6 +39,7 @@ def build(model_dir: Path, output: Path, signed_zxp: Path | None = None) -> None
         "APACHE-2.0.txt": ROOT / "APACHE-2.0.txt",
         "WHISPER-LICENSE.txt": ROOT / "WHISPER-LICENSE.txt",
         "docs/PODCAST-RESEARCH.md": ROOT / "docs/PODCAST-RESEARCH.md",
+        "docs/REELS-RESEARCH.md": ROOT / "docs/REELS-RESEARCH.md",
         "Install-mac.command": ROOT / "Install-mac.command",
         "Install-Windows.ps1": ROOT / "Install-Windows.ps1",
         "bootstrap-mac.sh": ROOT / "bootstrap-mac.sh",

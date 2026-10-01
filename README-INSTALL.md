@@ -79,3 +79,14 @@ Hozirgi podcast integratsiyasi **Premiere Pro uchun beta**; After Effects’da s
 Bular paneldagi qulay nomlar; modellarni UzScribe o‘qitgan degan da’vo yo‘q. Small/tiny va tajriba variantlari tanlovdan chiqarildi. Yangilash muvaffaqiyatli tugagach, pluginning `models/navai-small`, `models/small`, `models/tiny` papkalari tozalanadi. Foydalanuvchining boshqa keshlariga tegilmaydi. Standart transkripsiya tili o‘zbekcha. Global model va GigaAM jami taxminan 5.4 GB; Python muhiti bilan kamida 12 GB bo‘sh disk joyi tavsiya etiladi.
 
 Podcast avtomatik sinovlari: sintetik mikrofonlar bilan FFmpeg tahlili, haqiqiy Silero VAD, kamera tanlash, pauzani kesish, FPS va audio/video sinxronligi, panel workflow hamda host mock. Haqiqiy Premiere Pro’da 2020+ versiyalarning barchasi hali tekshirilmagan.
+
+
+## Reels — takroriy dubllarni tozalash
+
+Premiere’da **Reels** bo‘limini oching, nutq audio trekini tanlang va **Reels’ni tozalash** tugmasini bosing. Pauzalar qisqaradi, yaqin oraliqda qayta aytilgan aniq gaplar va yarim qolgan boshlanishlar topiladi. Eng to‘liq dubl, teng bo‘lsa oxirgisi qoladi. Natija avtomatik ravishda alohida **UzScribe Reels** sequence sifatida import qilinadi; uni Project panelidan oching. Asl sequence va media o‘zgarmaydi.
+
+Qo‘shimcha sozlamalarda model, In/Out/full, dubl tanlovi, pauza, gap chegarasi va kadr formati bor. **Avval natijani tekshirish** avtomatik importni o‘chiradi. Natijadagi **Bu dubl saqlansin** belgisini yoqib, **Tanlov bo‘yicha qayta tayyorlash** bilan kerakli dubllarni qaytaring. Transkripsiya keshga saqlanadi; audio/model/oraliq o‘zgarmasa qayta ASR bajarilmaydi. Import xatosida natija saqlanib, qayta qo‘shish mumkin.
+
+Ehtiyotkor rejim aniq takrorlar uchun; ikkinchi rejim faqat kichik yordamchi so‘z farqlariga ruxsat beradi. Son, inkor, mazmunli so‘z yoki ishonch darajasi pastligi gapni avtomatik o‘chirishdan saqlaydi. Qasddan qaytarilgan gap ham dublga o‘xshashi mumkin — tayyor montajni tekshiring. Har qanday parafrazani semantik tushunib kesadigan LLM tizimi qo‘shilmagan. Hech qanday API kaliti/obuna talab qilinmaydi; o‘rnatilgandan keyin offline ishlaydi.
+
+Reels hozir Premiere uchun beta. After Effects’da captions ishlaydi. Nested/multicam’ni flatten qiling, audio/video sinxron bo‘lsin, transition/effekt/subtitrlarni keyin qo‘shing. 9:16 tanlovi markazdan crop qiladi. Tahlil timeline mixer effektlaridan oldingi manba audio kanalidan olinadi. Bir nechta video/audio treklar birga siljiydi. [Tadqiqot va tekshiruvlar](docs/REELS-RESEARCH.md).

@@ -6,6 +6,8 @@ Premiere Pro va After Effects uchun lokal CEP panel. U faol sequence yoki kompoz
 
 **Terminaldan o‘rnatish:** macOS Terminal, Windows PowerShell yoki Windows CMD uchun [README-INSTALL.md](README-INSTALL.md)dagi tegishli bitta buyruq kodni, kerak bo‘lsa Python’ni, Whisper large-v3 va GigaAM Uzbek 600M modellarini o‘rnatadi. Adobe dasturlarining o‘zi oldindan o‘rnatilgan bo‘lishi kerak.
 
+**Reels montaji:** pauza va qayta yozilgan dubllarni bitta tugmada tozalash, alohida sequence va dubllarni qaytarish. [Yo‘riqnoma](README-INSTALL.md#reels--takroriy-dubllarni-tozalash), [tadqiqot](docs/REELS-RESEARCH.md).
+
 ## Ishlatish
 
 1. Premiere Pro’da sequence’ni yoki After Effects’da kompozitsiyani oching.
