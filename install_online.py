@@ -25,15 +25,18 @@ CONVERTER_DEPENDENCIES = (
     "huggingface_hub>=0.34,<2",
 )
 CONVERT = r"""
+import faulthandler
 import os
 import shutil
 import sys
 from pathlib import Path
+faulthandler.enable()
 
 repo, revision, temporary = sys.argv[1:]
 os.environ.setdefault("HF_HOME", str(Path(temporary) / "hf-cache"))
 os.environ.setdefault("HF_HUB_DISABLE_XET", "1")
 from huggingface_hub import snapshot_download
+import torch
 from ctranslate2.converters import TransformersConverter
 from transformers import AutoTokenizer
 
@@ -45,6 +48,7 @@ if not (source / "model.safetensors").is_file():
     raise RuntimeError("NavAI model vaznlari yuklanmadi")
 converter = TransformersConverter(str(source),
                                   copy_files=["preprocessor_config.json"])
+print("NavAI vaznlari CTranslate2 formatiga o'tkazilmoqda…", flush=True)
 converter.convert(str(output), quantization="int8", force=True)
 AutoTokenizer.from_pretrained(str(source), use_fast=True).save_pretrained(str(output))
 for name in ("LICENSE", "NOTICE"):
@@ -90,14 +94,17 @@ if not valid_checkpoint():
 """
 
 VERIFY_RUNTIME = r"""
+import faulthandler
 import gc
 import sys
 import tempfile
 import wave
 from pathlib import Path
+faulthandler.enable()
 
 runtime = Path(sys.argv[1])
 sys.path.insert(0, str(runtime))
+import torch
 from faster_whisper import WhisperModel
 model = WhisperModel(str(runtime / "models" / "navai-small"),
                      device="cpu", compute_type="int8", local_files_only=True)
