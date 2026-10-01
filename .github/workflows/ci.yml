@@ -2,6 +2,7 @@ name: macOS and Windows checks
 
 on:
   push:
+    branches: [main]
   pull_request:
 
 jobs:
@@ -27,3 +28,11 @@ jobs:
         run: node tests/test_panel_workflow.js --windows
       - name: After Effects host script
         run: node tests/test_after_effects_composer.js
+      - name: Windows installer syntax
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $tokens = $null
+          $errors = $null
+          [System.Management.Automation.Language.Parser]::ParseFile((Resolve-Path .\Install-Windows.ps1).Path, [ref]$tokens, [ref]$errors) | Out-Null
+          if ($errors.Count -gt 0) { $errors | ForEach-Object { Write-Error $_ }; exit 1 }

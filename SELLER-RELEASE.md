@@ -7,6 +7,7 @@ The current ZIP is a **beta** installer for macOS and Windows. Before taking pay
 3. Test clean macOS Apple Silicon, macOS Intel and Windows x64 machines with the supported Premiere Pro and After Effects versions. Verify panel loading, full and In/Out audio export, captions import, After Effects text layers, the installer, uninstall/reinstall and a media file with Uzbek speech. Windows execution has not yet been tested in this workspace.
 4. Confirm the NavAI Apache-2.0 notice is included and review third-party training-data attribution. Do not include Rubai weights until its license is clarified. Check GigaAM training-data provenance before bundling its weights commercially.
 5. Prepare actual purchase license, refund/support policy, privacy page and payment delivery in the chosen sales channel. This package contains no license-key enforcement or payment integration.
+6. Plan a UXP migration. Adobe says CEP will be removed from its flagship desktop apps from December 2029; Premiere already supports UXP, while After Effects UXP public beta is planned for November 2026. Explain the supported Adobe versions and update policy to buyers.
 
 The release builder accepts `--signed-zxp path/to/UzbekSubtitles.zxp` once the panel is signed. Build the ZIP with:
 
