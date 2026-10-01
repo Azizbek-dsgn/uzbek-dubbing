@@ -55,15 +55,19 @@ def _python_for(runtime: Path, system: str) -> Path:
     return runtime / ".venv" / ("Scripts/python.exe" if system == "win32" else "bin/python")
 
 
-def _prepare_environment(runtime: Path, system: str, *, convert: bool) -> Path:
+def _prepare_environment(runtime: Path, system: str, *, convert: bool,
+                         uv: Path | None = None) -> Path:
     python = _python_for(runtime, system)
     if not python.is_file():
         venv.EnvBuilder(with_pip=True).create(runtime / ".venv")
-    subprocess.run([str(python), "-m", "pip", "install", "--disable-pip-version-check",
-                    "-r", str(ROOT / "subtitles" / "requirements-release.txt")], check=True)
+    if uv:
+        base_command = [str(uv), "pip", "install", "--python", str(python)]
+    else:
+        base_command = [str(python), "-m", "pip", "install", "--disable-pip-version-check"]
+    subprocess.run([*base_command, "-r",
+                    str(ROOT / "subtitles" / "requirements-release.txt")], check=True)
     if convert:
-        subprocess.run([str(python), "-m", "pip", "install", "--disable-pip-version-check",
-                        *CONVERTER_DEPENDENCIES], check=True)
+        subprocess.run([*base_command, *CONVERTER_DEPENDENCIES], check=True)
     return python
 
 
@@ -78,7 +82,8 @@ def main() -> int:
         runtime, _ = destinations(sys.platform, Path.home(), dict(os.environ))
         existing = runtime / "models" / "navai-small"
         model = args.model_dir or (existing if (existing / "model.bin").is_file() else None)
-        python = _prepare_environment(runtime, sys.platform, convert=model is None)
+        uv = Path(os.environ["UZSCRIBE_UV_BIN"]) if os.environ.get("UZSCRIBE_UV_BIN") else None
+        python = _prepare_environment(runtime, sys.platform, convert=model is None, uv=uv)
         if model is None:
             with tempfile.TemporaryDirectory(prefix="uzscribe-model-") as temporary:
                 print("NavAI o‘zbekcha modeli yuklanmoqda va tayyorlanmoqda…", flush=True)

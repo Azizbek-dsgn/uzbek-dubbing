@@ -2,6 +2,7 @@ $ErrorActionPreference = 'Stop'
 $sourceUrl = 'https://codeload.github.com/Azizbek-dsgn/uzbek-dubbing/zip/refs/heads/feat/uzbek-subtitles-adobe'
 $work = Join-Path ([IO.Path]::GetTempPath()) ('uzscribe-' + [guid]::NewGuid().ToString('N'))
 $previousUvInstall = $env:UV_UNMANAGED_INSTALL
+$previousUzscribeUv = $env:UZSCRIBE_UV_BIN
 New-Item -ItemType Directory -Path $work | Out-Null
 try {
   $archive = Join-Path $work 'source.zip'
@@ -49,11 +50,13 @@ try {
     & $uv python install 3.12
     if ($LASTEXITCODE -ne 0) { throw 'Python 3.12 yuklanmadi.' }
     $python = (& $uv python find 3.12).Trim()
+    $env:UZSCRIBE_UV_BIN = $uv
   }
 
   & $python (Join-Path $source.FullName 'install_online.py')
   if ($LASTEXITCODE -ne 0) { throw 'UzScribe install failed.' }
 } finally {
   $env:UV_UNMANAGED_INSTALL = $previousUvInstall
+  $env:UZSCRIBE_UV_BIN = $previousUzscribeUv
   Remove-Item -LiteralPath $work -Recurse -Force -ErrorAction SilentlyContinue
 }

@@ -7,7 +7,7 @@ from pathlib import Path
 from unittest.mock import patch
 
 from install import destinations, install
-from install_online import CONVERT
+from install_online import CONVERT, _prepare_environment
 
 
 class InstallerTests(unittest.TestCase):
@@ -51,6 +51,21 @@ class InstallerTests(unittest.TestCase):
 
     def test_online_converter_script_is_valid_python(self):
         ast.parse(CONVERT)
+
+    def test_uv_installs_into_windows_runtime_when_bootstrap_provides_it(self):
+        with tempfile.TemporaryDirectory() as temp:
+            runtime = Path(temp)
+            python = runtime / '.venv/Scripts/python.exe'
+            python.parent.mkdir(parents=True)
+            python.touch()
+            with patch('install_online.subprocess.run') as run:
+                result = _prepare_environment(runtime, 'win32', convert=True,
+                                              uv=Path('C:/uv/uv.exe'))
+            self.assertEqual(result, python)
+            self.assertEqual(run.call_count, 2)
+            for call in run.call_args_list:
+                self.assertEqual(call.args[0][:5],
+                                 ['C:/uv/uv.exe', 'pip', 'install', '--python', str(python)])
 
     def test_manifest_targets_adobe_2020_hosts_and_cep9(self):
         manifest = ET.parse(Path(__file__).resolve().parents[1] /

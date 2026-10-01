@@ -51,6 +51,16 @@ jobs:
           . ./bootstrap-windows.ps1
           cmd.exe /d /s /c 'powershell -NoProfile -ExecutionPolicy Bypass -Command "Get-Content -Raw bootstrap-windows.ps1 | Invoke-Expression"'
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Windows uv package install smoke test
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          python -m pip install uv
+          $runtime = Join-Path $env:RUNNER_TEMP 'uzscribe-uv-smoke'
+          python -m venv $runtime
+          $python = Join-Path $runtime 'Scripts/python.exe'
+          uv pip install --python $python packaging
+          & $python -c 'import packaging; print(packaging.__version__)'
       - name: macOS bootstrap archive smoke test
         if: runner.os == 'macOS'
         run: |
