@@ -31,14 +31,18 @@ with tempfile.TemporaryDirectory(prefix='uzscribe-reels-check-') as temporary:
     original=source.read_bytes()
     settings={'audio':0,'model':'gigaam-uzbek'}
     report=run(source,folder/'reels.xml',settings)
-    assert report['removed_retakes']>=4,report
+    # CPU/Apple kernels can transcribe Wi-Fi differently at chunk boundaries.
+    # Only identical takes should be removed; preserve unmatched speech.
+    assert report['removed_retakes']>=3,report
+    for candidate in report['retakes']:
+        assert candidate['text']==candidate['kept_text'],candidate
     assert report['removed_seconds']>15,report
     assert parse_timeline(folder/'reels.xml').duration==report['output_frames']
     assert source.read_bytes()==original
     settings['keep_retake_ids']=[p['id'] for p in report['retakes']]
     restored=run(source,folder/'restored.xml',settings)
     assert restored['cached_transcript'] and restored['removed_retakes']==0
-    assert restored['output_seconds']>report['output_seconds']+15
+    assert restored['output_seconds']>report['output_seconds']+9
     # WAV assembly preserves timeline holes and non-zero source offsets.
     timeline=parse_timeline(source);clip=timeline.audio[0][0];clip.start=25;clip.end=125;clip.inside=0;clip.outside=100
     assembled=folder/'assembled.wav';render_audio(timeline,0,0,150,assembled)

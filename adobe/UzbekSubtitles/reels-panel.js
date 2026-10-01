@@ -51,7 +51,7 @@
   el('reelRun').addEventListener('click',function(){if(busy || document.uzscribeBusy)return;save();cancelled=false;result=null;snapshot=null;choices=[];el('reelReview').hidden=true;el('reelImport').hidden=true;phase(true);status('Timeline tekshirilmoqda…');
     refresh(function(error,data){if(error){fail(error.message);return;}if(cancelled){fail('Bekor qilindi.');return;}
       var directory=path.join(bridge.root,'exports','reels'),source;
-      try{fs.mkdirSync(directory,{recursive:true});source=path.join(directory,String(Date.now())+'-source.xml');}catch(e){fail(e.message);return;}
+      try{bridge.mkdir(directory);source=path.join(directory,String(Date.now())+'-source.xml');}catch(e){fail(e.message);return;}
       bridge.host('uzPodcastExport('+[source,data.name,data.identity].map(JSON.stringify).join(',')+')',function(err){if(err){fail(err.message);return;}if(cancelled){fail('Bekor qilindi.');return;}snapshot={source:source,info:data};analyze(snapshot);});
     });
   });

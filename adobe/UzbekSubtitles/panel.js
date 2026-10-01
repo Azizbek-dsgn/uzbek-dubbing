@@ -225,7 +225,17 @@
       } catch (e) { callback(new Error('Adobe javobi o‘qilmadi: ' + raw)); }
     });
   }
-  document.uzscribe = {host:jsonCall, root:root, python:python};
+  function ensureDirectory(directory) {
+    if (fs.existsSync(directory)) {
+      if (!fs.statSync(directory).isDirectory()) throw new Error('Papka o‘rnida fayl bor: ' + directory);
+      return;
+    }
+    var parent = path.dirname(directory);
+    if (parent !== directory) ensureDirectory(parent);
+    try { fs.mkdirSync(directory); }
+    catch (error) { if (!fs.existsSync(directory)) throw error; }
+  }
+  document.uzscribe = {host:jsonCall, root:root, python:python, mkdir:ensureDirectory};
   function getInfo(callback, selectedRange) {
     jsonCall('uzTimelineInfo(' + JSON.stringify(selectedRange || range.value) + ')', callback);
   }
@@ -628,7 +638,7 @@
       var audio = path.join(os.tmpdir(), 'uzbek-subtitles-' + unique + '.wav');
       runState.audio = audio;
       var exportDir = path.join(root, 'exports');
-      try { fs.mkdirSync(exportDir, {recursive: true}); }
+      try { ensureDirectory(exportDir); }
       catch (e) { finish('SRT papkasi yaratilmadi: ' + e.message); return; }
       var safeName = info.name.replace(/[^a-zA-Z0-9_-]+/g, '_').slice(0, 55) || 'timeline';
       var srt = path.join(exportDir, safeName + '-' + unique + '.uz.srt');
@@ -657,7 +667,7 @@
       show('Media papkasini to‘g‘ri kiriting.'); return;
     }
     var output = path.join(root, 'exports', 'batch');
-    try { fs.mkdirSync(output, {recursive:true}); }
+    try { ensureDirectory(output); }
     catch (e) { show('Natija papkasi yaratilmadi: ' + e.message); return; }
     var args = [path.join(root, 'subtitles', 'batch.py'), '--input-dir', input,
       '--output-dir', output, '--model', model.value, '--script', scriptChoice.value,

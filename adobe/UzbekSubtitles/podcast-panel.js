@@ -83,7 +83,7 @@
       // refresh rebuilt the row controls while working; lock them again.
       phase(true);
       var outputDir=path.join(bridge.root,'exports','podcast'), source, output, config;
-      try {fs.mkdirSync(outputDir,{recursive:true});var key=String(Date.now());source=path.join(outputDir,key+'-source.xml');output=path.join(outputDir,key+'-edit.xml');config=path.join(outputDir,key+'-settings.json');
+      try {bridge.mkdir(outputDir);var key=String(Date.now());source=path.join(outputDir,key+'-source.xml');output=path.join(outputDir,key+'-edit.xml');config=path.join(outputDir,key+'-settings.json');
         var settings={speakers:rows.map(function(r,i){return {audio:Number(r.audio.value),video:Number(r.video.value),name:'Odam '+(i+1)};}),wide_track:el('podWide').value===''?null:Number(el('podWide').value),start:data.start,end:data.start+data.duration,switch_cameras:el('podMode').value==='cameras',remove_silence:el('podRemove').checked,profile:el('podProfile').value};
         [['minimum_shot','podShot'],['reaction','podReaction'],['silence','podSilence'],['padding','podPadding'],['threshold','podThreshold'],['margin','podMargin'],['wide_every','podWideEvery']].forEach(function(p){settings[p[0]]=Number(el(p[1]).value);});
         fs.writeFileSync(config,JSON.stringify(settings),'utf8');
