@@ -2,11 +2,11 @@
 
 Bu beta paket. macOS’da lokal transkripsiya sinovdan o‘tgan; Windows’da avtomatik kod testlari o‘tgan, lekin Premiere Pro va After Effects ichida jonli import hali tekshirilmagan.
 
-**Talab:** Premiere Pro yoki After Effects, internet (birinchi o‘rnatishda Python paketlari uchun), Python 3.10–3.12, taxminan 1 GB bo‘sh joy. NavAI small modeli ZIP ichida; nutq fayllari kompyuteringizda ishlanadi.
+**Talab:** Premiere Pro yoki After Effects, internet (birinchi o‘rnatishda modellar va Python paketlari uchun), Python 3.10–3.12. Bir buyruqli o‘rnatishda NavAI small va GigaAM Uzbek 600M yuklanadi; GigaAM checkpointining o‘zi taxminan 2.3 GB. Python/PyTorch paketlari va vaqtinchalik fayllar uchun yana bir necha GB bo‘sh joy qoldiring. ZIP paketida NavAI small bor; nutq fayllari kompyuteringizda ishlanadi.
 
 ## GitHub’dan bir buyruq bilan o‘rnatish
 
-Quyidagi buyruqlar Git yoki Python’ni oldindan o‘rnatishni talab qilmaydi. Ular GitHub’dan kodni yuklab, Python 3.12 kerak bo‘lsa [uv](https://docs.astral.sh/uv/getting-started/installation/) orqali o‘rnatadi, NavAI modelini [Hugging Face’dan](https://huggingface.co/navai-uz/whisper-small-uzbek) olib CTranslate2 formatiga o‘giradi va panelni Adobe CEP katalogiga qo‘yadi. Birinchi o‘rnatishda bir necha gigabayt bo‘sh disk joyi va internet kerak; keyingi transkripsiya offline ishlaydi. Adobe Premiere Pro yoki After Effects o‘zi avvaldan o‘rnatilgan bo‘lishi kerak.
+Quyidagi buyruqlar Git yoki Python’ni oldindan o‘rnatishni talab qilmaydi. Ular GitHub’dan kodni yuklab, Python 3.12 kerak bo‘lsa [uv](https://docs.astral.sh/uv/getting-started/installation/) orqali o‘rnatadi, [NavAI](https://huggingface.co/navai-uz/whisper-small-uzbek) va [GigaAM Uzbek](https://huggingface.co/rustam1221/uzbek-asr-gigaam) modellarini yuklaydi hamda panelni Adobe CEP katalogiga qo‘yadi. Birinchi o‘rnatishda bir necha gigabayt bo‘sh disk joyi va internet kerak; keyingi transkripsiya offline ishlaydi. Adobe Premiere Pro yoki After Effects o‘zi avvaldan o‘rnatilgan bo‘lishi kerak.
 
 macOS Terminal:
 
@@ -28,7 +28,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -Command "Invoke-RestMethod 'https
 
 Faqat oynangizga mos **bitta buyruqni** joylang. `bootstrap-windows.ps1` faylining ichidagi `$python`, `Invoke-WebRequest` kabi qatorlarni CMD’ga alohida joylamang; ular PowerShell sintaksisidir.
 
-Yangilash uchun o‘sha buyruqni qayta ishga tushiring; mavjud model qayta yuklanmaydi. Panel imzosiz beta bo‘lgani uchun skript joriy foydalanuvchida Adobe CEP debug rejimini yoqadi. Adobe dasturlarini qayta oching: **Window → Extensions → UzScribe**. Manifest Premiere Pro 2020+ va After Effects 2020+ versiyalariga mo‘ljallangan; har bir yilning Adobe ichidagi jonli integratsiya sinovi hali tugamagan.
+Yangilash uchun o‘sha buyruqni qayta ishga tushiring; mavjud model qayta yuklanmaydi. O‘rnatish uzilib qolsa, shu buyruqni qayta bajaring. Panel imzosiz beta bo‘lgani uchun skript joriy foydalanuvchida Adobe CEP debug rejimini yoqadi. Adobe dasturlarini qayta oching: **Window → Extensions → UzScribe**. Manifest Premiere Pro 2020+ va After Effects 2020+ versiyalariga mo‘ljallangan; har bir yilning Adobe ichidagi jonli integratsiya sinovi hali tugamagan.
 
 ## macOS
 

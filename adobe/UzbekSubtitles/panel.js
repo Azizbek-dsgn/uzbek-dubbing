@@ -87,7 +87,8 @@
       model.value = 'navai-small';
   }
   if (fs.existsSync(path.join(root, 'models', 'gigaam-uzbek', 'checkpoints', 'large_full_600m', 'best.pt')) &&
-      fs.existsSync(path.join(root, 'models', 'gigaam-base-large', 'config.json'))) {
+      fs.existsSync(path.join(root, 'models', 'gigaam-base-large', 'config.json')) &&
+      fs.existsSync(path.join(root, 'models', 'gigaam-base-large', 'modeling_gigaam.py'))) {
     var gigaamOption = document.createElement('option');
     gigaamOption.value = 'gigaam-uzbek';
     gigaamOption.textContent = 'GigaAM Uzbek 600M — suhbat nutqi';
@@ -112,6 +113,7 @@
   var savedFields = {
     range: range, audioTrack: audioTrack, model: model, style: style, lines: lines, words: words,
     chars: chars, duration: duration, pause: pause,
+    literary: document.getElementById('literary'),
     restoreSentences: document.getElementById('restoreSentences'), splitSentences: splitSentences,
     splitCommas: splitCommas, splitPauses: splitPauses, startPad: startPad,
     endPad: endPad, minCue: minCue, glossary: glossary, python: python,
@@ -568,6 +570,7 @@
     }
     if (!splitSentences.checked) args.push('--no-sentence-split');
     if (!savedFields.restoreSentences.checked) args.push('--no-sentence-restore');
+    if (savedFields.literary.checked) args.push('--literary');
     if (splitCommas.checked) args.push('--split-commas');
     if (!splitPauses.checked) args.push('--no-pause-split');
     runState.rules.forEach(function (rule) { args.push('--replace', rule); });
@@ -676,6 +679,7 @@
     if (exportVtt.checked) args.push('--export-vtt');
     if (exportAss.checked) args.push('--export-ass');
     if (captionMode.value === 'word') args.push('--word-mode');
+    if (savedFields.literary.checked) args.push('--literary');
     if (detectSpeakers.checked) {
       args.push('--speakers');
       if (speakerCount.value !== 'auto') args.push('--num-speakers', speakerCount.value);

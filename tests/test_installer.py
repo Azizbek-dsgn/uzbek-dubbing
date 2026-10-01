@@ -7,7 +7,7 @@ from pathlib import Path
 from unittest.mock import patch
 
 from install import destinations, install
-from install_online import CONVERT, _prepare_environment
+from install_online import CONVERT, DOWNLOAD_GIGAAM, _prepare_environment, _install_gigaam
 
 
 class InstallerTests(unittest.TestCase):
@@ -51,6 +51,7 @@ class InstallerTests(unittest.TestCase):
 
     def test_online_converter_script_is_valid_python(self):
         ast.parse(CONVERT)
+        ast.parse(DOWNLOAD_GIGAAM)
 
     def test_uv_installs_into_windows_runtime_when_bootstrap_provides_it(self):
         with tempfile.TemporaryDirectory() as temp:
@@ -67,6 +68,17 @@ class InstallerTests(unittest.TestCase):
                 self.assertEqual(call.args[0][:5],
                                  [str(Path('C:/uv/uv.exe')), 'pip', 'install',
                                   '--python', str(python)])
+
+    def test_gigaam_installer_uses_uv_and_downloads_into_runtime(self):
+        runtime = Path('C:/Users/Test/AppData/Local/UzbekSubtitles')
+        python = runtime / '.venv/Scripts/python.exe'
+        with patch('install_online.subprocess.run') as run:
+            _install_gigaam(runtime, python, Path('C:/uv/uv.exe'))
+        self.assertEqual(run.call_count, 3)
+        self.assertEqual(run.call_args_list[0].args[0][:5],
+                         ['C:/uv/uv.exe', 'pip', 'install', '--python', str(python)])
+        self.assertIn('requirements-gigaam.txt', run.call_args_list[0].args[0][-2])
+        self.assertEqual(run.call_args_list[2].args[0][-1], str(runtime))
 
     def test_manifest_targets_adobe_2020_hosts_and_cep9(self):
         manifest = ET.parse(Path(__file__).resolve().parents[1] /

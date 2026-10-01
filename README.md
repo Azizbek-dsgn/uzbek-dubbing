@@ -4,7 +4,7 @@ Premiere Pro va After Effects uchun lokal CEP panel. U faol sequence yoki kompoz
 
 **Boshqa foydalanuvchilar uchun:** `tools/build_release.py` yordamida NavAI small modeli bilan macOS/Windows beta ZIP yaratiladi. Xaridor ko‘rsatmasi [README-INSTALL.md](README-INSTALL.md), sotuvdan oldingi majburiy tekshiruvlar [SELLER-RELEASE.md](SELLER-RELEASE.md) faylida. Imzolangan ZXP va haqiqiy Windows sinovi tugamaguncha paketni yakuniy sotuv versiyasi deb belgilamang.
 
-**Terminaldan o‘rnatish:** macOS Terminal, Windows PowerShell yoki Windows CMD uchun [README-INSTALL.md](README-INSTALL.md)dagi tegishli bitta buyruq kodni, kerak bo‘lsa Python’ni va NavAI modelini o‘rnatadi. Adobe dasturlarining o‘zi oldindan o‘rnatilgan bo‘lishi kerak.
+**Terminaldan o‘rnatish:** macOS Terminal, Windows PowerShell yoki Windows CMD uchun [README-INSTALL.md](README-INSTALL.md)dagi tegishli bitta buyruq kodni, kerak bo‘lsa Python’ni, NavAI small va GigaAM Uzbek 600M modellarini o‘rnatadi. Adobe dasturlarining o‘zi oldindan o‘rnatilgan bo‘lishi kerak.
 
 ## Ishlatish
 
@@ -20,6 +20,7 @@ Tanlangan sozlamalar panel qayta ochilganda saqlanadi. Batafsil SRT vaqt kodlari
 ## Yangi imkoniyatlar
 
 - **NavAI Uzbek small** mahalliy, yengilroq model sifatida o‘rnatilgan. Tabiiy suhbat uchun GigaAM Uzbek 600M dastlab tanlanadi; boshqa ovozlarda NavAI small va medium’ni sinab ko‘ring. **Ikkinchi model bilan solishtirish** yoqilsa, ikkala natija yaratiladi va tekshirish oynasida farqlari ko‘rsatiladi. Bu ish vaqtini taxminan ikki baravar oshiradi.
+- **Adabiy yozuv** tanlovi keng tarqalgan so‘zlashuv shakllarini (`qivotti` → `qilyapti`, `shunaqa` → `shunday`) so‘z vaqtlarini o‘zgartirmasdan to‘g‘rilaydi. Bu cheklangan qoida to‘plami: butun gapni uslubiy qayta yozmaydi. Boshqa iboralarni natija oynasida yoki atamalar lug‘atida tuzating.
 - **Tekshirish oynasi** audio to‘lqini, subtitrlar ro‘yxati, past ishonchli so‘zlar va modellar kelishmagan joylarni ko‘rsatadi. Bitta subtitrni tanlab, boshqa model bilan faqat shu oralig‘ini qayta tanish mumkin. GigaAM CTC chiqishida ishonch ballari yo‘q; uning uchun ikkinchi model bilan kelishmovchilik belgilanadi.
 - **So‘zlovchilarni ajratish** lokal model bilan ixtiyoriy ishlaydi. So‘zlovchilar sonini avtomatik, 2, 3 yoki 4 ga sozlash, tekshirish oynasida har bir subtitr belgisini qo‘lda tuzatish mumkin. Belgilar JSON va ASS faylida saqlanadi; After Effects’da matn ranglari farqlanadi. Premiere caption track individual ranglarni skript orqali qo‘ymaydi.
 - **So‘zma-so‘z** rejimi har so‘z uchun alohida caption yaratadi. After Effects’da so‘z boshlanishida yengil kattalashish/opacity animatsiyasi qo‘shiladi. Premiere’da har so‘z alohida caption bo‘ladi.

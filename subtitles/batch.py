@@ -24,6 +24,7 @@ def main() -> int:
     parser.add_argument("--export-vtt", action="store_true")
     parser.add_argument("--export-ass", action="store_true")
     parser.add_argument("--word-mode", action="store_true")
+    parser.add_argument("--literary", action="store_true")
     parser.add_argument("--speakers", action="store_true")
     parser.add_argument("--num-speakers", type=int, choices=[2, 3, 4])
     args = parser.parse_args()
@@ -38,7 +39,7 @@ def main() -> int:
         print(f"UZBATCH {index}/{len(files)} {media.name}", flush=True)
         argv = ["--input", str(media), "--output", str(args.output_dir / (media.stem + ".uz.srt")),
                 "--model", args.model, "--script", args.script, "--fps", str(args.fps)]
-        for flag in ("export_vtt", "export_ass", "word_mode", "speakers"):
+        for flag in ("export_vtt", "export_ass", "word_mode", "literary", "speakers"):
             if getattr(args, flag):
                 argv.append("--" + flag.replace("_", "-"))
         if args.num_speakers:

@@ -4,7 +4,7 @@ from types import SimpleNamespace
 from subtitles.cli import (Word, _reliable_segment, apply_replacements,
                            make_cues, to_srt, to_vtt, to_ass, to_cyrillic, cue_speaker)
 from subtitles.gigaam import _chunks
-from subtitles.sentences import restore_sentences
+from subtitles.sentences import restore_sentences, standardize_literary
 
 
 class SubtitleTests(unittest.TestCase):
@@ -139,6 +139,15 @@ class SubtitleTests(unittest.TestCase):
                          [(w.start, w.end, w.confidence) for w in words])
         self.assertEqual([c.text for c in make_cues(fixed)],
                          ["Bugun havo yaxshi.", "Ertaga ishlaymiz."])
+
+    def test_literary_forms_preserve_timing_punctuation_and_unknown_words(self):
+        words = [Word(0, .3, "Qivotti,", .8), Word(.3, .6, "shunaqa", .7),
+                 Word(.6, .9, "turkcha.", .6), Word(.9, 1.2, "OʻZBEKCHA", .9)]
+        fixed = standardize_literary(words)
+        self.assertEqual([w.text for w in fixed],
+                         ["Qilyapti,", "shunday", "turkcha.", "OʻZBEKCHA"])
+        self.assertEqual([(w.start, w.end, w.confidence) for w in fixed],
+                         [(w.start, w.end, w.confidence) for w in words])
 
     def test_corrector_cannot_insert_or_translate_words(self):
         words = [Word(0, .3, "men"), Word(.3, .6, "ozbekcha"), Word(.6, .9, "gapirdim")]

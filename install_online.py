@@ -50,6 +50,28 @@ if not (output / "model.bin").is_file() or not (output / "tokenizer.json").is_fi
     raise RuntimeError("CTranslate2 modeli yaratilmadi")
 """
 
+DOWNLOAD_GIGAAM = r"""
+import sys
+from pathlib import Path
+from huggingface_hub import hf_hub_download
+
+runtime = Path(sys.argv[1])
+base = runtime / "models" / "gigaam-base-large"
+uzbek = runtime / "models" / "gigaam-uzbek"
+for name in ("config.json", "modeling_gigaam.py"):
+    if not (base / name).is_file():
+        hf_hub_download("ai-sage/GigaAM-Multilingual", name,
+                        revision="large_ctc", local_dir=base)
+checkpoint = uzbek / "checkpoints" / "large_full_600m" / "best.pt"
+if not checkpoint.is_file() or checkpoint.stat().st_size < 100_000_000:
+    hf_hub_download("rustam1221/uzbek-asr-gigaam",
+                    "checkpoints/large_full_600m/best.pt", local_dir=uzbek)
+if not all((base / name).is_file() for name in ("config.json", "modeling_gigaam.py")):
+    raise RuntimeError("GigaAM asosiy fayllari yuklanmadi")
+if not checkpoint.is_file() or checkpoint.stat().st_size < 100_000_000:
+    raise RuntimeError("GigaAM Uzbek 600M modeli yuklanmadi")
+"""
+
 
 def _python_for(runtime: Path, system: str) -> Path:
     return runtime / ".venv" / ("Scripts/python.exe" if system == "win32" else "bin/python")
@@ -69,6 +91,19 @@ def _prepare_environment(runtime: Path, system: str, *, convert: bool,
     if convert:
         subprocess.run([*base_command, *CONVERTER_DEPENDENCIES], check=True)
     return python
+
+
+def _install_gigaam(runtime: Path, python: Path, uv: Path | None) -> None:
+    if uv:
+        command = [str(uv), "pip", "install", "--python", str(python)]
+    else:
+        command = [str(python), "-m", "pip", "install", "--disable-pip-version-check"]
+    subprocess.run([*command, "-r", str(ROOT / "subtitles" / "requirements-gigaam.txt"),
+                    "huggingface_hub>=0.34,<2"], check=True)
+    subprocess.run([str(python), "-c", "import torch, torchaudio, hydra, soundfile, transformers, huggingface_hub"],
+                   check=True)
+    print("GigaAM Uzbek 600M yuklanmoqda (taxminan 2.3 GB)…", flush=True)
+    subprocess.run([str(python), "-c", DOWNLOAD_GIGAAM, str(runtime)], check=True)
 
 
 def main() -> int:
@@ -96,6 +131,7 @@ def main() -> int:
             install(ROOT, sys.platform, Path.home(), dict(os.environ),
                     developer=True, skip_dependencies=True, model_source=model)
         subprocess.run([str(python), "-c", "import faster_whisper, imageio_ffmpeg"], check=True)
+        _install_gigaam(runtime, python, uv)
     except (OSError, RuntimeError, subprocess.CalledProcessError) as exc:
         print(f"UzScribe o‘rnatilmadi: {exc}", file=sys.stderr)
         return 1

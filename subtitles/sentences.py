@@ -12,6 +12,35 @@ from typing import Callable, TypeVar
 T = TypeVar("T")
 END = ".!?…"
 PUNCT = ",;:.!?…"
+LITERARY_FORMS = {
+    "qivotti": "qilyapti", "qivossan": "qilyapsan", "qivoman": "qilyapman",
+    "kevotti": "kelyapti", "kevossan": "kelyapsan", "kevoman": "kelyapman",
+    "ketvotti": "ketyapti", "borvotti": "boryapti", "bo'votti": "bo'lyapti",
+    "qanaqa": "qanday", "shunaqa": "shunday", "bunaqa": "bunday",
+    "manga": "menga", "sanga": "senga", "bilmiyman": "bilmayman",
+}
+
+
+def standardize_literary(words: list[T]) -> list[T]:
+    """Normalize common colloquial Uzbek forms without changing word timing or count."""
+    result = []
+    for word in words:
+        match = re.fullmatch(r"([^\wʻʼ‘’']*)([\wʻʼ‘’']+)([^\wʻʼ‘’']*)", word.text)
+        if not match:
+            result.append(word)
+            continue
+        leading, source, trailing = match.groups()
+        normalized = source.casefold().translate(str.maketrans("ʻʼ‘’", "''''"))
+        replacement = LITERARY_FORMS.get(normalized)
+        if replacement:
+            if source.isupper():
+                replacement = replacement.upper()
+            elif source[:1].isupper():
+                replacement = replacement.capitalize()
+            result.append(replace(word, text=leading + replacement + trailing))
+        else:
+            result.append(word)
+    return result
 
 
 def _lexical(token: str) -> str:

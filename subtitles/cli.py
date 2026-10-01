@@ -351,6 +351,8 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--pause", type=float, default=0.65)
     parser.add_argument("--no-sentence-split", action="store_true")
     parser.add_argument("--no-sentence-restore", action="store_true")
+    parser.add_argument("--literary", action="store_true",
+                        help="Keng tarqalgan so‘zlashuv shakllarini adabiy yozuvga yaqinlashtirish")
     parser.add_argument("--split-commas", action="store_true")
     parser.add_argument("--no-pause-split", action="store_true")
     parser.add_argument("--start-pad-ms", type=int, default=0)
@@ -385,14 +387,23 @@ def main(argv: list[str] | None = None) -> int:
                 command.extend(["-ac", "1", "-ar", "16000", str(source)])
                 subprocess.run(command, check=True)
                 offset = args.start_seconds
-            words = apply_replacements(transcribe(source, args.model, args.device, report), args.replace)
+            words = transcribe(source, args.model, args.device, report)
+            if args.literary:
+                if __package__:
+                    from .sentences import standardize_literary
+                else:
+                    from sentences import standardize_literary
+                words = standardize_literary(words)
+            words = apply_replacements(words, args.replace)
             words = [Word(max(offset, w.start + offset),
                           max(offset + 0.01, w.end + offset, w.start + offset + 0.01),
                           w.text, w.confidence) for w in words]
             comparison = None
             if args.compare_model and args.compare_model != args.model:
-                alternative = apply_replacements(
-                    transcribe(source, args.compare_model, args.device, report), args.replace)
+                alternative = transcribe(source, args.compare_model, args.device, report)
+                if args.literary:
+                    alternative = standardize_literary(alternative)
+                alternative = apply_replacements(alternative, args.replace)
                 comparison = [{"start": round(w.start + offset, 3), "end": round(w.end + offset, 3),
                                "text": w.text, "confidence": w.confidence} for w in alternative]
             turns = diarize(source, Path(__file__).resolve().parent.parent / "models" / "speaker-diarization",
