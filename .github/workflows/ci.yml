@@ -53,6 +53,7 @@ jobs:
           Remove-Item Env:UZSCRIBE_FORCE_MANAGED_PYTHON
           Remove-Item Env:UZSCRIBE_ARCHIVE_PATH
           $env:UZSCRIBE_SOURCE_DIR = $source
+          $env:PSModulePath = Join-Path $env:WINDIR 'System32\WindowsPowerShell\v1.0\Modules'
           cmd.exe /d /s /c 'powershell -NoProfile -ExecutionPolicy Bypass -Command "Get-Content -Raw bootstrap-windows.ps1 | Invoke-Expression"'
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
       - name: Windows uv package install smoke test
