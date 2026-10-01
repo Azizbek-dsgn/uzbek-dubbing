@@ -65,7 +65,8 @@ class InstallerTests(unittest.TestCase):
             self.assertEqual(run.call_count, 2)
             for call in run.call_args_list:
                 self.assertEqual(call.args[0][:5],
-                                 ['C:/uv/uv.exe', 'pip', 'install', '--python', str(python)])
+                                 [str(Path('C:/uv/uv.exe')), 'pip', 'install',
+                                  '--python', str(python)])
 
     def test_manifest_targets_adobe_2020_hosts_and_cep9(self):
         manifest = ET.parse(Path(__file__).resolve().parents[1] /
