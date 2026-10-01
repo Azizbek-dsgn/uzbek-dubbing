@@ -1,6 +1,6 @@
 # O‘zbekcha subtitr plagini
 
-Premiere Pro va After Effects uchun bepul, lokal CEP panel. U faol sequence yoki kompozitsiyadagi audioni eksport qiladi, tanlangan model bilan o‘zbekcha nutqni so‘z vaqtigacha taniydi va subtitrlarni timeline’ga qo‘yadi. API kaliti kerak emas; model bir marta yuklangach internet talab qilinmaydi.
+Premiere Pro va After Effects uchun lokal CEP panel. U faol sequence yoki kompozitsiyadagi audioni eksport qiladi, tanlangan model bilan o‘zbekcha nutqni so‘z vaqtigacha taniydi va subtitrlarni timeline’ga qo‘yadi. API kaliti kerak emas; o‘rnatishdan keyin transkripsiya internet talab qilmaydi.
 
 ## Ishlatish
 
@@ -78,14 +78,14 @@ Konvertatsiya uchun qo‘shimcha disk va xotira kerak. Model bir marta tayyorlan
 
 ## O‘rnatish
 
-Python 3.10+ bilan `pip install -r subtitles/requirements.txt` bajaring. `adobe/UzbekSubtitles` papkasini Adobe CEP extensions katalogiga symlink qiling. Imzosiz development paneli uchun `PlayerDebugMode=1` kerak. Adobe dasturini qayta ishga tushiring. Mac’da:
+Xaridor ZIP’i uchun loyiha ildizidagi `README-INSTALL.md`dan foydalaning. Quyidagi usul faqat manba kodidan development o‘rnatish uchun: Python 3.10–3.12 bilan `pip install -r subtitles/requirements.txt` bajaring, `adobe/UzbekSubtitles` papkasini Adobe CEP extensions katalogiga symlink qiling. Imzosiz development paneli uchun `PlayerDebugMode=1` kerak. Adobe dasturini qayta ishga tushiring. Mac’da:
 
 ```bash
 mkdir -p "$HOME/Library/Application Support/Adobe/CEP/extensions"
 ln -s "$(pwd)/adobe/UzbekSubtitles" "$HOME/Library/Application Support/Adobe/CEP/extensions/UzbekSubtitles"
 ```
 
-Panel repo ichidagi `.venv/bin/python` ni o‘zi topadi; boshqa Python ishlatsangiz paneldagi yo‘lni o‘zgartiring. Premiere eksporti Adobe o‘rnatgan `WAV_Mono_16bit_16kHz.epr` presetiga tayanadi; hozirgi avtomatik qidiruv macOS’dagi Premiere 2024–2026 paketlariga mo‘ljallangan.
+Panel o‘rnatilgan runtime’dagi `.venv` Python’ni o‘zi topadi; boshqa Python ishlatsangiz paneldagi yo‘lni o‘zgartiring. Premiere eksporti Adobe o‘rnatgan `WAV_Mono_16bit_16kHz.epr` presetiga tayanadi; avtomatik qidiruv ishlamasa panelning texnik sozlamalarida fayl yo‘lini kiriting.
 
 ## Alohida SRT yaratish
 

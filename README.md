@@ -1,6 +1,8 @@
 # O‘zbekcha subtitr plagini
 
-Premiere Pro va After Effects uchun bepul, lokal CEP panel. U faol sequence yoki kompozitsiyadagi audioni eksport qiladi, tanlangan model bilan o‘zbekcha nutqni so‘z vaqtigacha taniydi va subtitrlarni timeline’ga qo‘yadi. API kaliti kerak emas; model bir marta yuklangach internet talab qilinmaydi.
+Premiere Pro va After Effects uchun lokal CEP panel. U faol sequence yoki kompozitsiyadagi audioni eksport qiladi, tanlangan model bilan o‘zbekcha nutqni so‘z vaqtigacha taniydi va subtitrlarni timeline’ga qo‘yadi. API kaliti kerak emas; o‘rnatishdan keyin transkripsiya internet talab qilmaydi.
+
+**Boshqa foydalanuvchilar uchun:** `tools/build_release.py` yordamida NavAI small modeli bilan macOS/Windows beta ZIP yaratiladi. Xaridor ko‘rsatmasi [README-INSTALL.md](README-INSTALL.md), sotuvdan oldingi majburiy tekshiruvlar [SELLER-RELEASE.md](SELLER-RELEASE.md) faylida. Imzolangan ZXP va haqiqiy Windows sinovi tugamaguncha paketni yakuniy sotuv versiyasi deb belgilamang.
 
 ## Ishlatish
 

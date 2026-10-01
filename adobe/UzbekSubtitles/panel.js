@@ -5,10 +5,15 @@
   var os = require('os');
   var path = require('path');
   var spawn = require('child_process').spawn;
-  var root = path.resolve(fs.realpathSync(__dirname), '..', '..');
+  var devRoot = path.resolve(fs.realpathSync(__dirname), '..', '..');
+  var userData = process.platform === 'win32'
+    ? path.join(process.env.LOCALAPPDATA || path.join(os.homedir(), 'AppData', 'Local'), 'UzbekSubtitles')
+    : path.join(os.homedir(), 'Library', 'Application Support', 'UzbekSubtitles');
+  var root = fs.existsSync(path.join(userData, 'subtitles', 'cli.py')) ? userData : devRoot;
   var hostScript = path.join(__dirname, 'host', 'editor.jsx');
   var aeScript = path.join(__dirname, 'host', 'after_effects.jsx');
   var python = document.getElementById('python');
+  var premierePreset = document.getElementById('premierePreset');
   var batchDir = document.getElementById('batchDir');
   var batchRun = document.getElementById('batchRun');
   var model = document.getElementById('model');
@@ -104,9 +109,11 @@
   });
   var savedFields = {
     range: range, audioTrack: audioTrack, model: model, style: style, lines: lines, words: words,
-    chars: chars, duration: duration, pause: pause, splitSentences: splitSentences,
+    chars: chars, duration: duration, pause: pause,
+    restoreSentences: document.getElementById('restoreSentences'), splitSentences: splitSentences,
     splitCommas: splitCommas, splitPauses: splitPauses, startPad: startPad,
     endPad: endPad, minCue: minCue, glossary: glossary, python: python,
+    premierePreset: premierePreset,
     compareModel: compareModel, script: scriptChoice, captionMode: captionMode,
     exportVtt: exportVtt, exportAss: exportAss, detectSpeakers: detectSpeakers,
     speakerCount: speakerCount, batchDir: batchDir, animation: animation
@@ -260,15 +267,26 @@
     });
   }
   function presetPath() {
-    if (process.platform !== 'darwin') return '';
-    var applications = '/Applications';
-    var versions = ['2026', '2025', '2024'];
-    for (var i = 0; i < versions.length; i++) {
-      var v = versions[i];
-      var candidate = path.join(applications, 'Adobe Premiere Pro ' + v,
-        'Adobe Premiere Pro ' + v + '.app', 'Contents', 'Settings', 'EncoderPresets',
-        'WAV_Mono_16bit_16kHz.epr');
-      if (fs.existsSync(candidate)) return candidate;
+    if (premierePreset.value.trim() && fs.existsSync(premierePreset.value.trim()))
+      return premierePreset.value.trim();
+    var name = 'WAV_Mono_16bit_16kHz.epr';
+    var roots = process.platform === 'win32'
+      ? [process.env.ProgramFiles, process.env['ProgramFiles(x86)']]
+      : ['/Applications'];
+    var versions = ['2027', '2026', '2025', '2024'];
+    for (var r = 0; r < roots.length; r++) {
+      if (!roots[r]) continue;
+      for (var i = 0; i < versions.length; i++) {
+        var folder = 'Adobe Premiere Pro ' + versions[i];
+        var base = process.platform === 'win32'
+          ? path.join(roots[r], 'Adobe', folder)
+          : path.join(roots[r], folder, folder + '.app', 'Contents');
+        var locations = [path.join(base, 'Settings', 'EncoderPresets', name),
+          path.join(base, 'Plug-ins', 'Common', 'Exporter', name)];
+        for (var j = 0; j < locations.length; j++) {
+          if (fs.existsSync(locations[j])) return locations[j];
+        }
+      }
     }
     return '';
   }
@@ -545,7 +563,7 @@
       if (speakerCount.value !== 'auto') args.push('--num-speakers', speakerCount.value);
     }
     if (!splitSentences.checked) args.push('--no-sentence-split');
-    if (!document.getElementById('restoreSentences').checked) args.push('--no-sentence-restore');
+    if (!savedFields.restoreSentences.checked) args.push('--no-sentence-restore');
     if (splitCommas.checked) args.push('--split-commas');
     if (!splitPauses.checked) args.push('--no-pause-split');
     runState.rules.forEach(function (rule) { args.push('--replace', rule); });
@@ -622,7 +640,11 @@
       var safeName = info.name.replace(/[^a-zA-Z0-9_-]+/g, '_').slice(0, 55) || 'timeline';
       var srt = path.join(exportDir, safeName + '-' + unique + '.uz.srt');
       var preset = info.host === 'PPRO' ? presetPath() : '';
-      if (info.host === 'PPRO' && !preset) { finish('Premiere WAV eksport preset’i topilmadi.'); return; }
+      if (info.host === 'PPRO' && !preset) {
+        advanced.open = true;
+        finish('Premiere WAV preset’i topilmadi. Qo‘shimcha sozlamalarda .epr fayl yo‘lini kiriting.');
+        return;
+      }
       show('Timeline ovozi eksport qilinmoqda...');
       jsonCall('uzExportAudio(' + JSON.stringify(requestedRange) + ',' + JSON.stringify(audio) + ',' + JSON.stringify(preset) + ',' + JSON.stringify(audioTrack.value) + ')',
         function (exportError, result) {

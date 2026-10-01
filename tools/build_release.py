@@ -1,0 +1,76 @@
+"""Build a clean buyer ZIP with the commercially licensed NavAI small model."""
+
+from __future__ import annotations
+
+import argparse
+import hashlib
+import json
+import tempfile
+import zipfile
+from pathlib import Path
+
+
+ROOT = Path(__file__).resolve().parents[1]
+PANEL = ("CSXS/manifest.xml", "index.html", "panel.js",
+         "host/editor.jsx", "host/after_effects.jsx")
+RUNTIME = ("__init__.py", "cli.py", "batch.py", "sentences.py", "gigaam.py",
+           "fastconformer.py", "requirements.txt", "requirements-release.txt",
+           "requirements-gigaam.txt", "requirements-fastconformer.txt",
+           "requirements-speakers.txt")
+MODEL = ("model.bin", "config.json", "preprocessor_config.json", "tokenizer.json",
+         "vocabulary.json", "LICENSE", "NOTICE")
+
+
+def hash_file(path: Path) -> str:
+    digest = hashlib.sha256()
+    with path.open("rb") as source:
+        for block in iter(lambda: source.read(1024 * 1024), b""):
+            digest.update(block)
+    return digest.hexdigest()
+
+
+def build(model_dir: Path, output: Path, signed_zxp: Path | None = None) -> None:
+    files: dict[str, Path] = {
+        "install.py": ROOT / "install.py",
+        "README-INSTALL.md": ROOT / "README-INSTALL.md",
+        "NOTICE-THIRD-PARTY.md": ROOT / "NOTICE-THIRD-PARTY.md",
+        "APACHE-2.0.txt": ROOT / "APACHE-2.0.txt",
+        "Install-mac.command": ROOT / "Install-mac.command",
+        "Install-Windows.ps1": ROOT / "Install-Windows.ps1",
+    }
+    files.update({f"adobe/UzbekSubtitles/{name}": ROOT / "adobe" / "UzbekSubtitles" / name
+                  for name in PANEL})
+    files.update({f"subtitles/{name}": ROOT / "subtitles" / name for name in RUNTIME})
+    files.update({f"models/navai-small/{name}": model_dir / name for name in MODEL})
+    if signed_zxp:
+        files["UzbekSubtitles.zxp"] = signed_zxp
+    missing = [name for name, path in files.items() if not path.is_file()]
+    if missing:
+        raise FileNotFoundError("Release fayllari topilmadi: " + ", ".join(missing))
+    checksums = {name: hash_file(path)
+                 for name, path in files.items()}
+    output.parent.mkdir(parents=True, exist_ok=True)
+    with tempfile.NamedTemporaryFile(dir=output.parent, suffix=".zip", delete=False) as tmp:
+        temporary = Path(tmp.name)
+    try:
+        with zipfile.ZipFile(temporary, "w", zipfile.ZIP_DEFLATED) as archive:
+            for name, path in files.items():
+                archive.write(path, name)
+            archive.writestr("checksums.json", json.dumps(checksums, indent=2) + "\n")
+        temporary.replace(output)
+    finally:
+        temporary.unlink(missing_ok=True)
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--model-dir", required=True, type=Path)
+    parser.add_argument("--output", required=True, type=Path)
+    parser.add_argument("--signed-zxp", type=Path)
+    args = parser.parse_args()
+    build(args.model_dir, args.output, args.signed_zxp)
+    print(args.output.resolve())
+
+
+if __name__ == "__main__":
+    main()

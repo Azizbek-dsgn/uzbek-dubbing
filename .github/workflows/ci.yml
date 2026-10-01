@@ -1,0 +1,29 @@
+name: macOS and Windows checks
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  source-checks:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+      - name: Python subtitle and installer tests
+        run: |
+          python -m pip install numpy
+          python -m unittest discover -s tests -v
+      - name: Panel workflow (Windows paths)
+        run: node tests/test_panel_workflow.js --windows
+      - name: After Effects host script
+        run: node tests/test_after_effects_composer.js
