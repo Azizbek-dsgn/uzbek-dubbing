@@ -17,18 +17,20 @@ bash -c 'set -o pipefail; curl -fsSL https://raw.githubusercontent.com/Azizbek-d
 Windows PowerShell:
 
 ```powershell
-irm https://raw.githubusercontent.com/Azizbek-dsgn/uzbek-dubbing/feat/uzbek-subtitles-adobe/bootstrap-windows.ps1 | iex
+powershell.exe -NoProfile -NoExit -ExecutionPolicy Bypass -Command "irm 'https://raw.githubusercontent.com/Azizbek-dsgn/uzbek-dubbing/feat/uzbek-subtitles-adobe/bootstrap-windows.ps1' | iex"
 ```
 
 Windows **Command Prompt (CMD, `C:\Users\...>` oynasi)**:
 
 ```bat
-powershell -NoProfile -ExecutionPolicy Bypass -Command "Invoke-RestMethod 'https://raw.githubusercontent.com/Azizbek-dsgn/uzbek-dubbing/feat/uzbek-subtitles-adobe/bootstrap-windows.ps1' | Invoke-Expression"
+powershell -NoProfile -NoExit -ExecutionPolicy Bypass -Command "Invoke-RestMethod 'https://raw.githubusercontent.com/Azizbek-dsgn/uzbek-dubbing/feat/uzbek-subtitles-adobe/bootstrap-windows.ps1' | Invoke-Expression"
 ```
 
 Faqat oynangizga mos **bitta buyruqni** joylang. `bootstrap-windows.ps1` faylining ichidagi `$python`, `Invoke-WebRequest` kabi qatorlarni CMD’ga alohida joylamang; ular PowerShell sintaksisidir.
 
 Yangilash uchun o‘sha buyruqni qayta ishga tushiring; mavjud model qayta yuklanmaydi. O‘rnatish uzilib qolsa, shu buyruqni qayta bajaring. Panel imzosiz beta bo‘lgani uchun skript joriy foydalanuvchida Adobe CEP debug rejimini yoqadi. Adobe dasturlarini qayta oching: **Window → Extensions → UzScribe**. Manifest Premiere Pro 2020+ va After Effects 2020+ versiyalariga mo‘ljallangan; har bir yilning Adobe ichidagi jonli integratsiya sinovi hali tugamagan.
+
+Windows’da xato bo‘lsa PowerShell oynasi ochiq qoladi. Jurnal `%LOCALAPPDATA%\UzbekSubtitles\install.log` faylida saqlanadi; o‘rnatish tugamaganda shu faylning oxirgi qatorlarini yuboring. Xatoni ko‘rmasdan eski o‘rnatmani o‘chirmang.
 
 ## macOS
 

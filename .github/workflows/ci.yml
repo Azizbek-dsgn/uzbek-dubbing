@@ -67,6 +67,27 @@ jobs:
           uv pip install --python $python -r subtitles/requirements-release.txt
           uv pip install --python $python -r subtitles/requirements-gigaam.txt 'huggingface_hub>=0.34,<2'
           & $python -c 'import faster_whisper, imageio_ffmpeg, av, torch, torchaudio, transformers, hydra, soundfile, huggingface_hub; print(torch.__version__, transformers.__version__)'
+      - name: Windows failed uv download leaves PowerShell open and writes a log
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $source = Join-Path $env:RUNNER_TEMP 'uzscribe-failure-source'
+          New-Item -ItemType Directory -Path $source -Force | Out-Null
+          'print("unexpected install")' | Set-Content (Join-Path $source 'install_online.py')
+          $env:UZSCRIBE_SOURCE_DIR = $source
+          $env:UV_DOWNLOAD_URL = 'http://127.0.0.1:9'
+          try {
+            & ./bootstrap-windows.ps1
+            throw 'Expected uv failure did not occur.'
+          } catch {
+            if ($_.Exception.Message -eq 'Expected uv failure did not occur.') { throw }
+          } finally {
+            Remove-Item Env:UZSCRIBE_SOURCE_DIR
+            Remove-Item Env:UV_DOWNLOAD_URL
+          }
+          if (-not (Test-Path (Join-Path $env:LOCALAPPDATA 'UzbekSubtitles/install.log'))) {
+            throw 'Install log was not saved.'
+          }
       - name: macOS model dependency resolution
         if: runner.os == 'macOS'
         run: |

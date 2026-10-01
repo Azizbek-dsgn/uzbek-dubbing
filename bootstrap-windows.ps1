@@ -2,10 +2,20 @@ $ErrorActionPreference = 'Stop'
 [Net.ServicePointManager]::SecurityProtocol = [Net.ServicePointManager]::SecurityProtocol -bor [Net.SecurityProtocolType]::Tls12
 $sourceUrl = 'https://codeload.github.com/Azizbek-dsgn/uzbek-dubbing/zip/refs/heads/feat/uzbek-subtitles-adobe'
 $work = Join-Path ([IO.Path]::GetTempPath()) ('uzscribe-' + [guid]::NewGuid().ToString('N'))
+$logRoot = Join-Path $env:LOCALAPPDATA 'UzbekSubtitles'
+$logPath = Join-Path $logRoot 'install.log'
 $previousUvInstall = $env:UV_UNMANAGED_INSTALL
 $previousUzscribeUv = $env:UZSCRIBE_UV_BIN
 New-Item -ItemType Directory -Path $work | Out-Null
+New-Item -ItemType Directory -Path $logRoot -Force | Out-Null
+$transcriptStarted = $false
 try {
+  try {
+    Start-Transcript -Path $logPath -Append -ErrorAction Stop | Out-Null
+    $transcriptStarted = $true
+  } catch {
+    Write-Warning "O‘rnatish jurnalini yozib bo‘lmadi: $($_.Exception.Message)"
+  }
   if ($env:UZSCRIBE_SOURCE_DIR) {
     $source = Get-Item -LiteralPath $env:UZSCRIBE_SOURCE_DIR
   } else {
@@ -29,7 +39,9 @@ try {
     $uvScript = Join-Path $work 'uv-install.ps1'
     Invoke-WebRequest -Uri 'https://astral.sh/uv/install.ps1' -OutFile $uvScript -UseBasicParsing
     $env:UV_UNMANAGED_INSTALL = Join-Path $work 'uv-bin'
-    Invoke-Expression (Get-Content -LiteralPath $uvScript -Raw)
+    $powerShellExecutable = (Get-Process -Id $PID).Path
+    & $powerShellExecutable -NoProfile -ExecutionPolicy Bypass -File $uvScript
+    if ($LASTEXITCODE -ne 0) { throw "uv o‘rnatilmadi (kod $LASTEXITCODE)." }
     $uv = Join-Path $env:UV_UNMANAGED_INSTALL 'uv.exe'
     if (-not (Test-Path -LiteralPath $uv)) { throw 'uv.exe topilmadi.' }
     $env:UZSCRIBE_UV_BIN = $uv
@@ -78,7 +90,13 @@ try {
   }
   & $python @installArgs
   if ($LASTEXITCODE -ne 0) { throw 'UzScribe install failed.' }
+  Write-Host "UzScribe o‘rnatildi. Jurnal: $logPath"
+} catch {
+  Write-Host "UzScribe o‘rnatilmadi: $($_.Exception.Message)" -ForegroundColor Red
+  Write-Host "Xato jurnali: $logPath"
+  throw
 } finally {
+  if ($transcriptStarted) { Stop-Transcript | Out-Null }
   $env:UV_UNMANAGED_INSTALL = $previousUvInstall
   $env:UZSCRIBE_UV_BIN = $previousUzscribeUv
   Remove-Item -LiteralPath $work -Recurse -Force -ErrorAction SilentlyContinue
