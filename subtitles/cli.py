@@ -350,6 +350,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--max-duration", type=float, default=5.0)
     parser.add_argument("--pause", type=float, default=0.65)
     parser.add_argument("--no-sentence-split", action="store_true")
+    parser.add_argument("--no-sentence-restore", action="store_true")
     parser.add_argument("--split-commas", action="store_true")
     parser.add_argument("--no-pause-split", action="store_true")
     parser.add_argument("--start-pad-ms", type=int, default=0)
@@ -401,6 +402,17 @@ def main(argv: list[str] | None = None) -> int:
                 turn["end"] = round(turn["end"] + offset, 3)
         finally:
             scratch.cleanup()
+        if not args.no_sentence_restore:
+            if __package__:
+                from .sentences import local_corrector, restore_sentences
+            else:
+                from sentences import local_corrector, restore_sentences
+            try:
+                correct = local_corrector(Path(__file__).resolve().parent.parent)
+            except Exception as exc:
+                print(f"Matn modeli yuklanmadi, oddiy gap bo‘linishi ishlatiladi: {exc}", file=sys.stderr)
+                correct = None
+            words = restore_sentences(words, correct, strong_pause=max(0.8, args.pause + 0.2))
         if args.script == "cyrillic":
             words = [Word(w.start, w.end, to_cyrillic(w.text), w.confidence) for w in words]
             if comparison is not None:

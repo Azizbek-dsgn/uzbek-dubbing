@@ -16,6 +16,7 @@ Tanlangan sozlamalar panel qayta ochilganda saqlanadi. Batafsil SRT vaqt kodlari
 ## Yangi imkoniyatlar
 
 - **NavAI Uzbek small** mahalliy, yengilroq model sifatida o‘rnatilgan. Tabiiy suhbat uchun GigaAM Uzbek 600M dastlab tanlanadi; boshqa ovozlarda NavAI small va medium’ni sinab ko‘ring. **Ikkinchi model bilan solishtirish** yoqilsa, ikkala natija yaratiladi va tekshirish oynasida farqlari ko‘rsatiladi. Bu ish vaqtini taxminan ikki baravar oshiradi.
+- **Gap va tinish belgilarini tiklash** odatda yoqilgan. Agar `models/rubai-transcript/` ichida [`islomov/rubai-corrector-transcript-uz`](https://huggingface.co/islomov/rubai-corrector-transcript-uz) modeli o‘rnatilgan bo‘lsa, u gap boshidagi bosh harf va tinish belgilarini taklif qiladi. Panel faqat tanilgan so‘zlarga mos tushgan belgilarni oladi; so‘zlarning o‘zi, tartibi va vaqtini o‘zgartirmaydi. Model mavjud bo‘lmasa, kuchli pauza va audio modelning o‘z belgilariga tayanadi. Tinish belgilari xato bo‘lishi mumkin; tekshirish oynasida tuzating.
 - **Tekshirish oynasi** audio to‘lqini, subtitrlar ro‘yxati, past ishonchli so‘zlar va modellar kelishmagan joylarni ko‘rsatadi. Bitta subtitrni tanlab, boshqa model bilan faqat shu oralig‘ini qayta tanish mumkin. GigaAM CTC chiqishida ishonch ballari yo‘q; uning uchun ikkinchi model bilan kelishmovchilik belgilanadi.
 - **So‘zlovchilarni ajratish** lokal model bilan ixtiyoriy ishlaydi. So‘zlovchilar sonini avtomatik, 2, 3 yoki 4 ga sozlash, tekshirish oynasida har bir subtitr belgisini qo‘lda tuzatish mumkin. Belgilar JSON va ASS faylida saqlanadi; After Effects’da matn ranglari farqlanadi. Premiere caption track individual ranglarni skript orqali qo‘ymaydi.
 - **So‘zma-so‘z** rejimi har so‘z uchun alohida caption yaratadi. After Effects’da so‘z boshlanishida yengil kattalashish/opacity animatsiyasi qo‘shiladi. Premiere’da har so‘z alohida caption bo‘ladi.
@@ -31,7 +32,15 @@ Bizning 6 ta qisqa FLEURS o‘qib aytilgan nutq sinovimizda (jami 50 referens so
 
 Ko‘rib chiqish oynasidagi SRT formatini saqlang: har bir blokda raqam, `00:00:00,000 --> 00:00:01,000` shaklidagi vaqt va matn bo‘lishi kerak. Panel bo‘sh yoki ustma-ust vaqtlarni import qilishdan oldin bildiradi. Faol timeline transkripsiya vaqtida almashtirilsa, panel uning identifikatorini tekshirib, boshqa sequence yoki kompozitsiyaga subtitr qo‘yishdan saqlaydi.
 
-Oraliq tanlovida **Faqat In/Out** belgilar bo‘lmasa xato beradi; **To‘liq timeline** belgilarni e’tiborsiz qoldiradi. GigaAM Uzbek o‘rnatilgan bo‘lsa panel uni dastlab tanlaydi. NavAI va umumiy `large-v3`, `medium`, `small` modellari ham qoladi. GigaAM tinish belgilarini va so‘z vaqtlarini o‘z CTC chiqishidan oladi. Qator va so‘z chegaralari transkripsiya matnini bo‘ladi; xato eshitilgan so‘zni o‘zi tuzatmaydi.
+Oraliq tanlovida **Faqat In/Out** belgilar bo‘lmasa xato beradi; **To‘liq timeline** belgilarni e’tiborsiz qoldiradi. GigaAM Uzbek o‘rnatilgan bo‘lsa panel uni dastlab tanlaydi. NavAI va umumiy `large-v3`, `medium`, `small` modellari ham qoladi. GigaAM tinish belgilarini va so‘z vaqtlarini o‘z CTC chiqishidan oladi. **So‘z / qator** va **Qatorlar** faqat ekrandagi subtitr hajmini belgilaydi; uzun gap bir nechta captionga davom etadi. Bu sozlamalar eshitilgan so‘zlarni tuzatmaydi.
+
+Matn modelini boshqa kompyuterga o‘rnatish uchun loyiha ildizida `pip install transformers torch huggingface_hub` va quyidagini bajaring (model vaznlari source ZIP’ga kiritilmagan):
+
+```bash
+python3 -c 'from huggingface_hub import snapshot_download; snapshot_download("islomov/rubai-corrector-transcript-uz", local_dir="models/rubai-transcript", allow_patterns=["*.json", "model.safetensors"])'
+```
+
+Modelning o‘zi gap chegaralarini har doim topmaydi. Ayniqsa pauzasiz, tinish belgisiz uzun nutqda tekshirish oynasida gaplarni qo‘lda bo‘lish kerak bo‘lishi mumkin.
 
 ## Suhbat nutqi uchun GigaAM Uzbek
 

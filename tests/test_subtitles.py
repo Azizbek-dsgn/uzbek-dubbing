@@ -4,6 +4,7 @@ from types import SimpleNamespace
 from subtitles.cli import (Word, _reliable_segment, apply_replacements,
                            make_cues, to_srt, to_vtt, to_ass, to_cyrillic, cue_speaker)
 from subtitles.gigaam import _chunks
+from subtitles.sentences import restore_sentences
 
 
 class SubtitleTests(unittest.TestCase):
@@ -127,6 +128,30 @@ class SubtitleTests(unittest.TestCase):
                  {"start": 1.2, "end": 2, "speaker": "SPEAKER_01"}]
         self.assertEqual(cue_speaker(cue, turns), "SPEAKER_01")
         self.assertIn("SPEAKER_01", to_ass([cue], ["SPEAKER_01"]))
+
+    def test_sentence_restoration_keeps_words_and_timing(self):
+        words = [Word(i * .4, i * .4 + .3, text, .7) for i, text in
+                 enumerate(["bugun", "havo", "yaxshi", "ertaga", "ishlaymiz"])]
+        fixed = restore_sentences(words, lambda text: "Bugun havo yaxshi. Ertaga ishlaymiz.")
+        self.assertEqual([w.text for w in fixed],
+                         ["Bugun", "havo", "yaxshi.", "Ertaga", "ishlaymiz."])
+        self.assertEqual([(w.start, w.end, w.confidence) for w in fixed],
+                         [(w.start, w.end, w.confidence) for w in words])
+        self.assertEqual([c.text for c in make_cues(fixed)],
+                         ["Bugun havo yaxshi.", "Ertaga ishlaymiz."])
+
+    def test_corrector_cannot_insert_or_translate_words(self):
+        words = [Word(0, .3, "men"), Word(.3, .6, "ozbekcha"), Word(.6, .9, "gapirdim")]
+        fixed = restore_sentences(words, lambda _: "Men turkcha gapirdim.")
+        self.assertEqual([w.text for w in fixed], ["Men", "ozbekcha", "gapirdim."])
+        changed = restore_sentences(words, lambda _: "Merhaba nasilsin dostlar")
+        self.assertEqual([w.text for w in changed], ["Men", "ozbekcha", "gapirdim."])
+
+    def test_restoration_falls_back_to_strong_pause(self):
+        words = [Word(0, .2, "salom"), Word(1.6, 1.9, "bugun"),
+                 Word(2, 2.4, "yaxshi")]
+        fixed = restore_sentences(words)
+        self.assertEqual([w.text for w in fixed], ["Salom.", "Bugun", "yaxshi."])
 
 
 if __name__ == "__main__":

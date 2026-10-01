@@ -545,6 +545,7 @@
       if (speakerCount.value !== 'auto') args.push('--num-speakers', speakerCount.value);
     }
     if (!splitSentences.checked) args.push('--no-sentence-split');
+    if (!document.getElementById('restoreSentences').checked) args.push('--no-sentence-restore');
     if (splitCommas.checked) args.push('--split-commas');
     if (!splitPauses.checked) args.push('--no-pause-split');
     runState.rules.forEach(function (rule) { args.push('--replace', rule); });
