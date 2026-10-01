@@ -33,7 +33,7 @@ class Clip:
     outside: int
     fps: Fraction
     file: ET.Element
-    path: Path
+    path: Path | None
     channel: int
     enabled: bool = True
 
@@ -68,7 +68,7 @@ def media_path(url: str) -> Path:
     return Path(result)
 
 
-def parse_timeline(path: Path) -> Timeline:
+def parse_timeline(path: Path, *, allow_transitions: bool = False) -> Timeline:
     tree = ET.parse(path)
     root = tree.getroot()
     if root.tag != 'xmeml':
@@ -81,14 +81,15 @@ def parse_timeline(path: Path) -> Timeline:
     duration = int(sequence.findtext('duration', '0'))
     if duration <= 0:
         raise ValueError('Sequence bo‘sh.')
-    files = {f.get('id'): f for f in root.iter('file') if f.findtext('pathurl')}
+    files = {f.get('id'): f for f in root.iter('file') if f.findtext('pathurl') or f.findtext('mediaSource')}
     streams = []
     for kind in ('video', 'audio'):
         tracks = []
         for track in sequence.findall('media/' + kind + '/track'):
-            if track.find('transitionitem') is not None:
+            if track.find('transitionitem') is not None and not allow_transitions:
                 raise ValueError('Transition bor. Podcast montajini transition qo‘shishdan oldin bajaring.')
             clips = []
+            items = list(track)
             for element in track.findall('clipitem'):
                 if element.find('sequence') is not None:
                     raise ValueError('Nested klipni avval flatten qiling.')
@@ -98,19 +99,27 @@ def parse_timeline(path: Path) -> Timeline:
                 file = element.find('file')
                 if file is None:
                     raise ValueError('Klipning media manbasi topilmadi.')
-                file = file if file.findtext('pathurl') else files.get(file.get('id'))
+                file = file if file.findtext('pathurl') or file.findtext('mediaSource') else files.get(file.get('id'))
                 if file is None:
-                    raise ValueError('XML media havolasi yechilmadi.')
+                    raise ValueError('XML media havolasi yechilmadi: ' + element.findtext('name', 'Nomsiz klip'))
+                if not file.findtext('pathurl') and kind != 'video':
+                    raise ValueError('Nutq uchun lokal audio fayli kerak.')
                 clip_rate = rate(element.find('rate'), rate(file.find('rate'), fps))
                 start, end, inside, outside = (int(element.findtext(k, '-1'))
                                               for k in ('start', 'end', 'in', 'out'))
+                if allow_transitions:
+                    position = items.index(element)
+                    if start == -1 and position > 0 and items[position-1].tag == 'transitionitem':
+                        start = int(items[position-1].findtext('start', '-1'))
+                    if end == -1 and position+1 < len(items) and items[position+1].tag == 'transitionitem':
+                        end = int(items[position+1].findtext('end', '-1'))
                 if not 0 <= start < end <= duration or not 0 <= inside < outside:
                     raise ValueError('Klip vaqtlari noto‘g‘ri yoki transition bilan bog‘langan.')
                 if abs(float(Fraction(outside - inside, 1) / clip_rate - Fraction(end - start, 1) / fps)) > 2 / float(fps):
                     raise ValueError('Klip tezligi 100% emas. Avval normal tezlikdagi timeline tayyorlang.')
                 channel = max(0, int(element.findtext('sourcetrack/trackindex', '1')) - 1)
                 clips.append(Clip(element, start, end, inside, outside, clip_rate,
-                                  file, media_path(file.findtext('pathurl', '')), channel,
+                                  file, media_path(file.findtext('pathurl')) if file.findtext('pathurl') else None, channel,
                                   track.findtext('enabled', 'TRUE').upper() != 'FALSE' and
                                   element.findtext('enabled', 'TRUE').upper() != 'FALSE'))
             tracks.append(clips)
@@ -363,7 +372,8 @@ def edit_xml(timeline: Timeline, schedule: list[dict], mapped_video: set[int], *
         for track_index, track in enumerate(sequence.findall('media/' + kind + '/track')):
             first_clip = track.find('clipitem')
             insert_at = list(track).index(first_clip) if first_clip is not None else 0
-            for item in list(track.findall('clipitem')):
+            transitions = list(track.findall('transitionitem'))
+            for item in list(track.findall('clipitem')) + transitions:
                 track.remove(item)
             for source in original_tracks[track_index]:
                 for span in schedule:
@@ -401,6 +411,27 @@ def edit_xml(timeline: Timeline, schedule: list[dict], mapped_video: set[int], *
                     insert_at += 1
                     records.append((clip, kind, track_index + 1, len(track.findall('clipitem')),
                                     (file_id, inside, outside, output_start, end - start)))
+            for original_transition in transitions:
+                a, b = int(original_transition.findtext('start', '-1')), int(original_transition.findtext('end', '-1'))
+                span = next((s for s in schedule if s['start'] <= a < b <= s['end']), None)
+                if span is None:
+                    continue
+                transition = copy.deepcopy(original_transition)
+                start, end = span['output'] + a - span['start'], span['output'] + b - span['start']
+                set_text(transition, 'start', start); set_text(transition, 'end', end)
+                alignment = transition.findtext('alignment', '')
+                before = next((c for c in track.findall('clipitem') if int(c.findtext('end')) == end), None)
+                after = next((c for c in track.findall('clipitem') if int(c.findtext('start')) == start), None)
+                if alignment == 'end-black' and before is None or alignment == 'start-black' and after is None:
+                    continue
+                if alignment not in {'end-black', 'start-black'} and (before is None or after is None):
+                    continue
+                if before is not None and alignment != 'start-black':
+                    set_text(before, 'end', -1)
+                if after is not None and alignment != 'end-black':
+                    set_text(after, 'start', -1)
+                position = list(track).index(before) + 1 if before is not None and alignment != 'start-black' else list(track).index(after)
+                track.insert(position, transition)
     groups = {}
     for record in records:
         groups.setdefault(record[-1], []).append(record)

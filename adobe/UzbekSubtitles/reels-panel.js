@@ -34,7 +34,7 @@
     el('reelFile').textContent=result.path;el('reelReview').hidden=false;el('reelImport').hidden=false;
   }
   function importResult(){if(!result || busy)return;phase(true);el('reelCancel').hidden=true;
-    bridge.host('uzPodcastImport('+[result.path,result.info.name,result.info.identity].map(JSON.stringify).join(',')+')',function(error){phase(false);if(error){status('Import tugamadi: '+error.message+'\nXML saqlandi. Qayta import qilish mumkin.');return;}el('reelImport').hidden=true;status('Reels tozalandi. Project panelidagi “UzScribe Reels” sequence’ni ochib tekshiring.');});
+    bridge.host('uzPodcastImport('+[result.path,result.info.name,result.info.identity].map(JSON.stringify).join(',')+')',function(error){phase(false);if(error){status('Import tugamadi: '+error.message+'\nXML saqlandi. Qayta import qilish mumkin.');return;}el('reelImport').hidden=true;status('Reels tozalandi. Project panelidagi “UzScribe Reels” sequence’ni ochib tekshiring.'+(result.warnings&&result.warnings.length?'\n'+result.warnings.join('\n'):''));});
   }
   function analyze(state){var config,output,options=settings(state.info),autoImport=!el('reelPreviewFirst').checked;
     try{var key=String(Date.now());output=path.join(path.dirname(state.source),key+'-reels.xml');config=path.join(path.dirname(state.source),key+'-settings.json');fs.writeFileSync(config,JSON.stringify(options),'utf8');}
@@ -44,7 +44,7 @@
     var processRef=child;child.stdout.on('data',function(chunk){if(!cancelled)status(String(chunk).trim());});child.stderr.on('data',function(chunk){log=(log+chunk).slice(-4000);});
     child.on('error',function(error){if(child===processRef)fail('Python ochilmadi: '+error.message);});
     child.on('close',function(code){if(child!==processRef)return;child=null;if(cancelled){fail('Bekor qilindi. Asl sequence saqlandi.');return;}if(code!==0){fail('Reels montaji tugamadi:\n'+log);return;}
-      try{var report=JSON.parse(fs.readFileSync(output.replace(/\.xml$/,'.json'),'utf8'));result={path:output,info:state.info};review(report);phase(false);status('Tozalash tayyor. Dubllarni tekshirib, keraklisini saqlash mumkin.');if(autoImport)importResult();}
+      try{var report=JSON.parse(fs.readFileSync(output.replace(/\.xml$/,'.json'),'utf8'));result={path:output,info:state.info,warnings:report.warnings||[]};review(report);phase(false);status('Tozalash tayyor. Dubllarni tekshirib, keraklisini saqlash mumkin.');if(autoImport)importResult();}
       catch(e){fail('Natija o‘qilmadi: '+e.message);}
     });
   }

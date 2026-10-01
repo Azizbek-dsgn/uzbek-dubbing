@@ -34,6 +34,33 @@ def fixture(path, duration=300, fps=25, microphones=2):
 
 
 class PodcastTests(unittest.TestCase):
+    def test_premiere_synthetic_file_references_and_fades(self):
+        with tempfile.TemporaryDirectory() as temp:
+            source=Path(temp)/'source.xml';root=fixture(source,microphones=1)
+            video=root.find('sequence/media/video/track')
+            first=video.find('clipitem');generated=copy.deepcopy(first)
+            generated.set('id','adjustment');generated.find('name').text='Adjustment Layer'
+            file=generated.find('file');file.clear();file.set('id','slug-file')
+            ET.SubElement(file,'mediaSource').text='Slug'
+            video.append(generated)
+            reference=copy.deepcopy(generated);reference.set('id','adjustment-ref')
+            reference.find('file').clear();reference.find('file').set('id','slug-file');video.append(reference)
+            audio=root.find('sequence/media/audio/track');clip=audio.find('clipitem')
+            clip.find('end').text='-1';transition=ET.SubElement(audio,'transitionitem',id='fade')
+            for key,value in [('start',275),('end',300),('alignment','end-black')]:ET.SubElement(transition,key).text=str(value)
+            ET.ElementTree(root).write(source)
+            timeline=parse_timeline(source,allow_transitions=True)
+            self.assertIsNone(timeline.video[0][1].path)
+            self.assertEqual(timeline.audio[0][0].end,300)
+            for schedule,expected in [([{'start':0,'end':300,'output':0,'camera':None}],1),
+                                      ([{'start':50,'end':300,'output':0,'camera':None}],1),
+                                      ([{'start':0,'end':285,'output':0,'camera':None}],0)]:
+                output=edit_xml(timeline,schedule,set());dest=Path(temp)/'out.xml';ET.ElementTree(output).write(dest)
+                restored=parse_timeline(dest,allow_transitions=True)
+                self.assertEqual(len(output.findall('.//transitionitem')),expected)
+                self.assertEqual(restored.audio[0][0].end,schedule[0]['end']-schedule[0]['start'])
+                self.assertEqual(len(restored.video[0]),3)
+
     def test_initial_camera_is_actual_speaker_and_brief_bleed_does_not_cut(self):
         levels=np.full((2,100),-100.);levels[1,:]=-20;levels[0,20:22]=-12
         plan=camera_plan(levels,step=3,duration=300,fps=25)

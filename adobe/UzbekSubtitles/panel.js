@@ -75,7 +75,7 @@
   if (fs.existsSync(path.join(root, 'models', 'navai-medium', 'model.bin'))) {
     var option = document.createElement('option');
     option.value = 'navai-medium';
-    option.textContent = 'UzScribe Uzbek Studio';
+    option.textContent = 'Scribe Nav';
     model.insertBefore(option, model.firstChild);
     model.value = 'navai-medium';
   }
@@ -84,7 +84,7 @@
       fs.existsSync(path.join(root, 'models', 'gigaam-base-large', 'modeling_gigaam.py'))) {
     var gigaamOption = document.createElement('option');
     gigaamOption.value = 'gigaam-uzbek';
-    gigaamOption.textContent = 'UzScribe Uzbek';
+    gigaamOption.textContent = 'Scribe Giga';
     model.insertBefore(gigaamOption, model.firstChild);
     model.value = 'gigaam-uzbek';
   }

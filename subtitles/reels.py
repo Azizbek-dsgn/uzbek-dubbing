@@ -204,7 +204,7 @@ def cached_transcript(timeline, track, inside, outside, model, cache, decode=ree
 
 
 def run(source,output,settings,*,vad=True,decode=reels_transcribe):
-    timeline=parse_timeline(source);fps=float(timeline.fps)
+    timeline=parse_timeline(source,allow_transitions=True);fps=float(timeline.fps)
     def number(key,default,low,high):
         value=float(settings.get(key,default))
         if not math.isfinite(value) or not low<=value<=high:raise ValueError('Reels sozlamasi noto‘g‘ri: '+key)
@@ -252,6 +252,7 @@ def run(source,output,settings,*,vad=True,decode=reels_transcribe):
             'original_frames':timeline.duration,'output_frames':total,'output_seconds':total/fps,
             'removed_seconds':(timeline.duration-total)/fps,'retakes':proposals,
             'removed_retakes':sum(p['remove'] for p in proposals),'cuts':schedule,
+            'warnings': (['Timeline’da yaratilgan qatlamlar bor. Premiere XML ayrim Adjustment Layer/Graphic effektlarini saqlamaydi; yangi sequence ko‘rinishini tekshiring.'] if any(c.path is None for t in timeline.video for c in t) else []) + (['Kesishga tushgan fade/transition yangi sequence’da olib tashlanadi.'] if len(result.findall('.//transitionitem')) < len(timeline.sequence.findall('.//transitionitem')) else []),
             'transcript':[{k:v for k,v in p.items() if k!='tokens'} for p in parts]}
     output.parent.mkdir(parents=True,exist_ok=True);temporary=output.with_suffix('.tmp.xml')
     ET.ElementTree(result).write(temporary,encoding='utf-8',xml_declaration=True);temporary.replace(output)
