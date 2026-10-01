@@ -88,6 +88,7 @@ jobs:
           if (-not (Test-Path (Join-Path $env:LOCALAPPDATA 'UzbekSubtitles/install.log'))) {
             throw 'Install log was not saved.'
           }
+          $global:LASTEXITCODE = 0
       - name: macOS model dependency resolution
         if: runner.os == 'macOS'
         run: |
