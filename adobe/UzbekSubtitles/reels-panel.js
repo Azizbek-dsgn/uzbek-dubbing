@@ -28,8 +28,8 @@
   ['captionsTab','podcastTab'].forEach(function(id){el(id).addEventListener('click',function(){if(busy || document.uzscribeBusy)return;el('reelsPage').hidden=true;el('reelsTab').setAttribute('aria-selected','false');});});
   el('reelRefresh').addEventListener('click',function(){refresh();});el('reelRange').addEventListener('change',function(){refresh();});
   function settings(data){return {audio:Number(el('reelAudio').value),start:data.start,end:data.start+data.duration,model:el('reelModel').value,strength:el('reelStrength').value,keep:el('reelKeep').value,silence:Number(el('reelSilence').value),padding:Number(el('reelPadding').value),sentence_gap:Number(el('reelGap').value),window:Number(el('reelWindow').value),threshold:Number(el('reelThreshold').value),remove_retakes:el('reelRetakes').checked,remove_silence:el('reelRemoveSilence').checked,profile:el('reelProfile').value,keep_retake_ids:choices.filter(function(c){return c.field.checked;}).map(function(c){return c.id;})};}
-  function review(report){choices=[];el('reelTakes').textContent='';
-    el('reelSummary').textContent=report.output_seconds.toFixed(1)+' s natija · '+report.removed_seconds.toFixed(1)+' s olindi · '+report.removed_retakes+' takroriy dubl';
+  function review(report){if(typeof report.audio==='number')el('reelAudio').value=String(report.audio);choices=[];el('reelTakes').textContent='';
+    el('reelSummary').textContent=report.output_seconds.toFixed(1)+' s natija · '+report.removed_seconds.toFixed(1)+' s olindi · '+report.removed_retakes+' takroriy dubl'+(report.warnings&&report.warnings.length?' · '+report.warnings.join(' '):'');
     report.retakes.forEach(function(take){var box=document.createElement('div');box.className='retake';var label=document.createElement('label'),field=document.createElement('input');field.type='checkbox';field.checked=!take.remove;var title=document.createElement('span');title.textContent='Bu dubl saqlansin · '+take.start.toFixed(1)+'–'+take.end.toFixed(1)+' s';label.appendChild(field);label.appendChild(title);var text=document.createElement('p');text.textContent=take.text;var kept=document.createElement('p');kept.className='hint';kept.textContent='Qoldirilgan: '+take.kept_text;box.appendChild(label);box.appendChild(text);box.appendChild(kept);el('reelTakes').appendChild(box);choices.push({id:take.id,field:field});});
     el('reelFile').textContent=result.path;el('reelReview').hidden=false;el('reelImport').hidden=false;
   }
@@ -43,7 +43,7 @@
     try{child=spawn(bridge.python.value,[path.join(bridge.root,'subtitles','reels.py'),'--input',state.source,'--output',output,'--settings',config],{windowsHide:true,env:Object.assign({},process.env,{PYTHONUTF8:'1',HF_HUB_OFFLINE:'1'})});}catch(e){fail(e.message);return;}
     var processRef=child;child.stdout.on('data',function(chunk){if(!cancelled)status(String(chunk).trim());});child.stderr.on('data',function(chunk){log=(log+chunk).slice(-4000);});
     child.on('error',function(error){if(child===processRef)fail('Python ochilmadi: '+error.message);});
-    child.on('close',function(code){if(child!==processRef)return;child=null;if(cancelled){fail('Bekor qilindi. Asl sequence saqlandi.');return;}if(code!==0){fail('Reels montaji tugamadi:\n'+log);return;}
+    child.on('close',function(code){if(child!==processRef)return;child=null;if(cancelled){fail('Bekor qilindi. Asl sequence saqlandi.');return;}if(code!==0){fail('Reels montaji tugamadi:\n'+log.replace(/^Reels montaji tugamadi:\s*/, ''));return;}
       try{var report=JSON.parse(fs.readFileSync(output.replace(/\.xml$/,'.json'),'utf8'));result={path:output,info:state.info,warnings:report.warnings||[]};review(report);phase(false);status('Tozalash tayyor. Dubllarni tekshirib, keraklisini saqlash mumkin.');if(autoImport)importResult();}
       catch(e){fail('Natija o‘qilmadi: '+e.message);}
     });

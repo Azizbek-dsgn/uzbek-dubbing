@@ -29,10 +29,10 @@ if sys.platform == 'darwin' and platform.machine().lower() == 'x86_64':
 
 if __package__:
     from .cli import Word, transcribe, _join
-    from .podcast import parse_timeline, track_activity, retained_ranges, edit_xml
+    from .podcast import audio_route, speech_activity, parse_timeline, track_activity, retained_ranges, edit_xml
 else:
     from cli import Word, transcribe, _join
-    from podcast import parse_timeline, track_activity, retained_ranges, edit_xml
+    from podcast import audio_route, speech_activity, parse_timeline, track_activity, retained_ranges, edit_xml
 
 
 def reels_transcribe(audio, model, device, progress=None):
@@ -152,12 +152,11 @@ def render_audio(timeline, track, inside, outside, output):
             start,end=round((a-inside)/fps*16000),round((b-inside)/fps*16000)
             if start<cursor:raise ValueError('Audio trekda ustma-ust kliplar bor. Avval alohida trekka joylang.')
             if not clip.path.is_file():raise ValueError('Media offline: '+clip.path.name)
-            channels=int(clip.file.findtext('media/audio/channelcount','1'))
-            if clip.channel>=channels:raise ValueError('Audio kanal mosligini tekshiring.')
+            audio_stream,audio_channel=audio_route(clip)
             zeros(start-cursor);cursor=start
             seek=float(clip.inside/clip.fps)+(a-clip.start)/fps
             command=[imageio_ffmpeg.get_ffmpeg_exe(),'-nostdin','-v','error','-ss',str(seek),'-i',str(clip.path),
-                     '-t',str((b-a)/fps),'-map','0:a:0','-vn','-af',f'pan=mono|c0=c{clip.channel}',
+                     '-t',str((b-a)/fps),'-map',f'0:a:{audio_stream}','-vn','-af',f'pan=mono|c0=c{audio_channel}',
                      '-ar','16000','-f','s16le','pipe:1']
             with tempfile.TemporaryFile() as error:
                 process=subprocess.Popen(command,stdout=subprocess.PIPE,stderr=error)
@@ -186,7 +185,7 @@ def cached_transcript(timeline, track, inside, outside, model, cache, decode=ree
         stat=c.path.stat();clips.append([str(c.path),stat.st_size,stat.st_mtime_ns,c.start,c.end,c.inside,c.outside,str(c.fps),c.channel])
     model_files=[root/'models'/model/'model.bin'] if model!='gigaam-uzbek' else [root/'models/gigaam-uzbek/checkpoints/large_full_600m/best.pt',root/'models/gigaam-base-large/modeling_gigaam.py']
     weights=[[str(p),p.stat().st_size,p.stat().st_mtime_ns] for p in model_files if p.is_file()]
-    key=hashlib.sha256(json.dumps([2,model,weights,str(timeline.fps),inside,outside,clips],ensure_ascii=False).encode()).hexdigest()
+    key=hashlib.sha256(json.dumps([3,model,weights,str(timeline.fps),inside,outside,clips],ensure_ascii=False).encode()).hexdigest()
     cache.mkdir(parents=True,exist_ok=True);file=cache/(key+'.json')
     if file.is_file():
         try:
@@ -220,8 +219,8 @@ def run(source,output,settings,*,vad=True,decode=reels_transcribe):
     threshold=number('threshold',-42,-80,-10);window=number('window',45,3,120)
     if not any(c.enabled for t in timeline.video for c in t):raise ValueError('Faol video klip topilmadi.')
     print('UZREELS Nutq va pauzalar tahlili…',flush=True)
-    step=max(1,round(fps/10));activity=track_activity(timeline,track,step,vad=vad)
-    if not any(activity[inside//step:math.ceil(outside/step)]>threshold):raise ValueError('Tanlangan oraliqda nutq topilmadi.')
+    step=max(1,round(fps/10));track,activity,audio_warning=speech_activity(timeline,track,step,inside,outside,threshold,vad=vad)
+    if not any(activity[inside//step:math.ceil(outside/step)]>threshold):raise ValueError('Tanlangan audio kanalida bu oraliqda nutq topilmadi. Nutqli audio trekni tanlang; mikrofon va trekning mute holatini tekshiring.')
     plan=[{'start':i*step,'end':min(timeline.duration,(i+1)*step),'silent':bool(level<=threshold)} for i,level in enumerate(activity)]
     retained=retained_ranges(plan,timeline.duration,inside=inside,outside=outside,
                              remove_silence=bool(settings.get('remove_silence',True)),silence_frames=round(silence*fps),pad_frames=round(padding*fps))
@@ -252,7 +251,7 @@ def run(source,output,settings,*,vad=True,decode=reels_transcribe):
             'original_frames':timeline.duration,'output_frames':total,'output_seconds':total/fps,
             'removed_seconds':(timeline.duration-total)/fps,'retakes':proposals,
             'removed_retakes':sum(p['remove'] for p in proposals),'cuts':schedule,
-            'warnings': (['Timeline’da yaratilgan qatlamlar bor. Premiere XML ayrim Adjustment Layer/Graphic effektlarini saqlamaydi; yangi sequence ko‘rinishini tekshiring.'] if any(c.path is None for t in timeline.video for c in t) else []) + (['Kesishga tushgan fade/transition yangi sequence’da olib tashlanadi.'] if len(result.findall('.//transitionitem')) < len(timeline.sequence.findall('.//transitionitem')) else []),
+            'audio': track, 'warnings': ([audio_warning] if audio_warning else []) + (['Timeline’da yaratilgan qatlamlar bor. Premiere XML ayrim Adjustment Layer/Graphic effektlarini saqlamaydi; yangi sequence ko‘rinishini tekshiring.'] if any(c.path is None for t in timeline.video for c in t) else []) + (['Kesishga tushgan fade/transition yangi sequence’da olib tashlanadi.'] if len(result.findall('.//transitionitem')) < len(timeline.sequence.findall('.//transitionitem')) else []),
             'transcript':[{k:v for k,v in p.items() if k!='tokens'} for p in parts]}
     output.parent.mkdir(parents=True,exist_ok=True);temporary=output.with_suffix('.tmp.xml')
     ET.ElementTree(result).write(temporary,encoding='utf-8',xml_declaration=True);temporary.replace(output)

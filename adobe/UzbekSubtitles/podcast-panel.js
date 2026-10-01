@@ -101,7 +101,7 @@
           if(cancelled){fail('Bekor qilindi. Asl sequence saqlandi.');return;}
           if(code!==0){fail('Montaj tugamadi:\n'+log);return;}
           try {var report=JSON.parse(fs.readFileSync(output.replace(/\.xml$/,'.json'),'utf8'));result={path:output,info:data,report:report};
-            el('podSummary').textContent=report.output_seconds.toFixed(1)+' s natija · '+report.removed_seconds.toFixed(1)+' s pauza olindi · '+report.cuts.length+' bo‘lak';
+            el('podSummary').textContent=report.output_seconds.toFixed(1)+' s natija · '+report.removed_seconds.toFixed(1)+' s pauza olindi · '+report.cuts.length+' bo‘lak'+(report.warnings&&report.warnings.length?' · '+report.warnings.join(' '):'');
             el('podCuts').textContent='';report.cuts.slice(0,200).forEach(function(cut){var row=document.createElement('div');row.className='cue-item';row.textContent=(cut.start/report.fps).toFixed(1)+'–'+(cut.end/report.fps).toFixed(1)+' s → '+(cut.camera===null?'Asl kameralar':'Video '+(cut.camera+1));el('podCuts').appendChild(row);});
             el('podFile').textContent=output;el('podReview').hidden=false;phase(false);status('XML tayyor. Yangi sequence qo‘shib tekshiring.');
           }catch(e){fail('Natija o‘qilmadi: '+e.message);}

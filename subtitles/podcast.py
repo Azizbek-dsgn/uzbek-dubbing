@@ -18,6 +18,7 @@ import uuid
 import xml.etree.ElementTree as ET
 from dataclasses import dataclass
 from fractions import Fraction
+from functools import lru_cache
 from pathlib import Path
 from urllib.parse import unquote, urlparse
 
@@ -127,6 +128,34 @@ def parse_timeline(path: Path, *, allow_transitions: bool = False) -> Timeline:
     return Timeline(sequence, fps, duration, streams[0], streams[1])
 
 
+@lru_cache(maxsize=128)
+def _audio_stream_channels(path: str, size: int, modified: int) -> tuple[int, ...]:
+    import av
+    try:
+        with av.open(path) as container:
+            return tuple(len(stream.codec_context.layout.channels) for stream in container.streams.audio)
+    except (OSError, ValueError) as exc:
+        raise ValueError('Audio media o‘qilmadi: ' + Path(path).name) from exc
+
+
+def audio_route(clip: Clip) -> tuple[int, int]:
+    """Resolve Premiere's split mono XML components to real stream/channel pairs."""
+    if clip.path is None or not clip.path.is_file():
+        raise ValueError('Media offline yoki topilmadi: ' + (clip.path.name if clip.path else 'Audio'))
+    components = clip.file.findall('media/audio')
+    declared = [int(channel.findtext('sourcechannel', '0')) - 1
+                for component in components for channel in component.findall('audiochannel')]
+    physical = declared[clip.channel] if len(declared) > clip.channel and declared[clip.channel] >= 0 else clip.channel
+    stat = clip.path.stat()
+    counts = _audio_stream_channels(str(clip.path), stat.st_size, stat.st_mtime_ns)
+    remaining = physical
+    for stream, count in enumerate(counts):
+        if remaining < count:
+            return stream, remaining
+        remaining -= count
+    raise ValueError(f'{clip.path.name}: manba audio kanali {physical + 1} topilmadi ({sum(counts)} kanal bor).')
+
+
 def track_activity(timeline: Timeline, track_index: int, step: int, *, vad: bool = True) -> np.ndarray:
     """Decode one microphone in small chunks, retaining only loudness windows."""
     import imageio_ffmpeg
@@ -147,13 +176,11 @@ def track_activity(timeline: Timeline, track_index: int, step: int, *, vad: bool
         if not clip.path.is_file():
             raise ValueError(f'Media offline yoki topilmadi: {clip.path.name}')
         seconds = (clip.end - clip.start) / fps
-        channels = int(clip.file.findtext('media/audio/channelcount', '1'))
-        if clip.channel >= channels:
-            raise ValueError(f'{clip.path.name}: audio kanal mosligini tekshiring.')
+        audio_stream, audio_channel = audio_route(clip)
         command = [imageio_ffmpeg.get_ffmpeg_exe(), '-nostdin', '-v', 'error',
                    '-ss', str(float(Fraction(clip.inside, 1) / clip.fps)), '-i', str(clip.path),
-                   '-t', str(seconds), '-map', '0:a:0', '-vn',
-                   '-af', f'pan=mono|c0=c{clip.channel}', '-ar', '16000', '-f', 'f32le', 'pipe:1']
+                   '-t', str(seconds), '-map', f'0:a:{audio_stream}', '-vn',
+                   '-af', f'pan=mono|c0=c{audio_channel}', '-ar', '16000', '-f', 'f32le', 'pipe:1']
         # A file for stderr prevents an unread stderr pipe from blocking ffmpeg.
         import tempfile
         with tempfile.TemporaryFile() as error:
@@ -190,6 +217,28 @@ def track_activity(timeline: Timeline, track_index: int, step: int, *, vad: bool
                     process.wait()
                 process.stdout.close()
     return levels
+
+
+def speech_activity(timeline: Timeline, selected: int, step: int, inside: int, outside: int,
+                    threshold: float, *, vad: bool = True, allow_sibling: bool = True):
+    def audible(levels):
+        return np.any(levels[inside // step:math.ceil(outside / step)] > threshold)
+    levels = track_activity(timeline, selected, step, vad=vad)
+    if audible(levels) or not allow_sibling:
+        return selected, levels, ''
+    def signature(track):
+        return [(str(c.path), c.start, c.end, c.inside, c.outside, c.fps) for c in track if c.enabled]
+    selected_signature = signature(timeline.audio[selected])
+    # Only a paired channel of the exact same synced clips can replace this input.
+    # Never select unrelated music or another speaker's microphone.
+    if selected_signature:
+        for index, track in enumerate(timeline.audio):
+            if index == selected or signature(track) != selected_signature:
+                continue
+            alternative = track_activity(timeline, index, step, vad=vad)
+            if audible(alternative):
+                return index, alternative, f'Audio {selected + 1} kanalida nutq yo‘q; shu klipning nutqli Audio {index + 1} kanali ishlatildi.'
+    return selected, levels, ''
 
 
 def camera_plan(levels: np.ndarray, *, step: int, duration: int, fps: float,
@@ -482,14 +531,17 @@ def run(source: Path, output: Path, settings: dict, *, vad: bool = True) -> dict
     padding = number('padding', .2, 0, 1)
     wide_every = number('wide_every', 30, 0, 300)
     step = max(1, round(fps / 10))
-    activity = []
+    activity = []; warnings = []; mappings = [dict(m) for m in mappings]
     for index, mapping in enumerate(mappings, 1):
         print(f'UZPOD {index}/{len(mappings)} Mikrofon {mapping["audio"] + 1}', flush=True)
-        activity.append(track_activity(timeline, mapping['audio'], step, vad=vad))
+        actual, detected, warning = speech_activity(timeline, mapping['audio'], step, inside, outside, threshold, vad=vad, allow_sibling=len(mappings)==1)
+        mapping['audio'] = actual
+        activity.append(detected)
+        if warning: warnings.append(warning)
     levels = np.stack(activity)
     # Activity outside the selected range cannot make an empty selected range pass.
     if not np.any(levels[:, inside // step:math.ceil(outside / step)] > threshold):
-        raise ValueError('Tanlangan In/Out qismida nutq topilmadi.')
+        raise ValueError('Tanlangan mikrofonlarda In/Out qismida nutq yo‘q. Nutq bor audio trekni tanlang; chap/o‘ng kanal va trekning mute holatini tekshiring.')
     plan = camera_plan(levels, step=step, duration=timeline.duration, fps=fps,
                        threshold=threshold, minimum_shot=minimum_shot, reaction=reaction,
                        margin=margin, wide=wide is not None, wide_every=wide_every)
@@ -499,7 +551,7 @@ def run(source: Path, output: Path, settings: dict, *, vad: bool = True) -> dict
     mapped_video = {m['video'] for m in mappings} | ({wide} if wide is not None else set())
     result = edit_xml(timeline, schedule, mapped_video, profile=settings.get('profile', 'original'))
     total = sum(s['end'] - s['start'] for s in schedule)
-    report = {'schema': 1, 'source': str(source), 'xml': str(output), 'fps': fps,
+    report = {'schema': 1, 'warnings': warnings, 'speakers': mappings, 'source': str(source), 'xml': str(output), 'fps': fps,
               'original_frames': timeline.duration, 'output_frames': total,
               'removed_seconds': (timeline.duration - total) / fps,
               'output_seconds': total / fps, 'cuts': schedule,

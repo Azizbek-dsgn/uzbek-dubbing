@@ -69,7 +69,7 @@ class ReelsTests(unittest.TestCase):
             folder=Path(temp);source=folder/'source.xml';fixture(source,duration=500,microphones=1)
             words=speech(['Bugun sizga juda foydali maslahat beraman.']*2)
             settings={'audio':0,'remove_silence':False}
-            with patch('subtitles.reels.track_activity',return_value=np.full(167,-20.)),patch('subtitles.reels.cached_transcript',return_value=(words,True)):
+            with patch('subtitles.podcast.track_activity',return_value=np.full(167,-20.)),patch('subtitles.reels.cached_transcript',return_value=(words,True)):
                 original=source.read_bytes();report=run(source,folder/'edit.xml',settings)
                 self.assertEqual(report['removed_retakes'],1);self.assertGreater(report['removed_seconds'],1)
                 settings['keep_retake_ids']=[0];report=run(source,folder/'keep.xml',settings)
@@ -81,11 +81,11 @@ class ReelsTests(unittest.TestCase):
             folder=Path(temp);source=folder/'source.xml';fixture(source,duration=500,microphones=1)
             levels=np.full(167,-100.);levels[45:55]=-20
             settings={'audio':0,'start':4,'end':8,'remove_retakes':False}
-            with patch('subtitles.reels.track_activity',return_value=levels):
+            with patch('subtitles.podcast.track_activity',return_value=levels):
                 report=run(source,folder/'edit.xml',settings)
                 self.assertEqual(report['cuts'][0]['start'],0);self.assertEqual(report['cuts'][-1]['end'],500)
                 self.assertLess(report['removed_seconds'],4)
-            with patch('subtitles.reels.track_activity',return_value=np.full(167,-100.)),self.assertRaisesRegex(ValueError,'nutq topilmadi'):
+            with patch('subtitles.podcast.track_activity',return_value=np.full(167,-100.)),self.assertRaisesRegex(ValueError,'nutq topilmadi'):
                 run(source,folder/'none.xml',settings)
 
     def test_invalid_settings_and_word_times_fail(self):
