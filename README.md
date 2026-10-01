@@ -2,7 +2,7 @@
 
 Premiere Pro va After Effects uchun lokal CEP panel. U faol sequence yoki kompozitsiyadagi audioni eksport qiladi, tanlangan model bilan o‘zbekcha nutqni so‘z vaqtigacha taniydi va subtitrlarni timeline’ga qo‘yadi. API kaliti kerak emas; o‘rnatishdan keyin transkripsiya internet talab qilmaydi.
 
-**Boshqa foydalanuvchilar uchun:** `tools/build_release.py` yordamida NavAI small modeli bilan macOS/Windows beta ZIP yaratiladi. Xaridor ko‘rsatmasi [README-INSTALL.md](README-INSTALL.md), sotuvdan oldingi majburiy tekshiruvlar [SELLER-RELEASE.md](SELLER-RELEASE.md) faylida. Imzolangan ZXP va haqiqiy Windows sinovi tugamaguncha paketni yakuniy sotuv versiyasi deb belgilamang.
+**Boshqa foydalanuvchilar uchun:** `tools/build_release.py` yordamida NavAI small modeli bilan macOS/Windows beta ZIP yaratiladi; ZIP o‘rnatkichi GigaAM Uzbek’ni internetdan qo‘shimcha yuklaydi. Xaridor ko‘rsatmasi [README-INSTALL.md](README-INSTALL.md), sotuvdan oldingi majburiy tekshiruvlar [SELLER-RELEASE.md](SELLER-RELEASE.md) faylida. Imzolangan ZXP va haqiqiy Windows sinovi tugamaguncha paketni yakuniy sotuv versiyasi deb belgilamang.
 
 **Terminaldan o‘rnatish:** macOS Terminal, Windows PowerShell yoki Windows CMD uchun [README-INSTALL.md](README-INSTALL.md)dagi tegishli bitta buyruq kodni, kerak bo‘lsa Python’ni, NavAI small va GigaAM Uzbek 600M modellarini o‘rnatadi. Adobe dasturlarining o‘zi oldindan o‘rnatilgan bo‘lishi kerak.
 

@@ -48,7 +48,11 @@ jobs:
           'print("Windows bootstrap source executed")' | Set-Content (Join-Path $source 'install_online.py')
           $env:UZSCRIBE_ARCHIVE_PATH = Join-Path $fixture 'source.zip'
           Compress-Archive -Path $source -DestinationPath $env:UZSCRIBE_ARCHIVE_PATH
+          $env:UZSCRIBE_FORCE_MANAGED_PYTHON = '1'
           . ./bootstrap-windows.ps1
+          Remove-Item Env:UZSCRIBE_FORCE_MANAGED_PYTHON
+          Remove-Item Env:UZSCRIBE_ARCHIVE_PATH
+          $env:UZSCRIBE_SOURCE_DIR = $source
           cmd.exe /d /s /c 'powershell -NoProfile -ExecutionPolicy Bypass -Command "Get-Content -Raw bootstrap-windows.ps1 | Invoke-Expression"'
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
       - name: Windows uv package install smoke test
@@ -57,7 +61,7 @@ jobs:
         run: |
           python -m pip install uv
           $runtime = Join-Path $env:RUNNER_TEMP 'uzscribe-uv-smoke'
-          python -m venv $runtime
+          uv venv --python 3.12 $runtime
           $python = Join-Path $runtime 'Scripts/python.exe'
           uv pip install --python $python packaging
           & $python -c 'import packaging; print(packaging.__version__)'
@@ -67,4 +71,5 @@ jobs:
           mkdir -p "$RUNNER_TEMP/uzscribe-fixture/checkout"
           printf 'print("macOS bootstrap source executed")\n' > "$RUNNER_TEMP/uzscribe-fixture/checkout/install_online.py"
           tar -czf "$RUNNER_TEMP/uzscribe-fixture/source.tar.gz" -C "$RUNNER_TEMP/uzscribe-fixture" checkout
-          UZSCRIBE_ARCHIVE_PATH="$RUNNER_TEMP/uzscribe-fixture/source.tar.gz" bash bootstrap-mac.sh
+          UZSCRIBE_FORCE_MANAGED_PYTHON=1 UZSCRIBE_ARCHIVE_PATH="$RUNNER_TEMP/uzscribe-fixture/source.tar.gz" bash bootstrap-mac.sh
+          UZSCRIBE_SOURCE_DIR="$RUNNER_TEMP/uzscribe-fixture/checkout" bash bootstrap-mac.sh

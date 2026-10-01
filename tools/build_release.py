@@ -32,11 +32,14 @@ def hash_file(path: Path) -> str:
 def build(model_dir: Path, output: Path, signed_zxp: Path | None = None) -> None:
     files: dict[str, Path] = {
         "install.py": ROOT / "install.py",
+        "install_online.py": ROOT / "install_online.py",
         "README-INSTALL.md": ROOT / "README-INSTALL.md",
         "NOTICE-THIRD-PARTY.md": ROOT / "NOTICE-THIRD-PARTY.md",
         "APACHE-2.0.txt": ROOT / "APACHE-2.0.txt",
         "Install-mac.command": ROOT / "Install-mac.command",
         "Install-Windows.ps1": ROOT / "Install-Windows.ps1",
+        "bootstrap-mac.sh": ROOT / "bootstrap-mac.sh",
+        "bootstrap-windows.ps1": ROOT / "bootstrap-windows.ps1",
     }
     files.update({f"adobe/UzbekSubtitles/{name}": ROOT / "adobe" / "UzbekSubtitles" / name
                   for name in PANEL})

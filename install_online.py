@@ -1,4 +1,4 @@
-"""Install UzScribe from a GitHub checkout, downloading the Uzbek model on first use."""
+"""Install UzScribe from source, preparing Python, NavAI and GigaAM."""
 
 from __future__ import annotations
 
@@ -77,11 +77,20 @@ def _python_for(runtime: Path, system: str) -> Path:
     return runtime / ".venv" / ("Scripts/python.exe" if system == "win32" else "bin/python")
 
 
+def _navai_ready(directory: Path) -> bool:
+    return all((directory / name).is_file()
+               for name in ("model.bin", "config.json", "tokenizer.json"))
+
+
 def _prepare_environment(runtime: Path, system: str, *, convert: bool,
                          uv: Path | None = None) -> Path:
     python = _python_for(runtime, system)
     if not python.is_file():
-        venv.EnvBuilder(with_pip=True).create(runtime / ".venv")
+        if uv:
+            subprocess.run([str(uv), "venv", "--python", sys.executable,
+                            str(runtime / ".venv")], check=True)
+        else:
+            venv.EnvBuilder(with_pip=True).create(runtime / ".venv")
     if uv:
         base_command = [str(uv), "pip", "install", "--python", str(python)]
     else:
@@ -116,7 +125,9 @@ def main() -> int:
     try:
         runtime, _ = destinations(sys.platform, Path.home(), dict(os.environ))
         existing = runtime / "models" / "navai-small"
-        model = args.model_dir or (existing if (existing / "model.bin").is_file() else None)
+        if args.model_dir and not _navai_ready(args.model_dir):
+            raise FileNotFoundError(f"NavAI modeli to‘liq emas: {args.model_dir}")
+        model = args.model_dir or (existing if _navai_ready(existing) else None)
         uv = Path(os.environ["UZSCRIBE_UV_BIN"]) if os.environ.get("UZSCRIBE_UV_BIN") else None
         python = _prepare_environment(runtime, sys.platform, convert=model is None, uv=uv)
         if model is None:

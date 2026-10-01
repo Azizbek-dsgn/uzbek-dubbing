@@ -7,7 +7,7 @@ from pathlib import Path
 from unittest.mock import patch
 
 from install import destinations, install
-from install_online import CONVERT, DOWNLOAD_GIGAAM, _prepare_environment, _install_gigaam
+from install_online import CONVERT, DOWNLOAD_GIGAAM, _navai_ready, _prepare_environment, _install_gigaam
 
 
 class InstallerTests(unittest.TestCase):
@@ -53,6 +53,15 @@ class InstallerTests(unittest.TestCase):
         ast.parse(CONVERT)
         ast.parse(DOWNLOAD_GIGAAM)
 
+    def test_incomplete_navai_install_is_not_treated_as_ready(self):
+        with tempfile.TemporaryDirectory() as temp:
+            model = Path(temp)
+            (model / 'model.bin').write_bytes(b'partial')
+            self.assertFalse(_navai_ready(model))
+            (model / 'config.json').write_text('{}')
+            (model / 'tokenizer.json').write_text('{}')
+            self.assertTrue(_navai_ready(model))
+
     def test_uv_installs_into_windows_runtime_when_bootstrap_provides_it(self):
         with tempfile.TemporaryDirectory() as temp:
             runtime = Path(temp)
@@ -80,6 +89,19 @@ class InstallerTests(unittest.TestCase):
                           '--python', str(python)])
         self.assertIn('requirements-gigaam.txt', run.call_args_list[0].args[0][-2])
         self.assertEqual(run.call_args_list[2].args[0][-1], str(runtime))
+
+    def test_fresh_runtime_uses_uv_venv_without_system_pip(self):
+        with tempfile.TemporaryDirectory() as temp:
+            runtime = Path(temp) / 'new-runtime'
+            with patch('install_online.subprocess.run') as run:
+                python = _prepare_environment(runtime, 'win32', convert=False,
+                                              uv=Path('C:/uv/uv.exe'))
+            self.assertEqual(run.call_count, 2)
+            self.assertEqual(run.call_args_list[0].args[0][:3],
+                             [str(Path('C:/uv/uv.exe')), 'venv', '--python'])
+            self.assertEqual(run.call_args_list[0].args[0][-1], str(runtime / '.venv'))
+            self.assertEqual(run.call_args_list[1].args[0][:5],
+                             [str(Path('C:/uv/uv.exe')), 'pip', 'install', '--python', str(python)])
 
     def test_manifest_targets_adobe_2020_hosts_and_cep9(self):
         manifest = ET.parse(Path(__file__).resolve().parents[1] /
