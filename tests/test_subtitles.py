@@ -153,6 +153,13 @@ class SubtitleTests(unittest.TestCase):
         fixed = restore_sentences(words)
         self.assertEqual([w.text for w in fixed], ["Salom.", "Bugun", "yaxshi."])
 
+    def test_long_sentence_chunk_does_not_gain_false_capital(self):
+        words = [Word(i * .2, i * .2 + .15, "gap") for i in range(31)]
+        fixed = restore_sentences(words, lambda text: text.capitalize() + ".")
+        self.assertEqual(fixed[0].text, "Gap")
+        self.assertEqual(fixed[29].text, "gap")
+        self.assertEqual(fixed[30].text, "gap.")
+
 
 if __name__ == "__main__":
     unittest.main()

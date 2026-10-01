@@ -30,7 +30,8 @@ def _tokens(text: str) -> list[str]:
     return result
 
 
-def _transfer(words: list[T], prediction: str, final_chunk: bool) -> list[T]:
+def _transfer(words: list[T], prediction: str, final_chunk: bool,
+              initial_capital: bool) -> list[T]:
     """Copy only case and punctuation from matching model tokens."""
     predicted = _tokens(prediction)
     source = [_lexical(w.text) for w in words]
@@ -47,7 +48,7 @@ def _transfer(words: list[T], prediction: str, final_chunk: bool) -> list[T]:
         if not source[i] or not target[j]:
             continue
         # Never replace the ASR spelling or introduce a different-language word.
-        if candidate[:1].isupper() and original[:1].islower():
+        if candidate[:1].isupper() and original[:1].islower() and (i > 0 or initial_capital):
             original = original[:1].upper() + original[1:]
         suffix = re.search(r"[,.!?;:…]+$", candidate)
         if suffix and (final_chunk or i < len(words) - 1):
@@ -73,10 +74,12 @@ def restore_sentences(words: list[T], correct: Callable[[str], str] | None = Non
     for word in words:
         if chunk and (word.start - chunk[-1].end >= strong_pause or len(chunk) >= 30):
             natural_break = word.start - chunk[-1].end >= strong_pause
-            result.extend(_restore_chunk(chunk, correct, natural_break))
+            begin_sentence = not result or result[-1].text.rstrip().endswith(tuple(END))
+            result.extend(_restore_chunk(chunk, correct, natural_break, begin_sentence))
             chunk = []
         chunk.append(word)
-    result.extend(_restore_chunk(chunk, correct, True))
+    begin_sentence = not result or result[-1].text.rstrip().endswith(tuple(END))
+    result.extend(_restore_chunk(chunk, correct, True, begin_sentence))
     for index, word in enumerate(result):
         if index == 0 or result[index - 1].text.rstrip().endswith(tuple(END)):
             result[index] = _capitalize_first(word)
@@ -84,11 +87,12 @@ def restore_sentences(words: list[T], correct: Callable[[str], str] | None = Non
 
 
 def _restore_chunk(words: list[T], correct: Callable[[str], str] | None,
-                   natural_break: bool) -> list[T]:
+                   natural_break: bool, begin_sentence: bool) -> list[T]:
     result = list(words)
     if correct:
         try:
-            result = _transfer(words, correct(" ".join(w.text.strip() for w in words)), natural_break)
+            result = _transfer(words, correct(" ".join(w.text.strip() for w in words)),
+                               natural_break, begin_sentence)
         except Exception:
             # A text model failure must not discard an otherwise usable transcript.
             pass
