@@ -29,8 +29,7 @@ try {
     $uvScript = Join-Path $work 'uv-install.ps1'
     Invoke-WebRequest -Uri 'https://astral.sh/uv/install.ps1' -OutFile $uvScript -UseBasicParsing
     $env:UV_UNMANAGED_INSTALL = Join-Path $work 'uv-bin'
-    powershell -NoProfile -ExecutionPolicy Bypass -File $uvScript
-    if ($LASTEXITCODE -ne 0) { throw 'uv setup failed.' }
+    Invoke-Expression (Get-Content -LiteralPath $uvScript -Raw)
     $uv = Join-Path $env:UV_UNMANAGED_INSTALL 'uv.exe'
     if (-not (Test-Path -LiteralPath $uv)) { throw 'uv.exe topilmadi.' }
     $env:UZSCRIBE_UV_BIN = $uv

@@ -65,6 +65,13 @@ jobs:
           $python = Join-Path $runtime 'Scripts/python.exe'
           uv pip install --python $python packaging
           & $python -c 'import packaging; print(packaging.__version__)'
+          uv pip install --python $python --dry-run -r subtitles/requirements-release.txt -r subtitles/requirements-gigaam.txt 'huggingface_hub>=0.34,<2'
+      - name: macOS model dependency resolution
+        if: runner.os == 'macOS'
+        run: |
+          python -m pip install uv
+          uv venv --python 3.12 "$RUNNER_TEMP/uzscribe-model-resolution"
+          uv pip install --python "$RUNNER_TEMP/uzscribe-model-resolution/bin/python" --dry-run -r subtitles/requirements-release.txt -r subtitles/requirements-gigaam.txt 'huggingface_hub>=0.34,<2'
       - name: macOS bootstrap archive smoke test
         if: runner.os == 'macOS'
         run: |
