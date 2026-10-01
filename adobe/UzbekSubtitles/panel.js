@@ -83,6 +83,8 @@
     var smallOption = document.createElement('option');
     smallOption.value = 'navai-small'; smallOption.textContent = 'NavAI Uzbek small — tezroq';
     model.insertBefore(smallOption, model.firstChild);
+    if (!fs.existsSync(path.join(root, 'models', 'navai-medium', 'model.bin')))
+      model.value = 'navai-small';
   }
   if (fs.existsSync(path.join(root, 'models', 'gigaam-uzbek', 'checkpoints', 'large_full_600m', 'best.pt')) &&
       fs.existsSync(path.join(root, 'models', 'gigaam-base-large', 'config.json'))) {

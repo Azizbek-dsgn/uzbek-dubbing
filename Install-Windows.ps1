@@ -11,7 +11,7 @@ if (-not $python) { throw 'Python 3.10–3.12 kerak: https://www.python.org/down
 if (Test-Path 'UzbekSubtitles.zxp') {
   & py $python install.py
   if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-  Write-Host 'Endi UzbekSubtitles.zxp faylini Adobe orqali o‘rnating.'
+  Write-Host 'Endi UzbekSubtitles.zxp faylini Adobe orqali ornating.'
 } else {
   & py $python install.py --developer
   if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
