@@ -76,7 +76,8 @@ class InstallerTests(unittest.TestCase):
             _install_gigaam(runtime, python, Path('C:/uv/uv.exe'))
         self.assertEqual(run.call_count, 3)
         self.assertEqual(run.call_args_list[0].args[0][:5],
-                         ['C:/uv/uv.exe', 'pip', 'install', '--python', str(python)])
+                         [str(Path('C:/uv/uv.exe')), 'pip', 'install',
+                          '--python', str(python)])
         self.assertIn('requirements-gigaam.txt', run.call_args_list[0].args[0][-2])
         self.assertEqual(run.call_args_list[2].args[0][-1], str(runtime))
 
