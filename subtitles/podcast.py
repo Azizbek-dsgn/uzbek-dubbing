@@ -361,6 +361,8 @@ def edit_xml(timeline: Timeline, schedule: list[dict], mapped_video: set[int], *
     records, seen_files = [], set()
     for kind, original_tracks in [('video', timeline.video), ('audio', timeline.audio)]:
         for track_index, track in enumerate(sequence.findall('media/' + kind + '/track')):
+            first_clip = track.find('clipitem')
+            insert_at = list(track).index(first_clip) if first_clip is not None else 0
             for item in list(track.findall('clipitem')):
                 track.remove(item)
             for source in original_tracks[track_index]:
@@ -382,19 +384,21 @@ def edit_xml(timeline: Timeline, schedule: list[dict], mapped_video: set[int], *
                     for item in list(clip.findall('link')) + list(clip.findall('masterclipid')):
                         clip.remove(item)
                     file = clip.find('file')
+                    file_position = list(clip).index(file)
                     clip.remove(file)
                     resolved = copy.deepcopy(source.file)
                     file_id = resolved.get('id') or 'uzscribe-file-' + uuid.uuid5(uuid.NAMESPACE_URL, str(source.path)).hex
                     resolved.set('id', file_id)
-                    clip.append(resolved)
+                    clip.insert(file_position, resolved)
                     if profile != 'original' and kind == 'video':
                         center_crop(clip, width, height, fallback)
                     if file_id in seen_files:
                         clip.remove(resolved)
-                        clip.append(ET.Element('file', id=file_id))
+                        clip.insert(file_position, ET.Element('file', id=file_id))
                     seen_files.add(file_id)
                     clip.set('id', 'uzscribe-clip-' + str(len(records) + 1))
-                    track.append(clip)
+                    track.insert(insert_at, clip)
+                    insert_at += 1
                     records.append((clip, kind, track_index + 1, len(track.findall('clipitem')),
                                     (file_id, inside, outside, output_start, end - start)))
     groups = {}

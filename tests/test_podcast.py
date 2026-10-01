@@ -117,3 +117,20 @@ class PodcastTests(unittest.TestCase):
             xml=Path(temp)/'source.xml';fixture(xml);levels=np.full(100,-100.);levels[:20]=-20
             with patch('subtitles.podcast.track_activity',return_value=levels),self.assertRaisesRegex(ValueError,'In/Out'):
                 run(xml,Path(temp)/'edit.xml',{'speakers':[{'audio':0,'video':0}],'start':8,'end':10})
+
+    def test_xml_keeps_file_and_track_metadata_order_and_disabled_clips(self):
+        with tempfile.TemporaryDirectory() as temp:
+            xml=Path(temp)/'source.xml';root=fixture(xml)
+            for track in root.findall('sequence/media/video/track'):
+                ET.SubElement(track,'enabled').text='TRUE'
+                ET.SubElement(track,'locked').text='FALSE'
+            clip=root.find('sequence/media/video/track/clipitem')
+            ET.SubElement(clip,'enabled').text='FALSE'
+            ET.ElementTree(root).write(xml)
+            timeline=parse_timeline(xml)
+            result=edit_xml(timeline,[{'start':0,'end':300,'output':0,'camera':1}],{0,1})
+            first=result.find('sequence/media/video/track')
+            self.assertEqual([n.tag for n in first],['clipitem','enabled','locked'])
+            copy=first.find('clipitem')
+            self.assertEqual(copy.findtext('enabled'),'FALSE')
+            self.assertLess([n.tag for n in copy].index('file'),[n.tag for n in copy].index('sourcetrack'))
