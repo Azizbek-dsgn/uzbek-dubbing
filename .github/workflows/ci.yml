@@ -49,6 +49,8 @@ jobs:
           $env:UZSCRIBE_ARCHIVE_PATH = Join-Path $fixture 'source.zip'
           Compress-Archive -Path $source -DestinationPath $env:UZSCRIBE_ARCHIVE_PATH
           . ./bootstrap-windows.ps1
+          cmd.exe /d /s /c 'powershell -NoProfile -ExecutionPolicy Bypass -Command "Get-Content -Raw bootstrap-windows.ps1 | Invoke-Expression"'
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
       - name: macOS bootstrap archive smoke test
         if: runner.os == 'macOS'
         run: |

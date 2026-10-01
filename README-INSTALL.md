@@ -6,7 +6,7 @@ Bu beta paket. macOS’da lokal transkripsiya sinovdan o‘tgan; Windows’da av
 
 ## GitHub’dan bir buyruq bilan o‘rnatish
 
-Repo **public qilingandan keyin** quyidagi buyruqlar Git yoki Python’ni oldindan o‘rnatishni talab qilmaydi. Ular GitHub’dan kodni yuklab, Python 3.12 kerak bo‘lsa [uv](https://docs.astral.sh/uv/getting-started/installation/) orqali o‘rnatadi, NavAI modelini [Hugging Face’dan](https://huggingface.co/navai-uz/whisper-small-uzbek) olib CTranslate2 formatiga o‘giradi va panelni Adobe CEP katalogiga qo‘yadi. Birinchi o‘rnatishda bir necha gigabayt bo‘sh disk joyi va internet kerak; keyingi transkripsiya offline ishlaydi. Adobe Premiere Pro yoki After Effects o‘zi avvaldan o‘rnatilgan bo‘lishi kerak.
+Quyidagi buyruqlar Git yoki Python’ni oldindan o‘rnatishni talab qilmaydi. Ular GitHub’dan kodni yuklab, Python 3.12 kerak bo‘lsa [uv](https://docs.astral.sh/uv/getting-started/installation/) orqali o‘rnatadi, NavAI modelini [Hugging Face’dan](https://huggingface.co/navai-uz/whisper-small-uzbek) olib CTranslate2 formatiga o‘giradi va panelni Adobe CEP katalogiga qo‘yadi. Birinchi o‘rnatishda bir necha gigabayt bo‘sh disk joyi va internet kerak; keyingi transkripsiya offline ishlaydi. Adobe Premiere Pro yoki After Effects o‘zi avvaldan o‘rnatilgan bo‘lishi kerak.
 
 macOS Terminal:
 
@@ -19,6 +19,14 @@ Windows PowerShell:
 ```powershell
 irm https://raw.githubusercontent.com/Azizbek-dsgn/uzbek-dubbing/feat/uzbek-subtitles-adobe/bootstrap-windows.ps1 | iex
 ```
+
+Windows **Command Prompt (CMD, `C:\Users\...>` oynasi)**:
+
+```bat
+powershell -NoProfile -ExecutionPolicy Bypass -Command "Invoke-RestMethod 'https://raw.githubusercontent.com/Azizbek-dsgn/uzbek-dubbing/feat/uzbek-subtitles-adobe/bootstrap-windows.ps1' | Invoke-Expression"
+```
+
+Faqat oynangizga mos **bitta buyruqni** joylang. `bootstrap-windows.ps1` faylining ichidagi `$python`, `Invoke-WebRequest` kabi qatorlarni CMD’ga alohida joylamang; ular PowerShell sintaksisidir.
 
 Yangilash uchun o‘sha buyruqni qayta ishga tushiring; mavjud model qayta yuklanmaydi. Panel imzosiz beta bo‘lgani uchun skript joriy foydalanuvchida Adobe CEP debug rejimini yoqadi. Adobe dasturlarini qayta oching: **Window → Extensions → UzScribe**. Manifest Premiere Pro 2020+ va After Effects 2020+ versiyalariga mo‘ljallangan; har bir yilning Adobe ichidagi jonli integratsiya sinovi hali tugamagan.
 
