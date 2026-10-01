@@ -9,7 +9,7 @@
       <Host Name="AEFT" Version="[17.0,99.9]"/>
     </HostList>
     <LocaleList><Locale Code="All"/></LocaleList>
-    <RequiredRuntimeList><RequiredRuntime Name="CSXS" Version="10.0"/></RequiredRuntimeList>
+    <RequiredRuntimeList><RequiredRuntime Name="CSXS" Version="9.0"/></RequiredRuntimeList>
   </ExecutionEnvironment>
   <DispatchInfoList>
     <Extension Id="uz.azizbek.subtitles.panel">

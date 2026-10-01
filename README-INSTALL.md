@@ -4,23 +4,23 @@ Bu beta paket. macOS’da lokal transkripsiya sinovdan o‘tgan; Windows’da av
 
 **Talab:** Premiere Pro yoki After Effects, internet (birinchi o‘rnatishda Python paketlari uchun), Python 3.10–3.12, taxminan 1 GB bo‘sh joy. NavAI small modeli ZIP ichida; nutq fayllari kompyuteringizda ishlanadi.
 
-## GitHub’dan terminal orqali o‘rnatish
+## GitHub’dan bir buyruq bilan o‘rnatish
 
-Git va Python 3.10–3.12 o‘rnatilgan bo‘lsin. Hozir repo private: GitHub ruxsati berilgan hisob bilan Git’ga kirgan foydalanuvchilar bu buyruqlarni ishlata oladi. Repo public bo‘lsa, kirish talab qilinmaydi. Birinchi o‘rnatishda kod GitHub’dan, NavAI modeli [Hugging Face’dan](https://huggingface.co/navai-uz/whisper-small-uzbek) olinadi va kompyuterda CTranslate2 formatiga o‘giriladi. Bunga bir necha gigabayt vaqtinchalik disk joyi va internet kerak; keyingi transkripsiya offline ishlaydi.
+Repo **public qilingandan keyin** quyidagi buyruqlar Git yoki Python’ni oldindan o‘rnatishni talab qilmaydi. Ular GitHub’dan kodni yuklab, Python 3.12 kerak bo‘lsa [uv](https://docs.astral.sh/uv/getting-started/installation/) orqali o‘rnatadi, NavAI modelini [Hugging Face’dan](https://huggingface.co/navai-uz/whisper-small-uzbek) olib CTranslate2 formatiga o‘giradi va panelni Adobe CEP katalogiga qo‘yadi. Birinchi o‘rnatishda bir necha gigabayt bo‘sh disk joyi va internet kerak; keyingi transkripsiya offline ishlaydi. Adobe Premiere Pro yoki After Effects o‘zi avvaldan o‘rnatilgan bo‘lishi kerak.
 
 macOS Terminal:
 
 ```sh
-git clone --depth 1 --branch feat/uzbek-subtitles-adobe https://github.com/Azizbek-dsgn/uzbek-dubbing.git "$HOME/UzScribe" && zsh "$HOME/UzScribe/Install-mac-online.command"
+bash -c 'set -o pipefail; curl -fsSL https://raw.githubusercontent.com/Azizbek-dsgn/uzbek-dubbing/feat/uzbek-subtitles-adobe/bootstrap-mac.sh | bash'
 ```
 
 Windows PowerShell:
 
 ```powershell
-git clone --depth 1 --branch feat/uzbek-subtitles-adobe https://github.com/Azizbek-dsgn/uzbek-dubbing.git "$env:USERPROFILE\UzScribe"; if ($LASTEXITCODE -eq 0) { powershell -ExecutionPolicy Bypass -File "$env:USERPROFILE\UzScribe\Install-Windows-online.ps1" }
+irm https://raw.githubusercontent.com/Azizbek-dsgn/uzbek-dubbing/feat/uzbek-subtitles-adobe/bootstrap-windows.ps1 | iex
 ```
 
-Yangilash uchun shu papkada `git pull --ff-only` bajaring, keyin online o‘rnatish skriptini qayta ishga tushiring. Panel imzosiz beta bo‘lgani uchun skript joriy foydalanuvchida Adobe CEP debug rejimini yoqadi. Adobe dasturlarini qayta oching: **Window → Extensions → UzScribe**.
+Yangilash uchun o‘sha buyruqni qayta ishga tushiring; mavjud model qayta yuklanmaydi. Panel imzosiz beta bo‘lgani uchun skript joriy foydalanuvchida Adobe CEP debug rejimini yoqadi. Adobe dasturlarini qayta oching: **Window → Extensions → UzScribe**. Manifest Premiere Pro 2020+ va After Effects 2020+ versiyalariga mo‘ljallangan; har bir yilning Adobe ichidagi jonli integratsiya sinovi hali tugamagan.
 
 ## macOS
 

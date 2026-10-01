@@ -4,7 +4,7 @@ Premiere Pro va After Effects uchun lokal CEP panel. U faol sequence yoki kompoz
 
 **Boshqa foydalanuvchilar uchun:** `tools/build_release.py` yordamida NavAI small modeli bilan macOS/Windows beta ZIP yaratiladi. Xaridor ko‘rsatmasi [README-INSTALL.md](README-INSTALL.md), sotuvdan oldingi majburiy tekshiruvlar [SELLER-RELEASE.md](SELLER-RELEASE.md) faylida. Imzolangan ZXP va haqiqiy Windows sinovi tugamaguncha paketni yakuniy sotuv versiyasi deb belgilamang.
 
-**Terminaldan o‘rnatish:** GitHub checkoutidan `Install-mac-online.command` yoki `Install-Windows-online.ps1` ishga tushadi. Ko‘chirib ishlatadigan buyruqlar [README-INSTALL.md](README-INSTALL.md)da. Kod GitHub’dan, birinchi o‘rnatishdagi NavAI modeli Hugging Face’dan olinadi. Repo hozir private; boshqalarga GitHub ruxsati kerak.
+**Terminaldan o‘rnatish:** GitHub public bo‘lgach, macOS yoki Windows’da [README-INSTALL.md](README-INSTALL.md)dagi bitta buyruq kodni, kerak bo‘lsa Python’ni va NavAI modelini o‘rnatadi. Adobe dasturlarining o‘zi oldindan o‘rnatilgan bo‘lishi kerak. Repo hozir private; public bo‘lmaguncha tashqi foydalanuvchilar buyruqdan foydalana olmaydi.
 
 ## Ishlatish
 

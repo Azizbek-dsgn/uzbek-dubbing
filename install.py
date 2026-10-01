@@ -77,12 +77,12 @@ def _copy_panel(package: Path, target: Path) -> None:
 
 def _enable_debug(system: str) -> None:
     if system == "darwin":
-        for version in ("10", "11", "12"):
+        for version in ("9", "10", "11", "12", "13"):
             subprocess.run(["defaults", "write", f"com.adobe.CSXS.{version}",
                             "PlayerDebugMode", "1"], check=True)
     else:
         import winreg
-        for version in ("10", "11", "12"):
+        for version in ("9", "10", "11", "12", "13"):
             with winreg.CreateKey(winreg.HKEY_CURRENT_USER,
                                   rf"Software\Adobe\CSXS.{version}") as key:
                 winreg.SetValueEx(key, "PlayerDebugMode", 0, winreg.REG_SZ, "1")

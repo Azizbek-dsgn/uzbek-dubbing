@@ -275,7 +275,9 @@
     var roots = process.platform === 'win32'
       ? [process.env.ProgramFiles, process.env['ProgramFiles(x86)']]
       : ['/Applications'];
-    var versions = ['2027', '2026', '2025', '2024'];
+    var versions = [];
+    for (var year = new Date().getFullYear() + 1; year >= 2020; year--)
+      versions.push(String(year));
     for (var r = 0; r < roots.length; r++) {
       if (!roots[r]) continue;
       for (var i = 0; i < versions.length; i++) {

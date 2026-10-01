@@ -32,9 +32,27 @@ jobs:
         if: runner.os == 'Windows'
         shell: pwsh
         run: |
-          $tokens = $null
-          $errors = $null
-          foreach ($script in @('Install-Windows.ps1', 'Install-Windows-online.ps1')) {
+          foreach ($script in @('Install-Windows.ps1', 'Install-Windows-online.ps1', 'bootstrap-windows.ps1')) {
+            $tokens = $null
+            $errors = $null
             [System.Management.Automation.Language.Parser]::ParseFile((Resolve-Path $script).Path, [ref]$tokens, [ref]$errors) | Out-Null
+            if ($errors.Count -gt 0) { $errors | ForEach-Object { Write-Error $_ }; exit 1 }
           }
-          if ($errors.Count -gt 0) { $errors | ForEach-Object { Write-Error $_ }; exit 1 }
+      - name: Windows bootstrap archive smoke test
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $fixture = Join-Path $env:RUNNER_TEMP 'uzscribe-fixture'
+          $source = Join-Path $fixture 'checkout'
+          New-Item -ItemType Directory -Path $source -Force | Out-Null
+          'print("Windows bootstrap source executed")' | Set-Content (Join-Path $source 'install_online.py')
+          $env:UZSCRIBE_ARCHIVE_PATH = Join-Path $fixture 'source.zip'
+          Compress-Archive -Path $source -DestinationPath $env:UZSCRIBE_ARCHIVE_PATH
+          . ./bootstrap-windows.ps1
+      - name: macOS bootstrap archive smoke test
+        if: runner.os == 'macOS'
+        run: |
+          mkdir -p "$RUNNER_TEMP/uzscribe-fixture/checkout"
+          printf 'print("macOS bootstrap source executed")\n' > "$RUNNER_TEMP/uzscribe-fixture/checkout/install_online.py"
+          tar -czf "$RUNNER_TEMP/uzscribe-fixture/source.tar.gz" -C "$RUNNER_TEMP/uzscribe-fixture" checkout
+          UZSCRIBE_ARCHIVE_PATH="$RUNNER_TEMP/uzscribe-fixture/source.tar.gz" bash bootstrap-mac.sh

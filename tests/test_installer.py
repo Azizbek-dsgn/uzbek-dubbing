@@ -2,6 +2,7 @@ import json
 import ast
 import tempfile
 import unittest
+import xml.etree.ElementTree as ET
 from pathlib import Path
 from unittest.mock import patch
 
@@ -47,6 +48,16 @@ class InstallerTests(unittest.TestCase):
 
     def test_online_converter_script_is_valid_python(self):
         ast.parse(CONVERT)
+
+    def test_manifest_targets_adobe_2020_hosts_and_cep9(self):
+        manifest = ET.parse(Path(__file__).resolve().parents[1] /
+                            'adobe/UzbekSubtitles/CSXS/manifest.xml').getroot()
+        hosts = {host.attrib['Name']: host.attrib['Version']
+                 for host in manifest.findall('./ExecutionEnvironment/HostList/Host')}
+        self.assertEqual(hosts['PPRO'], '[14.0,99.9]')
+        self.assertEqual(hosts['AEFT'], '[17.0,99.9]')
+        runtime = manifest.find('./ExecutionEnvironment/RequiredRuntimeList/RequiredRuntime')
+        self.assertEqual(runtime.attrib['Version'], '9.0')
 
     def test_checksum_rejects_corrupt_package(self):
         with tempfile.TemporaryDirectory() as temp:
