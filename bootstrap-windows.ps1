@@ -44,7 +44,7 @@ try {
     Invoke-WebRequest -Uri 'https://astral.sh/uv/install.ps1' -OutFile $uvScript -UseBasicParsing
     $env:UV_UNMANAGED_INSTALL = Join-Path $work 'uv-bin'
     powershell -NoProfile -ExecutionPolicy Bypass -File $uvScript
-    if ($LASTEXITCODE -ne 0) { throw 'Python o‘rnatuvchisi ishga tushmadi.' }
+    if ($LASTEXITCODE -ne 0) { throw 'Python setup failed.' }
     $uv = Join-Path $env:UV_UNMANAGED_INSTALL 'uv.exe'
     & $uv python install 3.12
     if ($LASTEXITCODE -ne 0) { throw 'Python 3.12 yuklanmadi.' }
@@ -52,7 +52,7 @@ try {
   }
 
   & $python (Join-Path $source.FullName 'install_online.py')
-  if ($LASTEXITCODE -ne 0) { throw 'UzScribe o‘rnatilmadi.' }
+  if ($LASTEXITCODE -ne 0) { throw 'UzScribe install failed.' }
 } finally {
   $env:UV_UNMANAGED_INSTALL = $previousUvInstall
   Remove-Item -LiteralPath $work -Recurse -Force -ErrorAction SilentlyContinue
