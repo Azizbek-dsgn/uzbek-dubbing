@@ -115,6 +115,24 @@ def _install_gigaam(runtime: Path, python: Path, uv: Path | None) -> None:
     subprocess.run([str(python), "-c", DOWNLOAD_GIGAAM, str(runtime)], check=True)
 
 
+def _verify_installation(runtime: Path, panel: Path, python: Path) -> None:
+    if not python.is_file():
+        raise RuntimeError("UzScribe Python muhiti topilmadi")
+    if not _navai_ready(runtime / "models" / "navai-small"):
+        raise RuntimeError("NavAI modeli to‘liq o‘rnatilmadi")
+    base = runtime / "models" / "gigaam-base-large"
+    if not all((base / name).is_file() for name in ("config.json", "modeling_gigaam.py")):
+        raise RuntimeError("GigaAM asosiy fayllari to‘liq o‘rnatilmadi")
+    checkpoint = (runtime / "models" / "gigaam-uzbek" / "checkpoints" /
+                  "large_full_600m" / "best.pt")
+    if not checkpoint.is_file() or checkpoint.stat().st_size < 100_000_000:
+        raise RuntimeError("GigaAM Uzbek 600M checkpointi to‘liq o‘rnatilmadi")
+    for name in ("CSXS/manifest.xml", "index.html", "panel.js",
+                 "assets/uzscribe-logo.jpg"):
+        if not (panel / name).is_file():
+            raise RuntimeError(f"Adobe panel fayli yetishmayapti: {name}")
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="GitHub’dan UzScribe o‘rnatish")
     parser.add_argument("--model-dir", type=Path,
@@ -123,7 +141,7 @@ def main() -> int:
     if not (3, 10) <= sys.version_info[:2] < (3, 13):
         parser.error("Python 3.10, 3.11 yoki 3.12 kerak")
     try:
-        runtime, _ = destinations(sys.platform, Path.home(), dict(os.environ))
+        runtime, panel = destinations(sys.platform, Path.home(), dict(os.environ))
         existing = runtime / "models" / "navai-small"
         if args.model_dir and not _navai_ready(args.model_dir):
             raise FileNotFoundError(f"NavAI modeli to‘liq emas: {args.model_dir}")
@@ -143,6 +161,7 @@ def main() -> int:
                     developer=True, skip_dependencies=True, model_source=model)
         subprocess.run([str(python), "-c", "import faster_whisper, imageio_ffmpeg"], check=True)
         _install_gigaam(runtime, python, uv)
+        _verify_installation(runtime, panel, python)
     except (OSError, RuntimeError, subprocess.CalledProcessError) as exc:
         print(f"UzScribe o‘rnatilmadi: {exc}", file=sys.stderr)
         return 1

@@ -56,7 +56,7 @@ jobs:
           $env:PSModulePath = Join-Path $env:WINDIR 'System32\WindowsPowerShell\v1.0\Modules'
           cmd.exe /d /s /c 'powershell -NoProfile -ExecutionPolicy Bypass -Command "Get-Content -Raw bootstrap-windows.ps1 | Invoke-Expression"'
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-      - name: Windows uv package install smoke test
+      - name: Windows full runtime dependency install
         if: runner.os == 'Windows'
         shell: pwsh
         run: |
@@ -64,9 +64,9 @@ jobs:
           $runtime = Join-Path $env:RUNNER_TEMP 'uzscribe-uv-smoke'
           uv venv --python 3.12 $runtime
           $python = Join-Path $runtime 'Scripts/python.exe'
-          uv pip install --python $python packaging
-          & $python -c 'import packaging; print(packaging.__version__)'
-          uv pip install --python $python --dry-run -r subtitles/requirements-release.txt -r subtitles/requirements-gigaam.txt 'huggingface_hub>=0.34,<2'
+          uv pip install --python $python -r subtitles/requirements-release.txt
+          uv pip install --python $python -r subtitles/requirements-gigaam.txt 'huggingface_hub>=0.34,<2'
+          & $python -c 'import faster_whisper, imageio_ffmpeg, av, torch, torchaudio, transformers, hydra, soundfile, huggingface_hub; print(torch.__version__, transformers.__version__)'
       - name: macOS model dependency resolution
         if: runner.os == 'macOS'
         run: |

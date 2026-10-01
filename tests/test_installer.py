@@ -7,7 +7,9 @@ from pathlib import Path
 from unittest.mock import patch
 
 from install import destinations, install
-from install_online import CONVERT, DOWNLOAD_GIGAAM, _navai_ready, _prepare_environment, _install_gigaam
+from install_online import (CONVERT, DOWNLOAD_GIGAAM, _navai_ready,
+                            _prepare_environment, _install_gigaam,
+                            _verify_installation)
 
 
 class InstallerTests(unittest.TestCase):
@@ -102,6 +104,32 @@ class InstallerTests(unittest.TestCase):
             self.assertEqual(run.call_args_list[0].args[0][-1], str(runtime / '.venv'))
             self.assertEqual(run.call_args_list[1].args[0][:5],
                              [str(Path('C:/uv/uv.exe')), 'pip', 'install', '--python', str(python)])
+
+    def test_post_install_check_requires_both_models_and_panel(self):
+        with tempfile.TemporaryDirectory() as temp:
+            runtime = Path(temp) / 'runtime'
+            panel = Path(temp) / 'panel'
+            python = runtime / '.venv/Scripts/python.exe'
+            files = [python,
+                     *(runtime / 'models/navai-small' / name for name in
+                       ('model.bin', 'config.json', 'tokenizer.json')),
+                     *(runtime / 'models/gigaam-base-large' / name for name in
+                       ('config.json', 'modeling_gigaam.py')),
+                     *(panel / name for name in
+                       ('CSXS/manifest.xml', 'index.html', 'panel.js',
+                        'assets/uzscribe-logo.jpg'))]
+            for path in files:
+                path.parent.mkdir(parents=True, exist_ok=True)
+                path.touch()
+            checkpoint = (runtime / 'models/gigaam-uzbek/checkpoints/'
+                          'large_full_600m/best.pt')
+            checkpoint.parent.mkdir(parents=True)
+            with checkpoint.open('wb') as output:
+                output.truncate(100_000_001)
+            _verify_installation(runtime, panel, python)
+            (panel / 'panel.js').unlink()
+            with self.assertRaisesRegex(RuntimeError, 'panel.js'):
+                _verify_installation(runtime, panel, python)
 
     def test_manifest_targets_adobe_2020_hosts_and_cep9(self):
         manifest = ET.parse(Path(__file__).resolve().parents[1] /
