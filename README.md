@@ -1,4 +1,4 @@
-# O‘zbekcha subtitr plagini
+# UzScribe
 
 Premiere Pro va After Effects uchun lokal CEP panel. U faol sequence yoki kompozitsiyadagi audioni eksport qiladi, tanlangan model bilan o‘zbekcha nutqni so‘z vaqtigacha taniydi va subtitrlarni timeline’ga qo‘yadi. API kaliti kerak emas; o‘rnatishdan keyin transkripsiya internet talab qilmaydi.
 
@@ -8,7 +8,7 @@ Premiere Pro va After Effects uchun lokal CEP panel. U faol sequence yoki kompoz
 
 1. Premiere Pro’da sequence’ni yoki After Effects’da kompozitsiyani oching.
 2. Kerakli joyga In/Out nuqtalarini qo‘ying. AE’da Work Area belgilang. Belgilanmagan bo‘lsa butun timeline olinadi.
-3. **Window → Extensions → Uzbek Subtitles** panelini oching. Asosiy ekranda oraliq, qator va so‘z sonini tanlang. Model, gap bo‘linishi, timing va boshqa tanlovlar **Qo‘shimcha sozlamalar** ichida.
+3. **Window → Extensions → UzScribe** panelini oching. Asosiy ekranda oraliq, qator va so‘z sonini tanlang. Model, gap bo‘linishi, timing va boshqa tanlovlar **Qo‘shimcha sozlamalar** ichida.
 4. **Subtitr yaratish** tugmasini bosing. Natija qisqa ro‘yxatda ochiladi: qatorni tanlab, matnini oddiy maydonda tuzating. So‘ng **Timeline’ga qo‘shish** ni bosing. Premiere’da caption track, AE’da vaqtli matn qatlamlari yaratiladi. SRT nusxasi `exports/` papkasida qoladi. **SRT saqlansin** tugmasi timeline’ga qo‘ymasdan faylni saqlaydi.
 
 After Effects’da **Animatsiya → Animation Composer’da ochish** tanlansa, yaratilgan matn qatlamlari tanlanadi va o‘rnatilgan Mister Horse paneli ochiladi. Presetni Composer ichida tanlang. Composer presetini boshqa paneldan avtomatik qo‘llash uchun ochiq API topilmadi. Premiere caption treki AE matn qatlami bo‘lmagani uchun bu tanlov Premiere’da o‘chiriladi.

@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<ExtensionManifest Version="7.0" ExtensionBundleId="uz.azizbek.subtitles" ExtensionBundleVersion="0.1.0" ExtensionBundleName="Uzbek Subtitles">
+<ExtensionManifest Version="7.0" ExtensionBundleId="uz.azizbek.subtitles" ExtensionBundleVersion="0.2.0" ExtensionBundleName="UzScribe">
   <ExtensionList>
-    <Extension Id="uz.azizbek.subtitles.panel" Version="0.1.0"/>
+    <Extension Id="uz.azizbek.subtitles.panel" Version="0.2.0"/>
   </ExtensionList>
   <ExecutionEnvironment>
     <HostList>
@@ -19,7 +19,7 @@
           <CEFCommandLine><Parameter>--enable-nodejs</Parameter><Parameter>--mixed-context</Parameter></CEFCommandLine>
         </Resources>
         <Lifecycle><AutoVisible>true</AutoVisible></Lifecycle>
-        <UI><Type>Panel</Type><Menu>Uzbek Subtitles</Menu><Geometry><Size><Width>380</Width><Height>440</Height></Size></Geometry></UI>
+        <UI><Type>Panel</Type><Menu>UzScribe</Menu><Geometry><Size><Width>380</Width><Height>440</Height></Size></Geometry></UI>
       </DispatchInfo>
     </Extension>
   </DispatchInfoList>

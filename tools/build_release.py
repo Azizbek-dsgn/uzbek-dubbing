@@ -43,7 +43,7 @@ def build(model_dir: Path, output: Path, signed_zxp: Path | None = None) -> None
     files.update({f"subtitles/{name}": ROOT / "subtitles" / name for name in RUNTIME})
     files.update({f"models/navai-small/{name}": model_dir / name for name in MODEL})
     if signed_zxp:
-        files["UzbekSubtitles.zxp"] = signed_zxp
+        files["UzScribe.zxp"] = signed_zxp
     missing = [name for name, path in files.items() if not path.is_file()]
     if missing:
         raise FileNotFoundError("Release fayllari topilmadi: " + ", ".join(missing))

@@ -4,9 +4,9 @@ cd "$(dirname "$0")"
 for candidate in python3.12 python3.11 python3.10 python3; do
   if command -v "$candidate" >/dev/null 2>&1; then
     if "$candidate" -c 'import sys; assert (3,10) <= sys.version_info[:2] < (3,13)' 2>/dev/null; then
-      if [[ -f UzbekSubtitles.zxp ]]; then
+      if [[ -f UzScribe.zxp ]]; then
         "$candidate" install.py
-        print 'Endi UzbekSubtitles.zxp faylini Adobe orqali o‘rnating.'
+        print 'Endi UzScribe.zxp faylini Adobe orqali o‘rnating.'
       else
         "$candidate" install.py --developer
       fi

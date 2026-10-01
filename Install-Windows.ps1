@@ -8,10 +8,10 @@ foreach ($version in @('-3.12', '-3.11', '-3.10')) {
   } catch {}
 }
 if (-not $python) { throw 'Python 3.10–3.12 kerak: https://www.python.org/downloads/' }
-if (Test-Path 'UzbekSubtitles.zxp') {
+if (Test-Path 'UzScribe.zxp') {
   & py $python install.py
   if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-  Write-Host 'Endi UzbekSubtitles.zxp faylini Adobe orqali ornating.'
+  Write-Host 'Endi UzScribe.zxp faylini Adobe orqali ornating.'
 } else {
   & py $python install.py --developer
   if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }

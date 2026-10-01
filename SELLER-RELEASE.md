@@ -9,10 +9,10 @@ The current ZIP is a **beta** installer for macOS and Windows. Before taking pay
 5. Prepare actual purchase license, refund/support policy, privacy page and payment delivery in the chosen sales channel. This package contains no license-key enforcement or payment integration.
 6. Plan a UXP migration. Adobe says CEP will be removed from its flagship desktop apps from December 2029; Premiere already supports UXP, while After Effects UXP public beta is planned for November 2026. Explain the supported Adobe versions and update policy to buyers.
 
-The release builder accepts `--signed-zxp path/to/UzbekSubtitles.zxp` once the panel is signed. Build the ZIP with:
+The release builder accepts `--signed-zxp path/to/UzScribe.zxp` once the panel is signed. Build the ZIP with:
 
 ```text
-python3 tools/build_release.py --model-dir models/navai-small --output UzbekSubtitles.zip --signed-zxp UzbekSubtitles.zxp
+python3 tools/build_release.py --model-dir models/navai-small --output UzScribe.zip --signed-zxp UzScribe.zxp
 ```
 
 Adobe's [CEP packaging guide](https://github.com/Adobe-CEP/Getting-Started-guides/blob/master/Package%20Distribute%20Install/readme.md) describes signing and verification. Its [signing issue note](https://github.com/Adobe-CEP/CEP-Resources/blob/master/ZXPSignCMD/KnownIssue2024.md) recommends testing on both platforms.

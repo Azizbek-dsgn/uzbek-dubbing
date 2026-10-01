@@ -105,7 +105,7 @@ def install(package: Path, system: str, home: Path, environment: dict[str, str],
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Uzbek Subtitles o‘rnatish")
+    parser = argparse.ArgumentParser(description="UzScribe o‘rnatish")
     parser.add_argument("--developer", action="store_true",
                         help="Beta: imzosiz CEP panelni ko‘chirib, Adobe debug rejimini yoqish")
     args = parser.parse_args()

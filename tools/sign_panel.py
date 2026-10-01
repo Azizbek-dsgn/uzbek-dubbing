@@ -26,7 +26,7 @@ def main() -> None:
     password = os.environ.get("UZ_SUBTITLES_CERT_PASSWORD") or getpass.getpass(".p12 paroli: ")
     args.output.parent.mkdir(parents=True, exist_ok=True)
     with tempfile.TemporaryDirectory() as temp:
-        staging = Path(temp) / "UzbekSubtitles"
+        staging = Path(temp) / "UzScribe"
         shutil.copytree(PANEL, staging,
                         ignore=shutil.ignore_patterns(".DS_Store", "__MACOSX", "__pycache__"))
         if any(path.is_symlink() for path in staging.rglob("*")):
