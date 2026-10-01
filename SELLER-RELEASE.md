@@ -2,7 +2,7 @@
 
 The current ZIP is a **beta** installer for macOS and Windows. Before taking payment for a final release:
 
-1. Set the final seller/product name and contact details in the manifest, buyer documentation and purchase terms.
+1. Add the seller identity and contact details to buyer documentation and purchase terms. The product name in the panel is UzScribe.
 2. Sign the static CEP panel as ZXP with the seller's certificate using Adobe `ZXPSignCmd` through `tools/sign_panel.py`; verify the signature. Ship the signed ZXP in the buyer ZIP. Keep the private `.p12` and password outside the repository. Test the signed ZXP independently on macOS and Windows; Adobe documents a cross-platform signing issue with some CEP packages.
 3. Test clean macOS Apple Silicon, macOS Intel and Windows x64 machines with the supported Premiere Pro and After Effects versions. Verify panel loading, full and In/Out audio export, captions import, After Effects text layers, the installer, uninstall/reinstall and a media file with Uzbek speech. Windows execution has not yet been tested in this workspace.
 4. Confirm the NavAI Apache-2.0 notice is included and review third-party training-data attribution. Do not include Rubai weights until its license is clarified. Check GigaAM training-data provenance before bundling its weights commercially.
