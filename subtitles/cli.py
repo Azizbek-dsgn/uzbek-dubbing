@@ -211,12 +211,9 @@ def transcribe(path: Path, model_name: str, device: str, progress=None) -> list[
     except ImportError as exc:
         raise RuntimeError("faster-whisper topilmadi; subtitles/requirements.txt ni o'rnating") from exc
     if device == "auto":
-        try:
-            import subprocess
-            probe = subprocess.run(["nvidia-smi", "-L"], capture_output=True, timeout=3)
-            device = "cuda" if probe.returncode == 0 and probe.stdout else "cpu"
-        except (FileNotFoundError, subprocess.TimeoutExpired):
-            device = "cpu"
+        # The one-command installer includes the CPU runtime. An NVIDIA
+        # driver alone does not provide the CUDA/cuDNN libraries Whisper needs.
+        device = "cpu"
     local_model = Path(__file__).resolve().parent.parent / "models" / model_name
     if model_name.startswith("navai-") and not (local_model / "model.bin").is_file():
         raise RuntimeError(f"NavAI modeli o'rnatilmagan: models/{model_name}/model.bin")
