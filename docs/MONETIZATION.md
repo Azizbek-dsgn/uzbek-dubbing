@@ -1,5 +1,9 @@
 # UzScribe monetizatsiyasi — 2026-10-03
 
+## Tanlangan to‘lov yo‘li
+
+**Renuvo tanlandi.** 0.6.1 server adapteri va paneldagi obuna kabineti qo‘shilgan; sandbox API key va merchant acceptance hali yo‘q. [Ulanish va cheklovlar](../billing/RENUVO.md). Renuvo narxlari uning kabinetida boshqariladi; mahalliy display katalog moslanadi.
+
 ## Tavsiya etilgan boshlanish
 
 **Pro obuna:** subtitr + animatsiya + Premiere Podcast/Reels, ikki kompyuter. Mahalliy ASR audio/video fayllarni serverga yubormaydi. Sotuv qiymati: qulay ish jarayoni, tayyor o‘rnatish, yangilanish va yordam. ASR modeli boshqa muallifniki; sotilayotgan narsa UzScribe integratsiyasi va xizmatidir.
@@ -11,7 +15,7 @@
 | Studio | Keyin kelishiladi | Ko‘p o‘rinli litsenziya va yordam |
 | O‘rnatib berish / trening | Alohida xizmat | Tijoriy yordam va montaj bo‘yicha trening |
 
-Narxlar foydalanuvchi tasdiqlamaguncha **namuna**. Boshqaruv ekranida o‘zgartiriladi. Cheksiz lifetime litsenziya doimiy yangilash xarajatini qoplamasligi mumkin; avval 30/365 kunlik tarifni real mijozlarda sinang. Public beta hozir community rejimida ishlaydi; pullik ZIP alohida sozlanadi.
+Narxlar foydalanuvchi tasdiqlamaguncha **namuna**. Renuvo tanlanganda uning kabinetida o‘zgartiriladi. Cheksiz lifetime litsenziya doimiy yangilash xarajatini qoplamasligi mumkin; avval 30/365 kunlik tarifni real mijozlarda sinang. Public beta hozir community rejimida ishlaydi; pullik ZIP alohida sozlanadi.
 
 100 ta 30 kunlik 49 000 so‘mlik obuna **4 900 000 so‘m yalpi tushum** beradi. Bu prognoz emas: chegirma, qaytarish, provayder komissiyasi, soliq, server va qo‘llab-quvvatlash xarajatlari ayriladi. Faol obuna sonini tushum yoki kafolatlangan daromad bilan tenglashtirmang.
 
@@ -19,6 +23,7 @@ Narxlar foydalanuvchi tasdiqlamaguncha **namuna**. Boshqaruv ekranida o‘zgarti
 
 | Usul | Qayerga mos | Hozirgi holat |
 |---|---|---|
+| Renuvo Tenant API | Avtomatik obuna, hosted checkout va mijoz portal | Sinov adapteri qo‘shildi; real sandbox acceptance hali bajarilmadi |
 | Payme Merchant API | Payme checkout orqali so‘mda to‘lov, callback bilan litsenziya ochish | Kodga qo‘shildi; real merchant va sandbox tasdig‘i kerak |
 | Payme Subscribe API | Karta tokeni va rozilik bilan takroriy yechish | Tadqiq qilindi; avtomatik yechish bu versiyada yo‘q |
 | Click Shop API | UZCARD/HUMO va Click foydalanuvchilariga qo‘shimcha kanal | Tadqiq qilindi; adapter hali yozilmadi |
@@ -28,7 +33,7 @@ Narxlar foydalanuvchi tasdiqlamaguncha **namuna**. Boshqaruv ekranida o‘zgarti
 
 Payme [Merchant API](https://developer.help.paycom.uz/protokol-merchant-api/) JSON-RPC callbacklaridan foydalanadi. [Checkout summasi](https://developer.help.paycom.uz/initsializatsiya-platezhey/otpravka-cheka-po-metodu-get/) **tiyinda** yuboriladi: 49 000 so‘m = 4 900 000 tiyin. Saytda so‘m ko‘rinadi; hisob-kitobda integer tiyin ishlatiladi.
 
-[Subscribe API](https://developer.help.paycom.uz/protokol-subscribe-api/) Merchant API’dan alohida. Karta ma’lumotlari Payme tizimida tokenlashtiriladi. Avtomatik yechish uchun merchantdan kerakli ruxsat, foydalanuvchi roziligi, bekor qilish va retry tartibi kerak. Ushbu versiya **qo‘lda uzayadigan obuna**: kartadan avtomatik pul olinmaydi.
+[Subscribe API](https://developer.help.paycom.uz/protokol-subscribe-api/) Merchant API’dan alohida. Karta ma’lumotlari Payme tizimida tokenlashtiriladi. Avtomatik yechish uchun merchantdan kerakli ruxsat, foydalanuvchi roziligi, bekor qilish va retry tartibi kerak. Payme Merchant adapteri **qo‘lda uzayadigan obuna**. Tanlangan Renuvo adapteri avtomatik renewal holatini server bilan tekshiradi; haqiqiy to‘lov uchun onboarding va acceptance kerak.
 
 [Click rasmiy hujjatlari](https://docs.click.uz/) Shop API Prepare/Complete va to‘lov havolasi oqimini beradi. CLICK’ning o‘z premium obunasi mavjudligi tashqi merchantga avtomatik yechish huquqi borligini anglatmaydi.
 

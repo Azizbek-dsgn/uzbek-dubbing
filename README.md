@@ -10,7 +10,7 @@ Premiere Pro va After Effects uchun lokal CEP panel. U faol sequence yoki kompoz
 
 **After Effects 0.5.2:** alohida kompozitsiya, Work Area va Render Queue adapteri. WAV/AIFF shablonlari avtomatik tanlanadi; AE’da Premiere EPR preset’i talab qilinmaydi. [Batafsil](README-INSTALL.md#052--after-effects-alohida-ish-yoli).
 
-**Obuna 0.6.0:** so‘mda tariflar, Payme checkout, litsenziya va qurilmalarni boshqarish. Server alohida o‘rnatiladi; merchant ulanmaguncha haqiqiy to‘lov olinmaydi. [Biznes modeli](docs/MONETIZATION.md), [serverni ulash](billing/README.md).
+**Obuna 0.6.1:** Renuvo avtomatik obuna adapteri, mijoz kabineti, litsenziya va qurilmalarni boshqarish. Payme qo‘lda to‘lov adapteri ham saqlangan. Renuvo hozir sinov integratsiyasi; real provayder acceptance talab qilinadi. Server alohida o‘rnatiladi; merchant ulanmaguncha haqiqiy to‘lov olinmaydi. [Biznes modeli](docs/MONETIZATION.md), [serverni ulash](billing/README.md).
 
 ## Ishlatish
 

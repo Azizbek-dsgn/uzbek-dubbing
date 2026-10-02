@@ -13,6 +13,7 @@ import sqlite3
 import threading
 import time
 from flask import Flask, jsonify, request, send_from_directory
+from .renuvo import Integration, RenuvoError
 from werkzeug.middleware.proxy_fix import ProxyFix
 from cryptography.hazmat.primitives import hashes, serialization
 from cryptography.hazmat.primitives.asymmetric import padding
@@ -82,6 +83,12 @@ class Store:
         for g in db.execute('SELECT * FROM grants WHERE license_id=? AND revoked=0 ORDER BY at,rowid',(identity,)):
             end = max(end,g['at']) + g['days'] * DAY
             seats = g['seats']
+        # Provider periods are absolute, never accumulated per webhook.
+        exists = db.execute("SELECT 1 FROM sqlite_master WHERE type='table' AND name='renuvo_subscriptions'").fetchone()
+        if exists:
+            for r in db.execute("SELECT expires_at,seats FROM renuvo_subscriptions WHERE license_id=? AND status='ACTIVE'", (identity,)):
+                if r['expires_at'] > end:
+                    end, seats = r['expires_at'], r['seats']
         return {'active':end > self.clock(),'expires_at':end,'seats':seats}
 
     def order(self, db, params):
@@ -181,15 +188,37 @@ class Store:
 def create_app(config=None):
     app=Flask(__name__,static_folder='static')
     app.config.update(DB_PATH=os.environ.get('UZSCRIBE_DB','billing-data/subscriptions.sqlite'),ADMIN_TOKEN=os.environ.get('UZSCRIBE_ADMIN_TOKEN',''),SIGNING_KEY=os.environ.get('UZSCRIBE_SIGNING_KEY',''),PAYME_KEY=os.environ.get('PAYME_KEY',''),PAYME_MERCHANT_ID=os.environ.get('PAYME_MERCHANT_ID',''),PAYME_TEST=os.environ.get('PAYME_TEST','1')=='1',MAX_CONTENT_LENGTH=32*1024,CLOCK=time.time)
+    app.config.update(RENUVO_PLAN_CATALOG=json.loads(os.environ.get('RENUVO_PLAN_CATALOG','{}')),BILLING_PROVIDER=os.environ.get('UZSCRIBE_BILLING_PROVIDER','payme'),RENUVO_API_URL=os.environ.get('RENUVO_API_URL','https://test.renuvo.uz'),RENUVO_API_KEY=os.environ.get('RENUVO_API_KEY',''),RENUVO_TENANT_ID=os.environ.get('RENUVO_TENANT_ID',''),RENUVO_WEBHOOK_SECRET=os.environ.get('RENUVO_WEBHOOK_SECRET',''),RENUVO_PLAN_IDS=json.loads(os.environ.get('RENUVO_PLAN_IDS','{}')))
     if config:app.config.update(config)
+    if app.config['BILLING_PROVIDER'] not in ('payme','renuvo'):raise ValueError('Unknown billing provider')
+    if not isinstance(app.config['RENUVO_PLAN_IDS'],dict):raise ValueError('Renuvo plan mapping must be an object')
     if os.environ.get('UZSCRIBE_TRUST_PROXY')=='1':app.wsgi_app=ProxyFix(app.wsgi_app,x_for=1)
     merchant=app.config['PAYME_MERCHANT_ID']
     if merchant and not re.fullmatch(r'[A-Za-z0-9_-]{1,100}',merchant):raise ValueError('Invalid Payme merchant identifier')
     store=Store(app.config['DB_PATH'],app.config['CLOCK']);app.store=store
+    catalog=app.config['RENUVO_PLAN_CATALOG']
+    if not isinstance(catalog,dict):raise ValueError('Renuvo display catalog must be an object')
+    if app.config['BILLING_PROVIDER']=='renuvo':
+        with store.db() as db:
+            for identity, item in catalog.items():
+                if not isinstance(identity,str) or not re.fullmatch('[a-z0-9_-]{1,32}',identity) or not isinstance(item,dict):raise ValueError('Invalid Renuvo catalog entry')
+                title=item.get('title');price=item.get('price_uzs');days=item.get('days');seats=item.get('seats')
+                if not isinstance(title,str) or not 1<=len(title)<=80 or type(price) is not int or not 1000<=price<=100000000 or type(days) is not int or not 1<=days<=730 or type(seats) is not int or not 1<=seats<=20:raise ValueError('Invalid Renuvo display plan')
+                db.execute('INSERT OR REPLACE INTO plans VALUES(?,?,?,?,?,1)',(identity,title,price,days,seats))
     private=None
     if app.config['SIGNING_KEY']:
         private=serialization.load_pem_private_key(Path(app.config['SIGNING_KEY']).read_bytes(),password=None)
         if private.key_size<2048:raise ValueError('RSA signing key must be at least 2048 bits')
+    renuvo=Integration(app,store,PaymentError) if app.config['BILLING_PROVIDER']=='renuvo' else None
+    app.renuvo=renuvo
+    def payments_ready():
+        return bool(private and (renuvo.ready() if renuvo else app.config['PAYME_KEY'] and app.config['PAYME_MERCHANT_ID']))
+    def sandbox():return renuvo.client.sandbox if renuvo else app.config['PAYME_TEST']
+    def renewal():return 'automatic' if renuvo else 'manual'
+    def refresh_entitlement(key):
+        if renuvo:
+            with store.db() as db:identity=store.license(db,key)['id']
+            renuvo.refresh_license(identity)
     limits={},threading.Lock()
 
     def bearer():
@@ -228,22 +257,28 @@ def create_app(config=None):
     @app.errorhandler(PaymentError)
     def problem(e):return jsonify(error=e.message),e.code if 400<=e.code<=599 else 400
 
+    @app.errorhandler(RenuvoError)
+    def renuvo_problem(e):
+        return jsonify(error='Renuvo bilan ulanish bajarilmadi. Kabinet va provayder tasdig‘ini tekshiring; keyin qayta urinib ko‘ring.'),503
+
     @app.get('/')
     def checkout_page():return send_from_directory(app.static_folder,'checkout.html')
     @app.get('/admin')
     def admin_page():return send_from_directory(app.static_folder,'admin.html')
     @app.get('/health')
-    def health():return jsonify(status='ok',payments_configured=bool(app.config['PAYME_KEY'] and app.config['PAYME_MERCHANT_ID']),signing_configured=bool(private))
+    def health():return jsonify(status='ok',payments_configured=payments_ready(),provider=app.config['BILLING_PROVIDER'],signing_configured=bool(private))
     @app.get('/api/plans')
     def plans():
         with store.db() as db:rows=[dict(r) for r in db.execute('SELECT * FROM plans WHERE enabled=1 ORDER BY price_uzs')]
-        return jsonify(plans=rows,currency='UZS',renewal='manual',payments_ready=bool(app.config['PAYME_KEY'] and app.config['PAYME_MERCHANT_ID'] and private),sandbox=app.config['PAYME_TEST'])
+        if renuvo:rows=[r for r in rows if r['id'] in app.config['RENUVO_PLAN_IDS']]
+        return jsonify(plans=rows,currency='UZS',provider=app.config['BILLING_PROVIDER'],renewal=renewal(),payments_ready=payments_ready(),sandbox=sandbox())
 
     @app.post('/api/orders')
     def purchase():
         p=body()
         if not isinstance(p.get('plan_id'),str):raise PaymentError(400,'Tarif ID noto‘g‘ri.')
-        if not private or not app.config['PAYME_KEY'] or not app.config['PAYME_MERCHANT_ID']:raise PaymentError(503,'To‘lov tizimi hali ulanmagan.')
+        if not payments_ready():raise PaymentError(503,'To‘lov tizimi hali ulanmagan.')
+        if renuvo:return jsonify(renuvo.purchase(p['plan_id'],bearer()))
         with store.db() as db:
             plan=db.execute('SELECT * FROM plans WHERE id=? AND enabled=1',(p.get('plan_id'),)).fetchone()
             if not plan:raise PaymentError(400,'Tarif topilmadi.')
@@ -260,16 +295,18 @@ def create_app(config=None):
 
     @app.get('/api/license')
     def status():
+        refresh_entitlement(bearer())
         with store.db() as db:
             lic=store.license(db,bearer());ent=store.entitlement(db,lic['id'])
             devices=[dict(r) for r in db.execute('SELECT device_id,label,seen FROM devices WHERE license_id=?',(lic['id'],))]
-        return jsonify(license_id=lic['id'],**ent,devices=devices,renewal='manual')
+        return jsonify(license_id=lic['id'],**ent,devices=devices,renewal=renewal(),provider=app.config['BILLING_PROVIDER'])
 
     @app.post('/api/activate')
     def activate():
         p=body();device=p.get('device_id','')
         if not isinstance(device,str) or not re.fullmatch(r'[a-f0-9]{64}',device):raise PaymentError(400,'Qurilma ID noto‘g‘ri.')
         if not private:raise PaymentError(503,'Litsenziya serveri sozlanmagan.')
+        refresh_entitlement(bearer())
         with store.db() as db:
             lic=store.license(db,bearer());ent=store.entitlement(db,lic['id'])
             if not ent['active']:raise PaymentError(403,'Obuna muddati tugagan yoki to‘lov kutilmoqda.')
@@ -289,11 +326,23 @@ def create_app(config=None):
             lic=store.license(db,bearer());db.execute('DELETE FROM devices WHERE license_id=? AND device_id=?',(lic['id'],p.get('device_id')));store.audit(db,'device.remove',lic['id'])
         return jsonify(success=True)
 
+    @app.post('/api/subscription/portal')
+    def subscription_portal():
+        if not renuvo:raise PaymentError(404,'Obuna kabineti mavjud emas.')
+        with store.db() as db:identity=store.license(db,bearer())['id']
+        return jsonify(portal_url=renuvo.portal(identity))
+
+    @app.post('/webhooks/renuvo')
+    def renuvo_webhook():
+        if not renuvo:raise PaymentError(404,'Renuvo yoqilmagan.')
+        renuvo.webhook(request.get_data(),request.headers.get('X-Webhook-Signature',''))
+        return jsonify(success=True)
+
     @app.post('/webhooks/payme')
     def payme():
         p=request.get_json(silent=True)
         identity=p.get('id') if isinstance(p,dict) else None
-        key=app.config['PAYME_KEY'];expected='Basic '+base64.b64encode(('Paycom:'+key).encode()).decode()
+        key='' if renuvo else app.config['PAYME_KEY'];expected='Basic '+base64.b64encode(('Paycom:'+key).encode()).decode()
         if not key or not hmac.compare_digest(request.headers.get('Authorization',''),expected):return jsonify(id=identity,error={'code':-32504,'message':'Authorization failed'})
         if not isinstance(p,dict) or not isinstance(p.get('params'),dict):return jsonify(id=identity,error={'code':-32600,'message':'Invalid Request'})
         return jsonify(id=identity,**store.payme(p.get('method'),p['params']))
@@ -309,11 +358,17 @@ def create_app(config=None):
             plans=[dict(r) for r in db.execute('SELECT * FROM plans ORDER BY price_uzs')]
             audit=[dict(r) for r in db.execute('SELECT * FROM audit ORDER BY id DESC LIMIT 100')]
             revenue=db.execute("SELECT COALESCE(SUM(amount),0)/100 FROM orders WHERE status='paid'").fetchone()[0]
-        return jsonify(licenses=licenses,orders=orders,plans=plans,audit=audit,revenue_uzs=revenue,sandbox=app.config['PAYME_TEST'],payments_ready=bool(private and app.config['PAYME_KEY'] and app.config['PAYME_MERCHANT_ID']))
+            if renuvo:
+                revenue+=db.execute("SELECT COALESCE(SUM(amount),0)/100 FROM renuvo_invoices WHERE status='PAID'").fetchone()[0]
+                for r in db.execute('SELECT * FROM renuvo_subscriptions ORDER BY checked DESC LIMIT 500'):
+                    amount=db.execute('SELECT COALESCE(SUM(amount),0) FROM renuvo_invoices WHERE subscription_id=?',(r['id'],)).fetchone()[0]
+                    orders.append({'id':r['id'],'amount':amount,'status':r['status'],'created':r['checked']})
+        return jsonify(licenses=licenses,orders=orders,plans=plans,audit=audit,revenue_uzs=revenue,sandbox=sandbox(),payments_ready=payments_ready(),provider=app.config['BILLING_PROVIDER'],renewal=renewal())
 
     @app.post('/api/admin/plans/<identity>')
     def edit_plan(identity):
         admin();p=body()
+        if renuvo:raise PaymentError(409,'Renuvo tarif narxi va muddatini Renuvo kabinetida boshqaring. Mahalliy tarif ma’lumotini server konfiguratsiyasi bilan moslang.')
         if not re.fullmatch('[a-z0-9_-]{1,32}',identity):raise PaymentError(400,'Tarif ID noto‘g‘ri.')
         title=str(p.get('title','')).strip()[:80]
         if not title:raise PaymentError(400,'Tarif nomi kerak.')

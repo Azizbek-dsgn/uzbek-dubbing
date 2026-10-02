@@ -2,6 +2,12 @@
 
 Flask + Waitress + SQLite. Bitta persistent server uchun; bir nechta konteyner/replika yoki serverless vaqtinchalik diskka mos emas. Audio/model fayllari bu serverga yuborilmaydi.
 
+## Tanlangan provayder: Renuvo
+
+Yangi konfiguratsiya Renuvo sandbox rejimiga tayyorlanadi. Avval [Renuvo ulanish yo‘riqnomasi](RENUVO.md) bilan API/tenant/plan ID va webhookni ulang. Real to‘lov yoqilmagan; Renuvo hujjatidagi haqiqiy provayder sinovi cheklovi ham tekshirilishi kerak.
+
+Quyidagi Payme qadamlar alohida legacy adapterga tegishli: uni ishlatish uchun `UZSCRIBE_BILLING_PROVIDER=payme` qo‘ying.
+
 ## Mahalliy va production tayyorlash
 
 ```sh

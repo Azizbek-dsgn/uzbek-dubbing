@@ -13,7 +13,7 @@ def main():
  private=rsa.generate_private_key(public_exponent=65537,key_size=3072)
  key.write_bytes(private.private_bytes(serialization.Encoding.PEM,serialization.PrivateFormat.PKCS8,serialization.NoEncryption()));os.chmod(key,0o600)
  public=private.public_key().public_bytes(serialization.Encoding.PEM,serialization.PublicFormat.SubjectPublicKeyInfo).decode()
- env.write_text('UZSCRIBE_DB='+shlex.quote(str((a.data_dir/'subscriptions.sqlite').resolve()))+'\nUZSCRIBE_SIGNING_KEY='+shlex.quote(str(key.resolve()))+'\nUZSCRIBE_ADMIN_TOKEN='+secrets.token_urlsafe(48)+'\nPAYME_TEST=1\nPAYME_MERCHANT_ID=\nPAYME_KEY=\n');os.chmod(env,0o600)
+ env.write_text('UZSCRIBE_DB='+shlex.quote(str((a.data_dir/'subscriptions.sqlite').resolve()))+'\nUZSCRIBE_SIGNING_KEY='+shlex.quote(str(key.resolve()))+'\nUZSCRIBE_ADMIN_TOKEN='+secrets.token_urlsafe(48)+'\nUZSCRIBE_BILLING_PROVIDER=renuvo\nRENUVO_API_URL=https://test.renuvo.uz\nRENUVO_API_KEY=\nRENUVO_TENANT_ID=\nRENUVO_WEBHOOK_SECRET='+secrets.token_urlsafe(48)+'\nRENUVO_PLAN_IDS=\'{}\'\nRENUVO_PLAN_CATALOG=\'{}\'\nPAYME_TEST=1\nPAYME_MERCHANT_ID=\nPAYME_KEY=\n');os.chmod(env,0o600)
  a.panel_config.parent.mkdir(parents=True,exist_ok=True);a.panel_config.write_text(json.dumps({'mode':'subscription','api_url':a.api_url.rstrip('/'),'public_key':public},indent=2)+'\n')
  print('Server credentials saved privately. Only the public panel configuration may be shipped.')
 if __name__=='__main__':main()
