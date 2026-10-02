@@ -28,7 +28,7 @@ set +a
 
 Windows serverida shu env qiymatlarni xizmat muhitiga kiriting va `.billing-venv\Scripts\waitress-serve.exe --listen=127.0.0.1:8765 billing.wsgi:app` ishga tushiring. Flask development serveridan production’da foydalanmang ([Flask deployment hujjati](https://flask.palletsprojects.com/en/stable/deploying/)). `.env` avtomatik o‘qilmaydi; qiymatlarni service environment orqali yuklash kerak.
 
-SQLite disk persistent bo‘lsin. Zaxira nusxani SQLite backup API orqali oling; faqat `.sqlite` faylini ishlayotgan WAL bazadan ko‘chirish yetarli emas. Reverse proxy request limit, timeout va rate limitni sozlang; ilova rate limiti bitta server jarayoniga tegishli. Proxy oldida IP limitlarini qo‘llang; ilova tekshirilmagan X-Forwarded-For’ga ishonmaydi.
+SQLite disk persistent bo‘lsin. Zaxira nusxani SQLite backup API orqali oling; faqat `.sqlite` faylini ishlayotgan WAL bazadan ko‘chirish yetarli emas. Reverse proxy request limit, timeout va rate limitni sozlang; ilova rate limiti bitta server jarayoniga tegishli. Proxy oldida IP limitlarini qo‘llang. Faqat bitta ishonchli reverse proxy va yopiq backend bo‘lsa, proxy X-Forwarded-For’ni almashtirib yuborsin va service environment’da `UZSCRIBE_TRUST_PROXY=1` qo‘ying (bir proxy hop). Backendga tashqaridan to‘g‘ridan-to‘g‘ri kirish bo‘lmasin; aks holda bu flag’ni yoqmang. Default `0` holatda proxyning IP’si bo‘yicha umumiy limit ishlaydi; ilova tekshirilmagan X-Forwarded-For’ga ishonmaydi.
 
 ## Pullik ZIP
 
@@ -53,7 +53,7 @@ So‘ng Payme sandbox’da checkout, noto‘g‘ri summa, takroriy callback, par
 1. Panel → **Obuna** → tarif → Payme’da to‘lash.
 2. Kalit kompyuterga saqlanadi; checkout browserda ochiladi.
 3. To‘lovdan keyin **Holatni yangilash**: imzolangan device lease olinadi.
-4. 3 kungacha offline ishlaydi; keyin internetda tasdiqlanadi. Obuna muddati tugasa yangi ishlar uchun uzaytirish kerak.
+4. 3 kungacha offline ishlaydi; keyin internetda tasdiqlanadi. Online tekshiruv har 4 soatda yoki foydalanuvchi bosganda bajariladi; serverning 401/403 rad javobi cached lease’ni bekor qiladi. Qurilma bindinglarini reset qilish limitni bo‘shatadi; kaliti mavjud eski mijoz qayta bog‘lanishi mumkin. Barcha eski mijozni to‘xtatish uchun litsenziyani bloklang. Obuna muddati tugasa yangi ishlar uchun uzaytirish kerak.
 5. Kompyuter almashtirish uchun **Bu kompyuterni uzish** yoki admin qurilmalarni uzadi.
 
 Kalit bearer credential: uni ommaga yubormang. Ikki Adobe host bitta runtime papkasini ishlatsa, bitta installation ID ishlatiladi. Bu hardware DRM emas; runtime papkasini nusxalash qurilma identifikatorini ham nusxalaydi. Maxfiy server kaliti public kodda mavjud emas. Community beta obunasiz ishlaydi; paid build config alohida beriladi.

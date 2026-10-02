@@ -122,4 +122,4 @@ Mahalliy tekshiruv: 70 Python test, 8 Node test to‘plami va haqiqiy AIFF → W
 
 Panelga **Obuna** bo‘limi qo‘shildi: kalit faollashtirish, Payme’da tarif olish/uzaytirish va kompyuterni uzish. Merchant va domen ulanmaguncha public beta **community** rejimida qoladi. Pullik distributiv uchun `tools/build_release.py --license-config` orqali public server konfiguratsiyasini berish kerak.
 
-Tariflar so‘mda; obuna hozir **qo‘lda uzayadi**, kartadan avtomatik yechilmaydi. Serverda tarif, mijoz, muddat, qurilma, to‘lov va audit boshqariladi. [Serverni tayyorlash](billing/README.md), [monetizatsiya yo‘llari](docs/MONETIZATION.md).
+Tariflar so‘mda; obuna hozir **qo‘lda uzayadi**, kartadan avtomatik yechilmaydi. Serverda tarif, mijoz, muddat, qurilma, to‘lov va audit boshqariladi. [Serverni tayyorlash](https://github.com/Azizbek-dsgn/uzbek-dubbing/blob/feat/uzbek-subtitles-adobe/billing/README.md), [monetizatsiya yo‘llari](https://github.com/Azizbek-dsgn/uzbek-dubbing/blob/feat/uzbek-subtitles-adobe/docs/MONETIZATION.md).

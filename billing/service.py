@@ -13,6 +13,7 @@ import sqlite3
 import threading
 import time
 from flask import Flask, jsonify, request, send_from_directory
+from werkzeug.middleware.proxy_fix import ProxyFix
 from cryptography.hazmat.primitives import hashes, serialization
 from cryptography.hazmat.primitives.asymmetric import padding
 
@@ -181,6 +182,7 @@ def create_app(config=None):
     app=Flask(__name__,static_folder='static')
     app.config.update(DB_PATH=os.environ.get('UZSCRIBE_DB','billing-data/subscriptions.sqlite'),ADMIN_TOKEN=os.environ.get('UZSCRIBE_ADMIN_TOKEN',''),SIGNING_KEY=os.environ.get('UZSCRIBE_SIGNING_KEY',''),PAYME_KEY=os.environ.get('PAYME_KEY',''),PAYME_MERCHANT_ID=os.environ.get('PAYME_MERCHANT_ID',''),PAYME_TEST=os.environ.get('PAYME_TEST','1')=='1',MAX_CONTENT_LENGTH=32*1024,CLOCK=time.time)
     if config:app.config.update(config)
+    if os.environ.get('UZSCRIBE_TRUST_PROXY')=='1':app.wsgi_app=ProxyFix(app.wsgi_app,x_for=1)
     merchant=app.config['PAYME_MERCHANT_ID']
     if merchant and not re.fullmatch(r'[A-Za-z0-9_-]{1,100}',merchant):raise ValueError('Invalid Payme merchant identifier')
     store=Store(app.config['DB_PATH'],app.config['CLOCK']);app.store=store
