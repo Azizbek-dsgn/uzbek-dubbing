@@ -24,6 +24,7 @@ jobs:
       - name: Python subtitle and installer tests
         run: |
           python -m pip install numpy "av>=16,<17" imageio-ffmpeg==0.6.0 "Pillow>=11.3,<13"
+          python -m pip install -r billing/requirements.txt
           python -m unittest discover -s tests -v
       - name: Panel workflow and bundled model default
         run: node tests/test_panel_workflow.js --windows --buyer
@@ -36,6 +37,7 @@ jobs:
           node tests/test_reels_panel.js
           node tests/test_animation_panel.js
           node tests/test_animation_host.js
+          node tests/test_license_panel.js
       - name: Windows installer syntax
         if: runner.os == 'Windows'
         shell: pwsh

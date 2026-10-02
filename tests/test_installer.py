@@ -37,7 +37,7 @@ class InstallerTests(unittest.TestCase):
             (package / 'adobe/UzbekSubtitles/assets').mkdir()
             (package / 'adobe/UzbekSubtitles/assets/uzscribe-logo.jpg').write_bytes(b'logo')
             (package / 'adobe/UzbekSubtitles/CSXS/manifest.xml').write_text('<root/>')
-            for name in ('index.html', 'panel.js', 'animation-panel.js', 'podcast-panel.js', 'reels-panel.js'):
+            for name in ('index.html', 'panel.js', 'license-core.js', 'license-panel.js', 'license-config.json', 'animation-panel.js', 'podcast-panel.js', 'reels-panel.js'):
                 (package / 'adobe/UzbekSubtitles' / name).write_text(name)
             (package / 'adobe/UzbekSubtitles/host/editor.jsx').write_text('editor')
             with patch('install._enable_debug') as debug:
@@ -45,6 +45,8 @@ class InstallerTests(unittest.TestCase):
                                          developer=True, skip_dependencies=True)
             self.assertEqual((runtime / 'models/large-v3/model.bin').read_bytes(), b'test')
             self.assertEqual((panel / 'panel.js').read_text(), 'panel.js')
+            self.assertEqual((panel / 'license-config.json').read_text(), 'license-config.json')
+            self.assertTrue((panel / 'license-panel.js').is_file())
             self.assertEqual((panel / 'assets/uzscribe-logo.jpg').read_bytes(), b'logo')
             debug.assert_called_once_with('darwin')
             with patch('install._enable_debug'):
@@ -157,7 +159,7 @@ class InstallerTests(unittest.TestCase):
                      *(runtime / 'models/gigaam-base-large' / name for name in
                        ('config.json', 'modeling_gigaam.py')),
                      *(panel / name for name in
-                       ('CSXS/manifest.xml', 'index.html', 'panel.js', 'animation-panel.js', 'podcast-panel.js', 'reels-panel.js',
+                       ('CSXS/manifest.xml', 'index.html', 'panel.js', 'license-core.js', 'license-panel.js', 'license-config.json', 'animation-panel.js', 'podcast-panel.js', 'reels-panel.js',
                         'assets/uzscribe-logo.jpg'))]
             for path in files:
                 path.parent.mkdir(parents=True, exist_ok=True)

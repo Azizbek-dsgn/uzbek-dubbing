@@ -10,6 +10,8 @@ Premiere Pro va After Effects uchun lokal CEP panel. U faol sequence yoki kompoz
 
 **After Effects 0.5.2:** alohida kompozitsiya, Work Area va Render Queue adapteri. WAV/AIFF shablonlari avtomatik tanlanadi; AE’da Premiere EPR preset’i talab qilinmaydi. [Batafsil](README-INSTALL.md#052--after-effects-alohida-ish-yoli).
 
+**Obuna 0.6.0:** so‘mda tariflar, Payme checkout, litsenziya va qurilmalarni boshqarish. Server alohida o‘rnatiladi; merchant ulanmaguncha haqiqiy to‘lov olinmaydi. [Biznes modeli](docs/MONETIZATION.md), [serverni ulash](billing/README.md).
+
 ## Ishlatish
 
 1. Premiere Pro’da sequence’ni yoki After Effects’da kompozitsiyani oching.

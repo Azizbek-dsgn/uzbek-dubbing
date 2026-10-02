@@ -1,0 +1,23 @@
+const assert=require('assert'),fs=require('fs'),os=require('os'),path=require('path'),vm=require('vm'),crypto=require('crypto'),EventEmitter=require('events');
+const temp=fs.mkdtempSync(path.join(os.tmpdir(),'uzscribe-license-')),dir=path.join(temp,'adobe','UzbekSubtitles');fs.mkdirSync(dir,{recursive:true});
+try {
+const keys=crypto.generateKeyPairSync('rsa',{modulusLength:2048,publicKeyEncoding:{type:'spki',format:'pem'},privateKeyEncoding:{type:'pkcs8',format:'pem'}});
+fs.copyFileSync('adobe/UzbekSubtitles/license-core.js',path.join(dir,'license-core.js'));
+fs.writeFileSync(path.join(dir,'license-config.json'),JSON.stringify({mode:'subscription',api_url:'https://billing.example.com',public_key:keys.publicKey}));
+fs.mkdirSync(path.join(temp,'license'));fs.writeFileSync(path.join(temp,'license','installation-id'),'stable-installation');
+const device=crypto.createHash('sha256').update('stable-installation').digest('hex'),now=Math.floor(Date.now()/1000);
+function token(expiry=now+3600){const payload=Buffer.from(JSON.stringify({v:1,device_id:device,license_id:'license-1',issued_at:now-60,expires_at:expiry,subscription_expires_at:now+86400,features:['captions','animations','reels','podcast']})).toString('base64url');return payload+'.'+crypto.sign('RSA-SHA256',Buffer.from(payload),keys.privateKey).toString('base64url');}
+const statePath=path.join(temp,'license','state.json');fs.writeFileSync(statePath,JSON.stringify({key:'UZS-synthetic',token:token()}));
+const ids=['licenseStatus','subscription','licenseKey','activateLicense','refreshLicense','buyLicense','licensePlan','releaseLicense'],els={};ids.forEach(id=>els[id]={value:id==='licensePlan'?'monthly':'',textContent:'',open:false,disabled:false,appendChild(){}});
+let offline=true,opened='',lastRequest=null;
+const https={request(options,callback){assert.equal(options.protocol,'https:');assert.equal(options.hostname,'billing.example.com');lastRequest=options;const req=new EventEmitter();req.setTimeout=()=>{};req.destroy=()=>{};let body='';req.write=v=>body+=v;req.end=()=>{if(offline){req.emit('error',Error('Offline'));return;}let data={};if(options.path==='/api/plans')data={plans:[],payments_ready:true};if(options.path==='/api/activate'){assert.equal(JSON.parse(body).device_id,device);data={token:token()};}if(options.path==='/api/orders')data={license_key:'UZS-new-synthetic',checkout_url:'https://checkout.test.paycom.uz/synthetic',sandbox:true};if(options.path==='/api/devices/remove')data={success:true};const res=new EventEmitter();res.statusCode=200;callback(res);res.emit('data',JSON.stringify(data));res.emit('end');};return req;}};
+const context={require:n=>n==='https'?https:n==='os'?{homedir:()=>temp}:require(n),__dirname:dir,process:{platform:'win32',env:{LOCALAPPDATA:path.join(temp,'local')}},Buffer,Date,JSON,Math,setInterval(){},__adobe_cep__:{openURLInDefaultBrowser:u=>opened=u},document:{getElementById:id=>els[id],createElement:()=>({})}};
+const script=fs.readFileSync('adobe/UzbekSubtitles/license-panel.js','utf8');vm.runInNewContext(script,context);
+assert(context.document.uzscribeLicense.allow('captions'),'offline valid signed lease must work');assert(els.licenseStatus.textContent.includes('Pro faol'));
+fs.writeFileSync(statePath,JSON.stringify({key:'UZS-synthetic',token:token(now-1)}));vm.runInNewContext(script,context);assert.equal(context.document.uzscribeLicense.allow('captions'),false);assert(els.subscription.open);
+offline=false;els.licenseKey.value='UZS-synthetic';els.activateLicense.onclick();assert(context.document.uzscribeLicense.allow('reels'));assert.equal(lastRequest.headers.Authorization,'Bearer UZS-synthetic');assert.equal(JSON.parse(fs.readFileSync(statePath)).key,'UZS-synthetic');
+els.buyLicense.onclick();assert.equal(opened,'https://checkout.test.paycom.uz/synthetic');assert.equal(JSON.parse(fs.readFileSync(statePath)).key,'UZS-new-synthetic');
+els.releaseLicense.onclick();assert.equal(context.document.uzscribeLicense.allow('captions'),false);
+fs.writeFileSync(path.join(dir,'license-config.json'),JSON.stringify({mode:'community'}));vm.runInNewContext(script,context);assert(context.document.uzscribeLicense.allow('captions'));
+console.log('Paid panel activation, HTTPS headers, shared device identity, offline lease, expiry, Payme handoff, release and community beta OK');
+}finally{fs.rmSync(temp,{recursive:true,force:true});}

@@ -48,7 +48,7 @@
       catch(e){fail('Natija o‘qilmadi: '+e.message);}
     });
   }
-  el('reelRun').addEventListener('click',function(){if(busy || document.uzscribeBusy)return;save();cancelled=false;result=null;snapshot=null;choices=[];el('reelReview').hidden=true;el('reelImport').hidden=true;phase(true);status('Timeline tekshirilmoqda…');
+  el('reelRun').addEventListener('click',function(){if(busy || document.uzscribeBusy)return;if(bridge.authorize && !bridge.authorize('reels'))return;save();cancelled=false;result=null;snapshot=null;choices=[];el('reelReview').hidden=true;el('reelImport').hidden=true;phase(true);status('Timeline tekshirilmoqda…');
     refresh(function(error,data){if(error){fail(error.message);return;}if(cancelled){fail('Bekor qilindi.');return;}
       var directory=path.join(bridge.root,'exports','reels'),source;
       try{bridge.mkdir(directory);source=path.join(directory,String(Date.now())+'-source.xml');}catch(e){fail(e.message);return;}

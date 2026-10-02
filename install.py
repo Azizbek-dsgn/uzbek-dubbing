@@ -73,7 +73,7 @@ def _copy_panel(package: Path, target: Path) -> None:
         shutil.copytree(source / folder, target / folder, dirs_exist_ok=True)
     if (source / "assets").is_dir():
         shutil.copytree(source / "assets", target / "assets", dirs_exist_ok=True)
-    for name in ("index.html", "panel.js", "animation-panel.js", "podcast-panel.js", "reels-panel.js"):
+    for name in ("index.html", "panel.js", "license-core.js", "license-panel.js", "license-config.json", "animation-panel.js", "podcast-panel.js", "reels-panel.js"):
         shutil.copy2(source / name, target / name)
 
 

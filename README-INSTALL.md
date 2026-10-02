@@ -117,3 +117,9 @@ Tanlangan subtitrning haqiqiy animatsiya preview’i, 40 qadam Undo/Redo va oxir
 - AE importidagi matn va transform parametrlari tilga bog‘lanmagan matchName orqali olinadi.
 
 Mahalliy tekshiruv: 70 Python test, 8 Node test to‘plami va haqiqiy AIFF → WAV konvertatsiyasi o‘tdi. AE sinovlari host API maketlarida tekshirilgan; ochiq Adobe oynasidagi fayl tanlash boshqaruvi javob bermagani sababli ushbu tuzatishning native render/import sinovi hali tasdiqlanmagan.
+
+### 0.6.0 — obuna uchun tayyor tizim
+
+Panelga **Obuna** bo‘limi qo‘shildi: kalit faollashtirish, Payme’da tarif olish/uzaytirish va kompyuterni uzish. Merchant va domen ulanmaguncha public beta **community** rejimida qoladi. Pullik distributiv uchun `tools/build_release.py --license-config` orqali public server konfiguratsiyasini berish kerak.
+
+Tariflar so‘mda; obuna hozir **qo‘lda uzayadi**, kartadan avtomatik yechilmaydi. Serverda tarif, mijoz, muddat, qurilma, to‘lov va audit boshqariladi. [Serverni tayyorlash](billing/README.md), [monetizatsiya yo‘llari](docs/MONETIZATION.md).

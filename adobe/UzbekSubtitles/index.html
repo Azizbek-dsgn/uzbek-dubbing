@@ -14,6 +14,7 @@
     .header{display:flex;align-items:center;gap:10px;margin-bottom:14px;flex:none}
     .mark{width:34px;height:34px;border:1px solid var(--line);border-radius:10px;object-fit:cover}
     h1{margin:0;font-size:21px;line-height:1.2;letter-spacing:-.04em}.subtitle{margin:2px 0 0;color:var(--muted);font-size:10px}
+    #subscription{flex:none;max-height:42vh;overflow:auto}#subscription:not([open]){overflow:visible}
     .mode-tabs{display:flex;flex:none;gap:3px;padding:4px;background:var(--card);border:1px solid #26262e;border-radius:12px;margin-bottom:14px}
     .mode-tabs button{flex:1;min-height:34px;padding:6px;border:0;border-radius:8px;color:var(--muted);background:transparent;font-weight:600}
     .mode-tabs button[aria-selected=true]{color:var(--text);background:#373740}
@@ -67,6 +68,7 @@
 <body>
   <main class="app">
     <header class="header"><img class="mark" src="assets/uzscribe-logo.jpg" alt="" aria-hidden="true"><div><h1>UzScribe</h1><p class="subtitle">by Meyor Vision</p></div></header>
+    <details class="section" id="subscription"><summary>Obuna</summary><div class="details-body"><p id="licenseStatus" class="hint" role="status"></p><label class="field"><span class="field-label">Litsenziya kaliti</span><input id="licenseKey" type="password" autocomplete="off" placeholder="UZS-…"></label><div class="action-row" style="margin-top:10px"><button id="activateLicense" class="secondary" type="button">Faollashtirish</button><button id="refreshLicense" class="secondary" type="button">Holatni yangilash</button></div><label class="field"><span class="field-label">Tarif · so‘mda</span><select id="licensePlan"><option value="monthly">Pro · 30 kun</option><option value="yearly">Pro · 365 kun</option></select></label><button id="buyLicense" class="secondary" type="button">Payme’da obuna olish / uzaytirish</button><button id="releaseLicense" class="refresh" type="button">Bu kompyuterni uzish</button><p class="hint">Kartadan avtomatik pul yechilmaydi. Pro litsenziyasi internet tekshiruvidan keyin 3 kungacha offline ishlaydi.</p></div></details>
     <nav class="mode-tabs" aria-label="Ish turi"><button id="captionsTab" type="button" aria-selected="true">Subtitr</button><button id="podcastTab" type="button" aria-selected="false">Podcast</button><button id="reelsTab" type="button" aria-selected="false">Reels</button></nav>
     <div id="captionPage" class="workflow"><div class="page-body">
     <section class="section" aria-labelledby="sourceTitle">
@@ -211,6 +213,7 @@
     <div class="footer"><p id="reelStatus" role="status" aria-live="polite"></p><button id="reelRun" class="run" type="button">Reels’ni tozalash</button><button id="reelCancel" class="secondary" type="button" hidden>Bekor qilish</button><button id="reelImport" class="secondary" type="button" hidden>Yangi sequence qo‘shish</button><p class="hint">Natija Project panelida alohida sequence bo‘ladi.</p></div>
     </div>
   </main>
+  <script src="license-panel.js"></script>
   <script src="panel.js"></script>
   <script src="animation-panel.js"></script>
   <script src="podcast-panel.js"></script>

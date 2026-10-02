@@ -11,7 +11,7 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[1]
-PANEL = ("CSXS/manifest.xml", "index.html", "panel.js", "animation-panel.js", "podcast-panel.js", "reels-panel.js", "assets/uzscribe-logo.jpg",
+PANEL = ("CSXS/manifest.xml", "index.html", "panel.js", "license-core.js", "license-panel.js", "license-config.json", "animation-panel.js", "podcast-panel.js", "reels-panel.js", "assets/uzscribe-logo.jpg",
          "host/editor.jsx", "host/after_effects.jsx")
 RUNTIME = ("__init__.py", "podcast.py", "reels.py", "cli.py", "batch.py", "animations.py", "sentences.py", "gigaam.py",
            "fastconformer.py", "requirements.txt", "requirements-release.txt",
@@ -30,7 +30,7 @@ def hash_file(path: Path) -> str:
     return digest.hexdigest()
 
 
-def build(model_dir: Path, output: Path, signed_zxp: Path | None = None) -> None:
+def build(model_dir: Path, output: Path, signed_zxp: Path | None = None, license_config: Path | None = None) -> None:
     files: dict[str, Path] = {
         "install.py": ROOT / "install.py",
         "install_online.py": ROOT / "install_online.py",
@@ -48,6 +48,13 @@ def build(model_dir: Path, output: Path, signed_zxp: Path | None = None) -> None
     }
     files.update({f"adobe/UzbekSubtitles/{name}": ROOT / "adobe" / "UzbekSubtitles" / name
                   for name in PANEL})
+    if license_config:
+        config = json.loads(license_config.read_text())
+        if config.get("mode") != "subscription" or not str(config.get("api_url", "")).startswith("https://") or "BEGIN PUBLIC KEY" not in str(config.get("public_key", "")) or "PRIVATE KEY" in str(config):
+            raise ValueError("Paid license configuration must contain an HTTPS API and a public RSA key only")
+        if signed_zxp:
+            raise ValueError("Configure the panel before signing ZXP; do not override its signed license configuration")
+        files["adobe/UzbekSubtitles/license-config.json"] = license_config
     files.update({f"subtitles/{name}": ROOT / "subtitles" / name for name in RUNTIME})
     files.update({f"models/large-v3/{name}": model_dir / name for name in MODEL})
     if signed_zxp:
@@ -75,8 +82,9 @@ def main() -> None:
     parser.add_argument("--model-dir", required=True, type=Path)
     parser.add_argument("--output", required=True, type=Path)
     parser.add_argument("--signed-zxp", type=Path)
+    parser.add_argument("--license-config", type=Path, help="Public subscription config for a paid buyer ZIP")
     args = parser.parse_args()
-    build(args.model_dir, args.output, args.signed_zxp)
+    build(args.model_dir, args.output, args.signed_zxp, args.license_config)
     print(args.output.resolve())
 
 
