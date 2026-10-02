@@ -30,6 +30,7 @@ jobs:
       - name: After Effects host script
         run: |
           node tests/test_after_effects_composer.js
+          node tests/test_after_effects_workflow.js
           node tests/test_podcast_host.js
           node tests/test_podcast_panel.js
           node tests/test_reels_panel.js

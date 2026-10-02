@@ -8,10 +8,12 @@ Premiere Pro va After Effects uchun lokal CEP panel. U faol sequence yoki kompoz
 
 **Reels montaji:** pauza va qayta yozilgan dubllarni bitta tugmada tozalash, alohida sequence va dubllarni qaytarish. [Yo‘riqnoma](README-INSTALL.md#reels--takroriy-dubllarni-tozalash), [tadqiqot](docs/REELS-RESEARCH.md).
 
+**After Effects 0.5.2:** alohida kompozitsiya, Work Area va Render Queue adapteri. WAV/AIFF shablonlari avtomatik tanlanadi; AE’da Premiere EPR preset’i talab qilinmaydi. [Batafsil](README-INSTALL.md#052--after-effects-alohida-ish-yoli).
+
 ## Ishlatish
 
 1. Premiere Pro’da sequence’ni yoki After Effects’da kompozitsiyani oching.
-2. Kerakli joyga In/Out nuqtalarini qo‘ying. AE’da Work Area belgilang. Belgilanmagan bo‘lsa butun timeline olinadi.
+2. Premiere’da In/Out (I/O), AE’da Work Area (B/N) belgilang. Belgilanmagan bo‘lsa butun timeline olinadi.
 3. **Window → Extensions → UzScribe** panelini oching. Asosiy ekranda oraliq, qator va so‘z sonini tanlang. Model, gap bo‘linishi, timing va boshqa tanlovlar **Qo‘shimcha sozlamalar** ichida.
 4. **Subtitr yaratish** tugmasini bosing. Natija qisqa ro‘yxatda ochiladi: qatorni tanlab, matnini oddiy maydonda tuzating. So‘ng **Timeline’ga qo‘shish** ni bosing. Premiere’da caption track, AE’da vaqtli matn qatlamlari yaratiladi. SRT nusxasi `exports/` papkasida qoladi. **SRT saqlansin** tugmasi timeline’ga qo‘ymasdan faylni saqlaydi.
 

@@ -12,9 +12,8 @@ comp.selectedLayers = [previous];
 comp.layers = {addText: value => {
   const text = {fontSize:0, fillColor:null, applyFill:false, applyStroke:false, justification:null};
   const layer = {selected:true, property: name => {
-    if (name === 'Source Text') return {value:text,setValue(){}};
-    if (name === 'Position') return {setValue(){}};
-    if (name === 'Transform') return {property:() => ({setValueAtTime(){animated++}})};
+    if (name === 'ADBE Text Properties') return {property:n=>{if(n!=='ADBE Text Document')throw Error(n);return {value:text,setValue(){}}}};
+    if (name === 'ADBE Transform Group') return {property:n => n==='ADBE Position'?{setValue(){}}:({setValueAtTime(){animated++}})};
     throw Error(name);
   }};
   layer.text = value; created.push(layer); return layer;

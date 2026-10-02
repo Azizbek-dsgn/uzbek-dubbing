@@ -9,5 +9,5 @@ assert(JSON.parse(context.uzPodcastImport('/tmp/源.xml','Podcast','seq-1')).suc
 seq.sequenceID='another';assert(JSON.parse(context.uzPodcastImport('/tmp/edit.xml','Podcast','seq-1')).error);assert.equal(imported,1);
 assert(JSON.parse(context.uzPodcastExport('/tmp/source.xml','Podcast','seq-1')).error);assert.equal(exported,1);
 seq.sequenceID='seq-1';exists=false;assert(JSON.parse(context.uzPodcastImport('/tmp/edit.xml','Podcast','seq-1')).error);assert.equal(imported,1);
-context.app.name='After Effects';assert(JSON.parse(context.uzPodcastExport('/tmp/source.xml','Podcast','seq-1')).error);
+delete context.app.name;context.CompItem=function(){};assert(JSON.parse(context.uzPodcastExport('/tmp/source.xml','Podcast','seq-1')).error);
 console.log('Podcast host identity guard, XML import/export, AE restriction OK');

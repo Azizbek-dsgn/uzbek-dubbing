@@ -106,3 +106,14 @@ Olti animatsiya, uslub saqlash, so‘z vaqti/urg‘u tahriri, subtitrni birlasht
 ### 0.5.1 — tahrir va haqiqiy preview
 
 Tanlangan subtitrning haqiqiy animatsiya preview’i, 40 qadam Undo/Redo va oxirgi tahrirni tiklash qo‘shildi. Wi‑Fi kabi ASR bo‘laklari asl timing bilan moslashtiriladi. AE import xatosida yaratilgan qatlamlar tozalanadi; MOGRT manifestlari boshqa kompyuterga butun papka bilan ko‘chadi.
+
+### 0.5.2 — After Effects alohida ish yo‘li
+
+- Premiere: Sequence → In/Out → WAV preset → caption track yoki animatsiya klipi.
+- After Effects: Composition → Work Area (B/N) yoki to‘liq kompozitsiya → native Render Queue audiosi → vaqtli matn qatlamlari. Premiere EPR preset’i AE’da kerak emas. Podcast/Reels montaji hozir Premiere uchun; AE’da bu bo‘limlar yashiriladi.
+- AE dasturi `CompItem` va CEP host identifikatori bilan aniqlanadi. `app.name` tekshiruviga bog‘lanmaydi.
+- Audio shablonlari nomiga emas, haqiqiy WAV/AIFF formatiga qarab tanlanadi. AIFF avtomatik 16 kHz mono WAV’ga aylantiriladi. Eksportdan so‘ng avvalgi Render Queue navbati tiklanadi.
+- Agar AE’da umuman WAV/AIFF Output Module shabloni bo‘lmasa: Render Queue → Output Module’da WAV yoki AIFF tanlang, audio yoqilsin, **UzScribe Audio** nomi bilan shablon saqlang. Panel shu shablonni keyingi safar avtomatik topadi.
+- AE importidagi matn va transform parametrlari tilga bog‘lanmagan matchName orqali olinadi.
+
+Mahalliy tekshiruv: 70 Python test, 8 Node test to‘plami va haqiqiy AIFF → WAV konvertatsiyasi o‘tdi. AE sinovlari host API maketlarida tekshirilgan; ochiq Adobe oynasidagi fayl tanlash boshqaruvi javob bermagani sababli ushbu tuzatishning native render/import sinovi hali tasdiqlanmagan.

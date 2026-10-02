@@ -273,8 +273,8 @@
       callback(null, raw);
     });
   }
-  function jsonCall(expression, callback) {
-    hostCall(hostScript, expression, function (err, raw) {
+  function jsonCall(expression, callback, adapter) {
+    hostCall(adapter || hostScript, expression, function (err, raw) {
       if (err) { callback(err); return; }
       try {
         var result = JSON.parse(raw);
@@ -302,10 +302,26 @@
       srtEditor.value=validateSrt(value).text;if(activeRun) activeRun.metadata=metadata;
       selectedCue=selected||0;renderCues();
     }, phase:setPhase, show:show, finish:finish, problem:importProblem};
+  function adobeHost() {
+    try {var environment=JSON.parse(__adobe_cep__.getHostEnvironment());return environment.appName;}
+    catch (_) {return '';}
+  }
   function getInfo(callback, selectedRange) {
-    jsonCall('uzTimelineInfo(' + JSON.stringify(selectedRange || range.value) + ')', callback);
+    var ae=adobeHost()==='AEFT';
+    jsonCall((ae?'uzAeTimelineInfo(':'uzTimelineInfo(') + JSON.stringify(selectedRange || range.value) + ')', callback, ae?aeScript:hostScript);
+  }
+  function hostUi(host) {
+      Array.prototype.forEach.call(range.options,function(option){
+        if(option.value==='auto')option.textContent=host==='AEFT'?'Work Area yoki to‘liq kompozitsiya':'In/Out yoki to‘liq video';
+        if(option.value==='full')option.textContent=host==='AEFT'?'To‘liq kompozitsiya':'To‘liq video';
+        if(option.value==='inout')option.textContent=host==='AEFT'?'Faqat Work Area · B/N':'Faqat In/Out · I/O';
+      });
+      if(premierePreset.parentNode)premierePreset.parentNode.hidden=host==='AEFT';
+      if(audioTrack.parentNode)audioTrack.parentNode.hidden=host==='AEFT';
+      ['podcastTab','reelsTab'].forEach(function(id){var tab=document.getElementById(id);if(tab)tab.hidden=host==='AEFT';});
   }
   function refreshTimeline() {
+    var host=adobeHost();if(host)hostUi(host);
     getInfo(function (err, info) {
       if (activeRun) return;
       if (err) { timeline.textContent = err.message; return; }
@@ -313,6 +329,7 @@
         (info.marked ? ('boshlanish ' + info.start.toFixed(2) + ' s') : 'to‘liq') +
         ' · ' + info.fps.toFixed(3) + ' fps';
       fps.value = info.fps.toFixed(3);
+      hostUi(info.host);
       var wanted = audioTrack.value;
       while (audioTrack.options.length > 1) audioTrack.remove(1);
       if (info.host === 'PPRO') {
@@ -368,7 +385,8 @@
     batchRun.disabled = phase !== 'idle';
     Object.keys(savedFields).forEach(function (key) {
       savedFields[key].disabled = phase !== 'idle' || (key === 'pause' && !splitPauses.checked) ||
-        (key === 'animation' && animationField.hidden);
+        (key === 'animation' && animationField.hidden) ||
+        ((key === 'audioTrack' || key === 'premierePreset') && adobeHost()==='AEFT');
     });
     cancel.disabled = false;
     historyControls();
@@ -685,6 +703,22 @@
       importCaptions(srt, info, audio);
     });
   }
+  function normalizeAeAudio(source,destination,state,callback) {
+    if(source===destination){callback(null);return;}
+    show('AE audiosi WAV formatiga tayyorlanmoqda...');
+    var code='import sys,subprocess,signal,imageio_ffmpeg\n'+
+      'p=subprocess.Popen([imageio_ffmpeg.get_ffmpeg_exe(),"-nostdin","-v","error","-y","-i",sys.argv[1],"-vn","-ac","1","-ar","16000","-c:a","pcm_s16le",sys.argv[2]])\n'+
+      'def stop(*args):\n p.terminate()\n raise KeyboardInterrupt\n'+
+      'signal.signal(signal.SIGTERM,stop)\n'+
+      'try: sys.exit(p.wait())\n'+
+      'finally:\n if p.poll() is None: p.kill();p.wait()\n';
+    var child=spawn(python.value,['-c',code,source,destination]),error='',closed=false;state.child=child;
+    if(process.platform==='win32')child.kill=function(){spawn('taskkill',['/PID',String(child.pid),'/T','/F']);};
+    child.stderr.on('data',function(data){error=(error+String(data)).slice(-1500);});
+    function done(problem){if(closed)return;closed=true;state.child=null;removeTemp(source);if(activeRun!==state)return;
+      callback(problem);}
+    child.on('error',function(e){done(e);});child.on('close',function(code){done(code===0 && fs.existsSync(destination) && fs.statSync(destination).size>44?null:new Error(state.cancelled?'Bekor qilindi.':'AE audio tayyorlanmadi: '+error));});
+  }
   function start(reviewFirst) {
     var rate = Number(fps.value);
     if (!isFinite(rate) || rate <= 0 || rate > 120) { show('FPS 1–120 oralig‘ida bo‘lsin.'); return; }
@@ -723,15 +757,24 @@
         return;
       }
       show('Timeline ovozi eksport qilinmoqda...');
-      jsonCall('uzExportAudio(' + JSON.stringify(requestedRange) + ',' + JSON.stringify(audio) + ',' + JSON.stringify(preset) + ',' + JSON.stringify(audioTrack.value) + ')',
+      var exportExpression=info.host==='AEFT'
+        ? 'uzAeExportAudio('+[requestedRange,audio,info.name,info.identity||''].map(JSON.stringify).join(',')+')'
+        : 'uzExportAudio(' + JSON.stringify(requestedRange) + ',' + JSON.stringify(audio) + ',' + JSON.stringify(preset) + ',' + JSON.stringify(audioTrack.value) + ')';
+      jsonCall(exportExpression,
         function (exportError, result) {
           if (runState.cancelled) { removeTemp(audio); finish('Bekor qilindi.'); return; }
           if (exportError) { removeTemp(audio); finish(exportError.message); return; }
           if (result.name !== info.name || result.identity !== info.identity) {
             removeTemp(audio); finish('Faol timeline eksport vaqtida o‘zgargan. Qayta urinib ko‘ring.'); return;
           }
-          transcribe(result.path, srt, info, reviewFirst, runState);
-        });
+          if(info.host==='AEFT') {
+            normalizeAeAudio(result.path,audio,runState,function(error){
+              if(error){finish(error.message);return;}
+              if(runState.cancelled){removeTemp(audio);finish('Bekor qilindi.');return;}
+              transcribe(audio,srt,info,reviewFirst,runState);
+            });
+          } else transcribe(result.path, srt, info, reviewFirst, runState);
+        },info.host==='AEFT'?aeScript:hostScript);
     }, requestedRange);
   }
   run.onclick = function () { start(true); };

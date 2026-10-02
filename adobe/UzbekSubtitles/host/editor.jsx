@@ -2,7 +2,7 @@ function uzJson(s) {
     return String(s).replace(/\\/g, "\\\\").replace(/"/g, '\\"').replace(/\r/g, "").replace(/\n/g, "\\n");
 }
 function uzIsAE() {
-    try { return app.name.indexOf("After Effects") !== -1; } catch (e) { return false; }
+    return typeof CompItem !== "undefined";
 }
 function uzRange(mode) {
     var start = 0, duration = 0, total = 0, marked = false, fps = 25, name = "", identity = "", trackCount = 0, videoCount = 0, width = 0, height = 0;
@@ -51,25 +51,7 @@ function uzExportAudio(mode, outputPath, presetPath, selectedTrack) {
         var r = uzRange(mode), out = new File(outputPath);
         if (out.exists) out.remove();
         if (uzIsAE()) {
-            var comp = app.project.activeItem, queue = app.project.renderQueue;
-            var item = queue.items.add(comp), module = item.outputModule(1), applied = false;
-            for (var t = 0; t < 3; t++) {
-                try { module.applyTemplate(["WAV", "Audio Only", "AIFF"][t]); applied = true; break; } catch (e) {}
-            }
-            if (!applied) { item.remove(); throw new Error("AE audio Output Module shabloni topilmadi."); }
-            module.file = out;
-            item.timeSpanStart = r.start;
-            item.timeSpanDuration = r.duration;
-            var disabled = [], currentIndex = queue.numItems;
-            for (var i = 1; i <= queue.numItems; i++) {
-                var other = queue.item(i);
-                if (i !== currentIndex) { disabled.push([other, other.render]); other.render = false; }
-            }
-            try { queue.render(); }
-            finally {
-                for (var j = 0; j < disabled.length; j++) disabled[j][0].render = disabled[j][1];
-                item.remove();
-            }
+            throw new Error("AE audiosi uchun alohida host yo‘lini ishlating. UzScribe panelini yangilang.");
         } else {
             var seq = app.project.activeSequence, preset = new File(presetPath);
             if (!preset.exists) throw new Error("Premiere WAV eksport preset’i topilmadi.");

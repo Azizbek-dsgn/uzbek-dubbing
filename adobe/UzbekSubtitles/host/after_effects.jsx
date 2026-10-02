@@ -1,3 +1,58 @@
+// After Effects adapter: composition/work area and native Render Queue audio.
+function uzAeJson(s) {return String(s).replace(/\\/g,"\\\\").replace(/"/g,'\\"').replace(/\r/g,'\\r').replace(/\n/g,'\\n');}
+function uzAeRange(mode) {
+    var comp=app.project && app.project.activeItem;
+    if(!comp || !(comp instanceof CompItem))throw new Error("Avval audio bor kompozitsiyani oching.");
+    var total=Number(comp.duration),start=0,duration=total;
+    var ws=Number(comp.workAreaStart),wd=Number(comp.workAreaDuration);
+    var marked=wd>0.05 && (ws>0.05 || wd<total-0.05);
+    if(mode==='inout'&&!marked)throw new Error("AE’da Work Area’ni belgilang (B va N).");
+    if(mode!=='full'&&marked){start=Math.max(0,ws);duration=Math.min(wd,total-start);}
+    if(!(duration>0))throw new Error("Kompozitsiya/Work Area davomiyligi noto‘g‘ri.");
+    return {comp:comp,start:start,duration:duration,marked:mode!=='full'&&marked};
+}
+function uzAeTimelineInfo(mode) {
+    try {
+        var r=uzAeRange(mode),comp=r.comp;
+        return '{"host":"AEFT","start":'+r.start+',"duration":'+r.duration+',"marked":'+r.marked+',"fps":'+Number(comp.frameRate)+',"width":'+Number(comp.width)+',"height":'+Number(comp.height)+',"trackCount":0,"videoCount":0,"name":"'+uzAeJson(comp.name)+'","identity":"'+uzAeJson(comp.id)+'"}';
+    }catch(e){return '{"error":"'+uzAeJson(e.toString())+'"}';}
+}
+function uzAeExportAudio(mode,outputPath,expectedName,expectedIdentity) {
+    var item=null,disabled=[];
+    try {
+        var r=uzAeRange(mode),comp=r.comp,queue=app.project.renderQueue;
+        if(comp.name!==expectedName || (expectedIdentity && String(comp.id)!==expectedIdentity))throw new Error("Faol kompozitsiya o‘zgargan. Avvalgi kompozitsiyani oching.");
+        if(queue.rendering)throw new Error("AE Render Queue hozir ishlayapti. Tugashini kuting.");
+        // Save only render flags we change; do not touch DONE/error queue entries.
+        for(var i=1;i<=queue.numItems;i++){var other=queue.item(i);if(other.render){disabled.push(other);other.render=false;}}
+        item=queue.items.add(comp);item.timeSpanStart=r.start;item.timeSpanDuration=r.duration;
+        var module=item.outputModule(1),templates=module.templates,format='',chosen='';
+        for(var t=0;t<templates.length;t++) {
+            try {
+                module=item.outputModule(1);module.applyTemplate(templates[t]);module=item.outputModule(1);
+                var actual=String(module.getSettings(GetSettingsFormat.STRING).Format);
+                if(/wave|wav|aiff/i.test(actual)){format=actual;chosen=templates[t];if(/wave|wav/i.test(actual))break;}
+            }catch(templateError){}
+        }
+        if(!chosen)throw new Error("AE audio Output Module topilmadi. Render Queue’da WAV yoki AIFF formatini tanlab UzScribe Audio nomi bilan shablon saqlang; keyin qaytaring.");
+        module=item.outputModule(1);module.applyTemplate(chosen);module=item.outputModule(1);
+        // AIFF templates work too; the panel converts the native export to 16 kHz WAV.
+        var nativePath=String(outputPath).replace(/\.wav$/i,/aiff/i.test(format)?'.aif':'.wav'),file=new File(nativePath);
+        if(file.exists)file.remove();
+        try {module.setSetting('Audio Output','On');}catch(audioSettingError){}
+        module=item.outputModule(1);module.file=file;item.render=true;
+        queue.render();
+        // Output Module can adjust the extension: use its actual resulting path.
+        var exported=item.outputModule(1).file;
+        if(!exported || !exported.exists || exported.length<1000)throw new Error("AE kompozitsiya audiosi eksport qilinmadi. Audio yoqilganini va Render Queue xatosini tekshiring.");
+        return '{"path":"'+uzAeJson(exported.fsName)+'","name":"'+uzAeJson(comp.name)+'","identity":"'+uzAeJson(comp.id)+'","template":"'+uzAeJson(chosen)+'"}';
+    }catch(e){return '{"error":"'+uzAeJson(e.toString())+'"}';}
+    finally {
+        if(item){try{item.remove();}catch(removeError){}}
+        for(var j=0;j<disabled.length;j++){try{disabled[j].render=true;}catch(restoreError){}}
+    }
+}
+
 function importUzbekSrt(srtPath, offsetSeconds, expectedName, expectedIdentity, captionMode, speakerLabels, selectForComposer) {
     if (!app.project || !app.project.activeItem || !(app.project.activeItem instanceof CompItem)) {
         return "Avval After Effects kompozitsiyasini oching. SRT: " + srtPath;
@@ -30,12 +85,12 @@ function importUzbekSrt(srtPath, offsetSeconds, expectedName, expectedIdentity, 
             if (!range) { continue; }
             var start = seconds(range[1]);
             var end = seconds(range[2]);
-            if (start === null || end === null || end <= start || start >= comp.duration) { continue; }
+            if (start === null || end === null || end <= start) { continue; }
             start += Number(offsetSeconds) || 0;
             end += Number(offsetSeconds) || 0;
             if (start >= comp.duration) { continue; }
             var layer = comp.layers.addText(lines.slice(2).join("\r"));
-            var text = layer.property("Source Text").value;
+            var text = layer.property("ADBE Text Properties").property("ADBE Text Document").value;
             text.fontSize = Math.max(28, Math.round(comp.width / 32));
             var speaker = speakerLabels && speakerLabels[i];
             var palette = [[1, 1, 1], [1, 0.77, 0.37], [0.58, 0.83, 1], [0.73, 1, 0.7]];
@@ -44,15 +99,15 @@ function importUzbekSrt(srtPath, offsetSeconds, expectedName, expectedIdentity, 
             text.applyFill = true;
             text.applyStroke = false;
             text.justification = ParagraphJustification.CENTER_JUSTIFY;
-            layer.property("Source Text").setValue(text);
-            layer.property("Position").setValue([comp.width / 2, comp.height * 0.88]);
+            layer.property("ADBE Text Properties").property("ADBE Text Document").setValue(text);
+            layer.property("ADBE Transform Group").property("ADBE Position").setValue([comp.width / 2, comp.height * 0.88]);
             layer.startTime = 0;
             layer.inPoint = start;
             layer.outPoint = Math.min(end, comp.duration);
             if (captionMode === "word" && !selectForComposer && end - start > 0.08) {
                 var popEnd = Math.min(end - 0.01, start + 0.12);
-                var scale = layer.property("Transform").property("Scale");
-                var opacity = layer.property("Transform").property("Opacity");
+                var scale = layer.property("ADBE Transform Group").property("ADBE Scale");
+                var opacity = layer.property("ADBE Transform Group").property("ADBE Opacity");
                 scale.setValueAtTime(start, [82, 82]);
                 scale.setValueAtTime(popEnd, [100, 100]);
                 opacity.setValueAtTime(start, 35);
