@@ -1,0 +1,4 @@
+faster-whisper>=1.1,<2
+imageio-ffmpeg>=0.6,<1
+av>=15,<19
+Pillow>=11.3,<13
