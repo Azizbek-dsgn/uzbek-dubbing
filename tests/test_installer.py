@@ -37,7 +37,7 @@ class InstallerTests(unittest.TestCase):
             (package / 'adobe/UzbekSubtitles/assets').mkdir()
             (package / 'adobe/UzbekSubtitles/assets/uzscribe-logo.jpg').write_bytes(b'logo')
             (package / 'adobe/UzbekSubtitles/CSXS/manifest.xml').write_text('<root/>')
-            for name in ('index.html', 'panel.js', 'podcast-panel.js', 'reels-panel.js'):
+            for name in ('index.html', 'panel.js', 'animation-panel.js', 'podcast-panel.js', 'reels-panel.js'):
                 (package / 'adobe/UzbekSubtitles' / name).write_text(name)
             (package / 'adobe/UzbekSubtitles/host/editor.jsx').write_text('editor')
             with patch('install._enable_debug') as debug:
@@ -157,7 +157,7 @@ class InstallerTests(unittest.TestCase):
                      *(runtime / 'models/gigaam-base-large' / name for name in
                        ('config.json', 'modeling_gigaam.py')),
                      *(panel / name for name in
-                       ('CSXS/manifest.xml', 'index.html', 'panel.js', 'podcast-panel.js', 'reels-panel.js',
+                       ('CSXS/manifest.xml', 'index.html', 'panel.js', 'animation-panel.js', 'podcast-panel.js', 'reels-panel.js',
                         'assets/uzscribe-logo.jpg'))]
             for path in files:
                 path.parent.mkdir(parents=True, exist_ok=True)

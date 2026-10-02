@@ -5,10 +5,11 @@ function uzIsAE() {
     try { return app.name.indexOf("After Effects") !== -1; } catch (e) { return false; }
 }
 function uzRange(mode) {
-    var start = 0, duration = 0, total = 0, marked = false, fps = 25, name = "", identity = "", trackCount = 0, videoCount = 0;
+    var start = 0, duration = 0, total = 0, marked = false, fps = 25, name = "", identity = "", trackCount = 0, videoCount = 0, width = 0, height = 0;
     if (uzIsAE()) {
         var comp = app.project.activeItem;
         if (!comp || !(comp instanceof CompItem)) throw new Error("Faol kompozitsiyani oching.");
+        width = comp.width; height = comp.height;
         name = comp.name; identity = String(comp.id); total = Number(comp.duration); fps = Number(comp.frameRate);
         var ws = Number(comp.workAreaStart), wd = Number(comp.workAreaDuration);
         marked = wd > 0.05 && (ws > 0.05 || wd < total - 0.05);
@@ -19,6 +20,7 @@ function uzRange(mode) {
         var seq = app.project.activeSequence;
         if (!seq) throw new Error("Faol sequence’ni oching.");
         name = seq.name;
+        try { var settings = seq.getSettings(); width = settings.videoFrameWidth; height = settings.videoFrameHeight; } catch (e) {}
         try { trackCount = Number(seq.audioTracks.numTracks); videoCount = Number(seq.videoTracks.numTracks); } catch (e) {}
         try { identity = seq.sequenceID ? String(seq.sequenceID) : ""; } catch (e) {}
         total = (Number(seq.end) - Number(seq.zeroPoint)) / 254016000000;
@@ -34,13 +36,13 @@ function uzRange(mode) {
     }
     if (!(duration > 0)) throw new Error("Timeline’da audio uzunligi topilmadi.");
     if (!(fps > 0) || !isFinite(fps)) fps = 25;
-    return {start:start, duration:duration, total:total, marked:marked && mode !== "full", fps:fps, name:name, identity:identity, trackCount:trackCount, videoCount:videoCount};
+    return {start:start, duration:duration, total:total, marked:marked && mode !== "full", fps:fps, name:name, identity:identity, trackCount:trackCount, videoCount:videoCount, width:width, height:height};
 }
 function uzTimelineInfo(mode) {
     try {
         var r = uzRange(mode);
         return '{"start":' + r.start + ',"duration":' + r.duration + ',"marked":' + r.marked +
-            ',"fps":' + r.fps + ',"trackCount":' + r.trackCount + ',"videoCount":' + r.videoCount + ',"name":"' + uzJson(r.name) + '","identity":"' + uzJson(r.identity) +
+            ',"width":' + Number(r.width || 0) + ',"height":' + Number(r.height || 0) + ',"fps":' + r.fps + ',"trackCount":' + r.trackCount + ',"videoCount":' + r.videoCount + ',"name":"' + uzJson(r.name) + '","identity":"' + uzJson(r.identity) +
             '","host":"' + (uzIsAE() ? "AEFT" : "PPRO") + '"}';
     } catch (e) { return '{"error":"' + uzJson(e.toString()) + '"}'; }
 }
@@ -147,5 +149,59 @@ function uzPodcastImport(xmlPath, expectedName, expectedIdentity) {
         if (!app.project.importFiles([file.fsName], true, app.project.rootItem, false))
             throw new Error("Yangi sequence import qilinmadi. XML faylni File > Import orqali tekshiring.");
         return '{"success":true}';
+    } catch (e) { return '{"error":"' + uzJson(e.toString()) + '"}'; }
+}
+
+function uzAnimationSequence(expectedName, identity) {
+    var seq = app.project.activeSequence;
+    if (!seq || seq.name !== expectedName || (identity && String(seq.sequenceID) !== identity))
+        throw new Error("Faol sequence o‘zgargan. Avvalgi sequence’ni oching.");
+    return seq;
+}
+function uzEmptyAnimationTrack(seq, start, end) {
+    for (var i = seq.videoTracks.numTracks - 1; i >= 0; i--) {
+        var track = seq.videoTracks[i], free = true;
+        for (var j = 0; j < track.clips.numItems; j++) {
+            if (Number(track.clips[j].start.seconds) < end && Number(track.clips[j].end.seconds) > start) { free = false; break; }
+        }
+        if (free) return i;
+    }
+    throw new Error("Animatsiya uchun bo‘sh video trek yarating va importni qaytaring. MOV saqlangan.");
+}
+function uzImportCaptionOverlay(mediaPath, offset, name, identity, duration) {
+    try {
+        var seq = uzAnimationSequence(name, identity), file = new File(mediaPath);
+        offset = Number(offset); duration = Number(duration);
+        if (!file.exists || !isFinite(offset + duration) || offset < 0 || duration <= 0) throw new Error("Animatsiya fayli yoki vaqti noto‘g‘ri.");
+        var index = uzEmptyAnimationTrack(seq, offset, offset + duration);
+        var item = uzFindSrt(app.project.rootItem, file.fsName);
+        if (!item) {
+            if (!app.project.importFiles([file.fsName], true, app.project.rootItem, false)) throw new Error("MOV import qilinmadi.");
+            item = uzFindSrt(app.project.rootItem, file.fsName);
+        }
+        if (!item) throw new Error("Import qilingan animatsiya topilmadi.");
+        var track = seq.videoTracks[index], before = track.clips.numItems;
+        track.overwriteClip(item, String(Math.round(offset * 254016000000)));
+        if (track.clips.numItems <= before) throw new Error("Animatsiya timeline’ga joylanmadi. MOV’ni qo‘lda import qiling.");
+        return '{"success":true}';
+    } catch (e) { return '{"error":"' + uzJson(e.toString()) + '"}'; }
+}
+function uzImportCaptionMogrts(clips, offset, name, identity) {
+    var inserted = 0;
+    try {
+        var seq = uzAnimationSequence(name, identity); offset = Number(offset);
+        if (!clips || !clips.length || !isFinite(offset) || offset < 0) throw new Error("MOGRT manifesti noto‘g‘ri.");
+        var end = 0;
+        for (var i = 0; i < clips.length; i++) {
+            if (!(new File(clips[i].path)).exists || clips[i].start < end || !(clips[i].end > clips[i].start)) throw new Error("MOGRT fayli yoki vaqti noto‘g‘ri.");
+            end = clips[i].end;
+        }
+        var index = uzEmptyAnimationTrack(seq, offset, offset + end);
+        for (var j = 0; j < clips.length; j++) {
+            var item = seq.importMGT(clips[j].path, String(Math.round((offset + clips[j].start) * 254016000000)), index, 0);
+            if (!item) throw new Error("MOGRT importi to‘xtadi. Qo‘shilganlar: " + inserted + ". Timeline’ni tekshiring.");
+            var trim = new Time(); trim.seconds = offset + clips[j].end; item.end = trim; inserted++;
+        }
+        return '{"success":true,"count":' + inserted + '}';
     } catch (e) { return '{"error":"' + uzJson(e.toString()) + '"}'; }
 }

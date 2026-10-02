@@ -9,3 +9,5 @@ UzScribe uses display names for upstream models; the models are not trained or o
 Python dependencies are obtained through pip/uv; their license texts are in installed package metadata. Faster-whisper includes a Silero VAD speech detector. Adobe Premiere Pro, After Effects and Animation Composer are separate products and are not included. Adobe WAV presets are read from the customer's Adobe installation and are not redistributed.
 
 The podcast editor was implemented independently. AutoPod's documented workflow, Podcut (MIT) and Auto-Editor (Unlicense) were research references; their code is not bundled or copied. See `docs/PODCAST-RESEARCH.md` and `docs/REELS-RESEARCH.md`. Reels references also include declip (MIT), OpenCut and Tribe Video Cleaner; their code is not copied or bundled.
+
+Caption animations are independently implemented with Pillow and imageio-ffmpeg; no Remotion runtime or external preset source is bundled. Research and output limitations: `docs/ANIMATIONS.md`.

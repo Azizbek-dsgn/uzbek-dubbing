@@ -57,6 +57,9 @@
     .pod-row{display:grid;grid-template-columns:1fr 1fr 28px;gap:7px;margin-top:11px;padding-top:10px;border-top:1px solid var(--line)}.pod-row .field-label{grid-column:1/-1}.pod-row button{border:0;border-radius:6px;background:transparent;color:var(--muted)}.pod-row button:hover{background:#34343d;color:#fff}
     .retake{padding:10px 0;border-bottom:1px solid var(--line)}.retake p{margin:6px 0;font-size:12px}.retake label{display:flex;align-items:center;gap:8px;font-size:12px}
     .result-path{overflow-wrap:anywhere}.result-path summary{padding:10px 0;color:var(--muted);font-size:11px}
+    .animation-preview{display:flex;justify-content:center;align-items:center;gap:6px;min-height:90px;background:#101015;border:1px solid var(--line);border-radius:10px;overflow:hidden;font-size:18px;font-weight:700;margin:8px 0;padding:12px;flex-wrap:wrap}
+    .animation-preview span{display:inline-block;transition:color .1s,transform .14s,background .14s,opacity .14s;border-radius:6px;padding:2px}
+    .word-row{display:grid;grid-template-columns:1fr 65px 65px 34px;gap:5px;margin:7px 0;align-items:center}.word-row input{padding:0 5px;height:32px;font-size:11px}.word-row button{height:32px;border:1px solid var(--line);border-radius:6px;background:var(--field);color:var(--text)}
     @media(max-width:320px){.app{padding:10px 8px 0}.section{padding:11px}.grid{gap:0 7px}.review-tools{flex-wrap:wrap}.review-tools .field{flex-basis:100%}}
   </style>
 </head>
@@ -77,8 +80,19 @@
       <div class="section-head"><h2 class="section-title" id="layoutTitle">Subtitr</h2></div>
       <div class="grid"><label class="field" for="lines"><span class="field-label">Qatorlar</span><input id="lines" type="number" min="1" max="3" step="1" value="2"></label><label class="field" for="words"><span class="field-label">So‘z / qator · taxminiy</span><input id="words" type="number" min="1" max="8" step="1" value="3"></label></div>
       <div class="caption-stage"><span class="stage-label">Subtitr namunasi · gapga mos bo‘linadi</span><div id="preview">Bugun o‘zbekcha subtitrlar<br>aniq vaqt bilan chiqadi</div></div>
-      <div id="animationField" hidden><label class="field" for="animation"><span class="field-label">Animatsiya · After Effects</span><select id="animation"><option value="none">Yo‘q</option><option value="composer">Animation Composer’da ochish</option></select></label>
-      <span id="animationHint" class="field-hint">AE’da subtitr qatlamlari tanlanib, Composer ochiladi.</span></div>
+      <div id="animationField"><label class="field" for="animation"><span class="field-label">Animatsiya</span><select id="animation"><option value="none">Oddiy subtitr</option><option value="karaoke">Karaoke</option><option value="pop">Soft Pop</option><option value="pill">Moving Highlight</option><option value="reveal">Word Reveal</option><option value="slide">Slide + Fade</option><option value="emphasis">Keyword Emphasis</option><option value="composer">Animation Composer · AE</option></select></label>
+      <div id="animationPreview" class="animation-preview" aria-label="Animatsiya namunasi"></div>
+      <span id="animationHint" class="field-hint"></span>
+      <details id="animationStyle"><summary>Uslub va joylashuv</summary><div class="details-body">
+        <label class="field"><span class="field-label">Shrift</span><select id="animFont"><option value="">Avtomatik · Arial Bold</option></select></label>
+        <div class="grid"><label class="field"><span class="field-label">O‘lcham · 1080p uchun</span><input id="animSize" type="number" min="16" max="160" value="56"></label><label class="field"><span class="field-label">Joylashuv</span><select id="animPosition"><option value="bottom">Pastda</option><option value="center">Markazda</option><option value="top">Tepada</option></select></label>
+        <label class="field"><span class="field-label">Matn rangi</span><input id="animColor" type="color" value="#ffffff"></label><label class="field"><span class="field-label">Ajratilgan so‘z</span><input id="animActive" type="color" value="#f5d76e"></label></div>
+        <label class="field"><span class="field-label">Animatsiya davomiyligi · soniya</span><input id="animSpeed" type="number" min="0.05" max="0.6" step="0.01" value="0.16"></label>
+        <div class="checks"><label><input id="animSafe" type="checkbox" checked> Reels interfeysi uchun xavfsiz joy</label></div>
+        <label class="field"><span class="field-label">Urg‘u beriladigan so‘zlar · vergul bilan</span><input id="animKeywords" placeholder="muhim, yangi, imkoniyat"></label>
+        <div class="review-tools"><label class="field"><span class="field-label">Saqlangan uslub</span><select id="animLoadStyle"><option value="">Uslub tanlang</option></select></label><button id="animSaveStyle" class="secondary" type="button">Saqlash</button></div>
+        <label class="field"><span class="field-label">Uslub nomi</span><input id="animStyleName" placeholder="Mening subtitrim" maxlength="60"></label>
+      </div></details></div>
     </section>
     <details class="section" id="advanced">
       <summary>Matn va qo‘shimcha sozlamalar</summary>
@@ -119,8 +133,11 @@
       <p id="reviewInfo" class="review-info"></p>
       <div id="cueList" class="cue-list" aria-label="Subtitrlar ro‘yxati"></div>
       <label class="field" for="cueText"><span class="field-label">Tanlangan subtitr matni</span><textarea id="cueText" class="cue-text" spellcheck="false"></textarea></label>
+      <div class="review-tools"><button id="mergeCue" class="secondary" type="button">Keyingisi bilan birlashtirish</button><button id="splitCue" class="secondary" type="button">Kursordan bo‘lish</button></div>
       <p id="compareText" class="hint"></p>
       <details><summary>Vaqt va qo‘shimcha tahrir</summary><div class="details-body">
+      <details><summary>So‘z vaqtlari va urg‘u</summary><div class="details-body"><div id="wordList"></div><button id="saveWordTimes" class="secondary" type="button">So‘z vaqtlarini saqlash</button><button id="refineTimes" class="secondary" type="button">Whisper bilan vaqtni tekshirish</button><p class="hint">Boshlanish/tugash · soniyada. Matnni o‘zgartirsangiz, mos so‘z matnini ham tuzating. Whisper matni mos kelgan so‘zlargina yangilanadi; Global modeli kerak.</p></div></details>
+      <details><summary>Animatsiya fayllari</summary><div class="details-body"><button id="exportAnimation" class="secondary" type="button">Shaffof MOV saqlash</button><button id="exportMogrt" class="secondary" type="button">AE’dan MOGRT eksport qilish</button><label class="field"><span class="field-label">AE yaratgan manifest.json · Premiere uchun</span><input id="mogrtManifest" placeholder="Manifest fayli yo‘li"></label><button id="importMogrt" class="secondary" type="button">MOGRT’larni timeline’ga qo‘shish</button><p class="hint">MOGRT uchun AE loyihasini avval saqlang. MOV animatsiyasi matn sifatida tahrirlanmaydi.</p></div></details>
       <canvas id="waveform" class="waveform" width="520" height="72" aria-label="Audio to‘lqini va subtitr vaqtlari"></canvas>
       <div class="review-tools"><label class="field" for="retryModel"><span class="field-label">Tanlangan subtitrni qayta tanish</span><select id="retryModel"></select></label><button id="retryCue" class="secondary" type="button">Qayta tanish</button></div>
       <div class="review-tools"><label class="field" for="speakerChoice"><span class="field-label">Tanlangan subtitr so‘zlovchisi</span><select id="speakerChoice"><option value="">Belgilanmagan</option><option value="SPEAKER_00">So‘zlovchi 1</option><option value="SPEAKER_01">So‘zlovchi 2</option><option value="SPEAKER_02">So‘zlovchi 3</option><option value="SPEAKER_03">So‘zlovchi 4</option></select></label><button id="assignSpeaker" class="secondary" type="button">Belgilash</button></div>
@@ -192,6 +209,7 @@
     </div>
   </main>
   <script src="panel.js"></script>
+  <script src="animation-panel.js"></script>
   <script src="podcast-panel.js"></script>
   <script src="reels-panel.js"></script>
 </body>

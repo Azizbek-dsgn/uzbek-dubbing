@@ -1,0 +1,22 @@
+const fs=require('fs'),vm=require('vm'),path=require('path'),os=require('os'),assert=require('assert'),EventEmitter=require('events');
+const source=fs.readFileSync('adobe/UzbekSubtitles/animation-panel.js','utf8');
+const ids=['animation','animFont','animSize','animColor','animActive','animPosition','animSafe','animSpeed','animKeywords','animLoadStyle','animSaveStyle','animStyleName','animationPreview','animationStyle','mergeCue','splitCue','wordList','saveWordTimes','refineTimes','exportAnimation','exportMogrt','importMogrt','mogrtManifest','cueText','srtEditor','workActions','cancel'];
+const els={};for(const id of ids)els[id]={id,value:'',checked:false,style:{},options:[{value:''}],parentNode:{},children:[],setAttribute(){},addEventListener(k,f){this['on'+k]=f},appendChild(o){this.children.push(o);this.options.push(o)},remove(i){this.options.splice(i,1)}};
+Object.assign(els.animation,{value:'karaoke',options:[{value:'none'},{value:'composer'},{value:'karaoke'}]});
+for(const [id,value] of Object.entries({animSize:'56',animSpeed:'.16',animColor:'#ffffff',animActive:'#f5d76e',animPosition:'bottom'}))els[id].value=value;
+els.animSafe.checked=true;
+const tmp=fs.mkdtempSync(path.join(os.tmpdir(),'uzscribe-anim-'));
+let run={review:true,srt:path.join(tmp,'captions.srt'),info:{host:'PPRO',start:5,name:'Test',identity:'id',width:320,height:568,fps:12,duration:2},metadata:{words:[{start:0,end:.4,text:'Salom'},{start:.4,end:1,text:'dunyo.'},{start:1,end:2,text:'Yangi.'}],cues:[{speaker:'SPEAKER_00'},{speaker:'SPEAKER_00'}]}},cues=[{start:0,end:1,text:'Salom dunyo.'},{start:1,end:2,text:'Yangi.'}],selected=0,message='',imported='',child;
+const bridge={root:process.cwd(),python:{value:'python'},mkdir:dir=>fs.mkdirSync(dir,{recursive:true}),state:()=>({run,cues,selected}),edit:(c,md,i)=>{cues=c;run.metadata=md;selected=i;bridge.onReviewChanged()},show:m=>message=m,phase:p=>bridge.onPhase(p),problem:m=>{message=m;bridge.onPhase('review')},finish:m=>{message=m;bridge.onPhase('idle')},host:(expr,cb)=>{imported=expr;cb(null,{success:true})},aeHost:(expr,cb)=>{imported=expr;cb(null,'2 ta vaqtli matn qatlami yaratildi.')}};
+const fakeCp={spawn:(_exe,args)=>{child=new EventEmitter();child.stderr=new EventEmitter();child.stdout=new EventEmitter();child.kill=()=>{};return child}};
+const memory={};const context={require:n=>n==='child_process'?fakeCp:require(n),document:{uzscribe:bridge,getElementById:id=>els[id],createElement:()=>({style:{},setAttribute(){},appendChild(){}})},process,localStorage:{getItem:k=>memory[k]||null,setItem:(k,v)=>memory[k]=v},setInterval:()=>0,JSON,Math,Number,Object,Array,String,isFinite,Error};
+vm.runInNewContext(source,context);bridge.onPhase('review');bridge.onHost(run.info);bridge.onReviewChanged();
+els.mergeCue.onclick();assert.equal(cues.length,1);assert.equal(cues[0].end,2);assert.equal(cues[0].text,'Salom dunyo. Yangi.');
+els.cueText.selectionStart=6;els.splitCue.onclick();assert.equal(cues.length,2);assert.equal(cues[0].end,.4);assert.equal(cues[1].start,.4);assert.equal(cues[1].text,'dunyo. Yangi.');
+els.animStyleName.value='Meyor';els.animSaveStyle.onclick();assert.ok(memory['uzscribe.styles.v1'].includes('Meyor'));
+const row=els.wordList.children[els.wordList.children.length-1]; // markup handled by row appendChild mock; use real test elements below for timing
+els.exportAnimation.onclick();assert.ok(els.animSize.disabled);child.emit('close',1);assert.ok(message.includes('tayyorlanmadi'));assert.ok(!els.animSize.disabled);
+bridge.animateImport(run.srt,run.info);child.emit('close',0);assert.ok(imported.startsWith('uzImportCaptionOverlay('));assert.ok(imported.includes(',5,"Test","id",2)'));
+run.info.host='AEFT';bridge.onPhase('review');bridge.animateImport(run.srt,run.info);child.emit('close',0);assert.ok(imported.startsWith('uzImportAnimatedCaptions('));
+bridge.onPhase('review');imported='';bridge.animateImport(run.srt,run.info);run.cancelled=true;child.emit('close',0);assert.equal(imported,'');
+fs.rmSync(tmp,{recursive:true,force:true});console.log('Animation editing, themes, host dispatch, failure and cancellation OK');

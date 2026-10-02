@@ -98,3 +98,7 @@ Oddiy subtitr rejimida gap/pauza chegaralari va o‘zbekcha yordamchi so‘zlar 
 ## Panel boshqaruvi
 
 Asosiy tugma oynaning pastida doim ko‘rinadi; sozlamalar alohida aylantiriladi. Subtitr uchun nutq modeli asosiy sahifada. Matn uzunligi, gap bo‘linishi, lug‘at va texnik sozlamalar nomlangan ochiladigan bo‘limlarga yig‘ilgan. Reels sahifasida audio, qism va pauza/takroriy dubl tanlovlari darhol ko‘rinadi. Natija fayli yo‘li alohida ochiladigan bo‘limda.
+
+## 0.5.0 — subtitr animatsiyalari
+
+Olti animatsiya, uslub saqlash, so‘z vaqti/urg‘u tahriri, subtitrni birlashtirish va bo‘lish qo‘shildi. AE’da matn qatlamlari, Premiere’da shaffof MOV, AE orqali MOGRT eksporti: [qo‘llanma](docs/ANIMATIONS.md). Yangilash uchun yuqoridagi o‘rnatish buyrug‘ini yana bajaring; modellar qayta yuklanmaydi, mavjud fayllar tekshiriladi. Adobe’ni qayta oching.

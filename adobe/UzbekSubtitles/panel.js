@@ -235,7 +235,16 @@
     try { fs.mkdirSync(directory); }
     catch (error) { if (!fs.existsSync(directory)) throw error; }
   }
-  document.uzscribe = {host:jsonCall, root:root, python:python, mkdir:ensureDirectory};
+  document.uzscribe = {host:jsonCall, root:root, python:python, mkdir:ensureDirectory,
+    aeHost:function(expression, callback) {hostCall(aeScript, expression, callback);},
+    state:function() {return {run:activeRun, selected:selectedCue, cues:cueData()};},
+    edit:function(cues, metadata, selected) {
+      function stamp(t) {var ms=Math.round(t*1000),h=Math.floor(ms/3600000);ms-=h*3600000;var m=Math.floor(ms/60000);ms-=m*60000;var sec=Math.floor(ms/1000);ms-=sec*1000;
+        function pad(n,l) {return ('0000'+n).slice(-l);}return pad(h,2)+':'+pad(m,2)+':'+pad(sec,2)+','+pad(ms,3);}
+      var value=cues.map(function(c,i) {return (i+1)+'\n'+stamp(c.start)+' --> '+stamp(c.end)+'\n'+c.text;}).join('\n\n')+'\n\n';
+      srtEditor.value=validateSrt(value).text;if(activeRun) activeRun.metadata=metadata;
+      selectedCue=selected||0;renderCues();
+    }, phase:setPhase, show:show, finish:finish, problem:importProblem};
   function getInfo(callback, selectedRange) {
     jsonCall('uzTimelineInfo(' + JSON.stringify(selectedRange || range.value) + ')', callback);
   }
@@ -260,9 +269,10 @@
         return o.value === wanted;
       }) ? wanted : 'all';
       audioTrack.disabled = info.host !== 'PPRO';
-      animationField.hidden = info.host !== 'AEFT';
-      animation.disabled = info.host !== 'AEFT';
-      animationHint.textContent = 'Subtitr qatlamlari tanlanadi va Animation Composer ochiladi.';
+      animationField.hidden = false;
+      animation.disabled = false;
+      animationHint.textContent = info.host === 'AEFT' ? 'Tahrirlanadigan matn qatlamlari.' : 'Shaffof animatsiya klipi uchun bo‘sh video trek kerak.';
+      if (document.uzscribe.onHost) document.uzscribe.onHost(info);
     });
   }
   function presetPath() {
@@ -304,6 +314,7 @@
         (key === 'animation' && animationField.hidden);
     });
     cancel.disabled = false;
+    if (document.uzscribe.onPhase) document.uzscribe.onPhase(phase);
   }
   function finish(message) {
     if (activeRun && activeRun.audio) removeTemp(activeRun.audio);
@@ -345,7 +356,7 @@
         return m ? Number(m[1]) * 3600 + Number(m[2]) * 60 + Number(m[3]) + Number(m[4]) / 1000 : 0;
       }
       return {index:index, start:seconds(span && span[1]), end:seconds(span && span[2]),
-        text:lines.slice(2).join(' ')};
+        text:lines.slice(2).join('\n')};
     });
   }
   function writeEditedFormats(srtPath) {
@@ -479,6 +490,7 @@
     }).map(function (w) { return w.text.trim(); }).join(' ') : '';
     compareText.textContent = alternativeText ? (metadata.comparison_model + ': ' + alternativeText) : '';
     drawWaveform();
+    if (document.uzscribe.onReviewChanged) document.uzscribe.onReviewChanged();
   }
   cueText.oninput = function () {
     var blocks = cueBlocks();
@@ -521,6 +533,7 @@
     } else finish(message + '\nSRT saqlandi: ' + srt);
   }
   function importCaptions(srt, info, audio) {
+    if (document.uzscribe.animateImport && /^(karaoke|pop|pill|reveal|slide|emphasis)$/.test(animation.value)) {document.uzscribe.animateImport(srt, info);return;}
     var speakerLabels = activeRun && activeRun.metadata && activeRun.metadata.cues ?
       activeRun.metadata.cues.map(function (cue) { return cue.speaker || ''; }) : [];
     var expression = info.host === 'AEFT'
