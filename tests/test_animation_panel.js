@@ -14,7 +14,7 @@ vm.runInNewContext(source,context);bridge.onPhase('review');bridge.onHost(run.in
 els.mergeCue.onclick();assert.equal(cues.length,1);assert.equal(cues[0].end,2);assert.equal(cues[0].text,'Salom dunyo. Yangi.');
 els.cueText.selectionStart=6;els.splitCue.onclick();assert.equal(cues.length,2);assert.equal(cues[0].end,.4);assert.equal(cues[1].start,.4);assert.equal(cues[1].text,'dunyo. Yangi.');
 els.animStyleName.value='Meyor';els.animSaveStyle.onclick();assert.ok(memory['uzscribe.styles.v1'].includes('Meyor'));
-els.previewAnimation.onclick();child.emit('close',0);assert.ok(els.actualAnimationPreview.src.includes('.preview.png'));assert.equal(els.actualAnimationPreview.hidden,false);
+els.previewAnimation.onclick();child.emit('close',0);assert.ok(els.actualAnimationPreview.src.includes('.preview.png'));assert.equal(els.actualAnimationPreview.hidden,false);bridge.onReviewChanged();assert.equal(els.actualAnimationPreview.hidden,true);assert.equal(els.animationPreview.hidden,false);
 const row=els.wordList.children[els.wordList.children.length-1]; // markup handled by row appendChild mock; use real test elements below for timing
 els.exportAnimation.onclick();assert.ok(els.animSize.disabled);child.emit('close',1);assert.ok(message.includes('tayyorlanmadi'));assert.ok(!els.animSize.disabled);
 bridge.animateImport(run.srt,run.info);child.emit('close',0);assert.ok(imported.startsWith('uzImportCaptionOverlay('));assert.ok(imported.includes(',5,"Test","id",2)'));
