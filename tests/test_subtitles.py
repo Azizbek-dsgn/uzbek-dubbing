@@ -8,6 +8,35 @@ from subtitles.sentences import restore_sentences, standardize_literary
 
 
 class SubtitleTests(unittest.TestCase):
+    def test_natural_caption_finishes_phrase_instead_of_exact_three_words(self):
+        parts = 'Bugun havo juda yaxshi.'.split()
+        words = [Word(i*.3, i*.3+.25, text) for i,text in enumerate(parts)]
+        cues = make_cues(words, max_lines=1, words_per_line=3)
+        self.assertEqual([c.text for c in cues], ['Bugun havo juda yaxshi.'])
+        self.assertEqual(cues[0].start, 0)
+        self.assertGreaterEqual(cues[0].end, words[-1].end)
+
+    def test_natural_caption_keeps_negation_and_helpers_attached(self):
+        words = [Word(i*.3, i*.3+.25, text) for i,text in enumerate('Bu men uchun juda muhim emas.'.split())]
+        cues = make_cues(words, max_lines=1, words_per_line=3)
+        self.assertEqual([c.text for c in cues], ['Bu men uchun', 'juda muhim emas.'])
+
+    def test_natural_caption_prefers_clause_boundary_and_preserves_all_words(self):
+        text = 'Bugun sizga yangi maslahat beraman, lekin avval yaxshilab eshiting.'
+        words = [Word(i*.3, i*.3+.25, token) for i,token in enumerate(text.split())]
+        cues = make_cues(words, max_lines=1, words_per_line=3)
+        self.assertEqual([c.text for c in cues], ['Bugun sizga yangi maslahat beraman,', 'lekin avval yaxshilab eshiting.'])
+        self.assertEqual(' '.join(c.text.replace('\n',' ') for c in cues), text)
+        self.assertTrue(all(a.end <= b.start for a,b in zip(cues,cues[1:])))
+
+    def test_natural_caption_respects_readable_width_duration_and_pause(self):
+        words = [Word(i*.5, i*.5+.4, token) for i,token in enumerate('Bugun biz yangi ishlarni birgalikda boshlaymiz va davom ettiramiz.'.split())]
+        cues = make_cues(words, words_per_line=3, max_chars=22, max_lines=2, max_duration=2, min_duration=0)
+        self.assertTrue(all(len(c.text.splitlines()) <= 2 for c in cues))
+        self.assertTrue(all(len(line) <= 22 for c in cues for line in c.text.splitlines()))
+        self.assertTrue(all(c.end-c.start <= 2.04 for c in cues))
+        self.assertEqual(' '.join(c.text.replace('\n',' ') for c in cues), ' '.join(w.text for w in words))
+
     def test_gigaam_chunks_preserve_timeline(self):
         import numpy as np
         rate = 100
@@ -60,11 +89,11 @@ class SubtitleTests(unittest.TestCase):
     def test_word_and_line_limits_split_cues(self):
         words = [Word(i * 0.3, i * 0.3 + 0.2, word) for i, word in
                  enumerate(["Bugun", "havo", "juda", "yaxshi", "ertalab", "uchrashamiz"])]
-        cues = make_cues(words, max_lines=1, words_per_line=3)
+        cues = make_cues(words, max_lines=1, words_per_line=3, natural=False)
         self.assertEqual([cue.text for cue in cues], ["Bugun havo juda", "yaxshi ertalab uchrashamiz"])
         self.assertTrue(all("\n" not in cue.text for cue in cues))
 
-        cues = make_cues(words, max_lines=2, words_per_line=2)
+        cues = make_cues(words, max_lines=2, words_per_line=2, natural=False)
         self.assertEqual(cues[0].text, "Bugun havo\njuda yaxshi")
         self.assertEqual(cues[1].text, "ertalab uchrashamiz")
 
@@ -99,7 +128,7 @@ class SubtitleTests(unittest.TestCase):
 
     def test_fast_words_do_not_drift_from_audio(self):
         words = [Word(i * .02, i * .02 + .015, str(i)) for i in range(5)]
-        cues = make_cues(words, fps=25, max_lines=1, words_per_line=1)
+        cues = make_cues(words, fps=25, max_lines=1, words_per_line=1, natural=False)
         self.assertEqual([cue.start for cue in cues], [0, .04, .08])
         self.assertEqual([cue.text for cue in cues], ["0 1", "2 3", "4"])
         self.assertTrue(all(a.end <= b.start for a, b in zip(cues, cues[1:])))

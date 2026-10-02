@@ -63,6 +63,69 @@ def _wrap(text: str, width: int, words_per_line: int) -> str:
     return "\n".join(lines)
 
 
+def _boundary_cost(left: Word, right: Word) -> float:
+    """Prefer phrase boundaries without cutting Uzbek helpers from their phrase."""
+    a = re.sub(r"[^\w']", '', _clean(left.text).casefold())
+    b = re.sub(r"[^\w']", '', _clean(right.text).casefold())
+    unfinished = {'va', 'yoki', 'hamda', 'juda', 'eng', 'har', 'bu', 'shu', 'o‘sha',
+                  'bir', 'hech', 'barcha', 'qanday', 'қандай', 'ва', 'ёки', 'жуда', 'энг', 'ҳар', 'бу', 'шу', 'бир'}
+    attached = {'emas', 'edi', 'ekan', 'kerak', 'mumkin', 'uchun', 'bilan', 'kabi', 'sari', 'qadar',
+                'bo‘ladi', "bo'ladi", 'bo‘ldi', "bo'ldi", 'эмас', 'эди', 'экан', 'керак', 'мумкин', 'учун', 'билан', 'каби'}
+    cost = (18 if a in unfinished else 0) + (18 if b in attached else 0)
+    if a.isdigit() and (b in {'ta', 'ming', 'million', 'yil', 'kun', 'soat', 'foiz', 'kg', 'km', 'та', 'минг', 'кун', 'фоиз'}):
+        cost += 25
+    if re.search(r'[,;:]$', _clean(left.text)):
+        cost -= 7
+    if b in {'lekin', 'ammo', 'chunki', 'shuning', 'agar', 'лекин', 'аммо', 'чунки', 'агар'}:
+        cost -= 4
+    return cost - min(8, max(0, right.start - left.end) * 10)
+
+
+def _natural_layout(group: list[Word], width: int, target: int, max_lines: int) -> str | None:
+    # A word count is a reading target. Allow two extra words to finish a phrase.
+    n = len(group); cap = target + 2
+    best = {(0, 0): (0.0, [])}
+    for lines in range(max_lines):
+        for start in range(n):
+            state = best.get((lines, start))
+            if state is None:
+                continue
+            for end in range(start + 1, min(n, start + cap) + 1):
+                text = _join(group[start:end])
+                if len(text) > width and end > start + 1:
+                    break
+                penalty = max(0, end - start - target) ** 2
+                if end < n:
+                    penalty += _boundary_cost(group[end-1], group[end]) + 8
+                candidate = (state[0] + penalty, state[1] + [text])
+                key = (lines+1, end)
+                if key not in best or candidate[0] < best[key][0]:
+                    best[key] = candidate
+    complete = [best[(lines, n)] for lines in range(1, max_lines+1) if (lines, n) in best]
+    return '\n'.join(min(complete, key=lambda value: value[0])[1]) if complete else None
+
+
+def _natural_groups(words: list[Word], width: int, target: int, lines: int, duration: float) -> list[list[Word]]:
+    n = len(words); best = [float('inf')] * (n+1); following = [n] * n; best[n] = 0
+    cap = (target+2)*lines
+    for start in range(n-1, -1, -1):
+        for end in range(start+1, min(n, start+cap)+1):
+            if end > start+1 and words[end-1].end - words[start].start > duration:
+                break
+            if _natural_layout(words[start:end], width, target, lines) is None:
+                continue
+            count = end - start
+            cost = 4 + max(0, count-target*lines)**2 * .5 + (8 if count == 1 and n > 1 else 0)
+            if end < n:
+                cost += _boundary_cost(words[end-1], words[end])
+            if cost + best[end] <= best[start]:
+                best[start] = cost + best[end]; following[start] = end
+    result = []; start = 0
+    while start < n:
+        end = following[start]; result.append(words[start:end]); start = end
+    return result
+
+
 def make_cues(
     words: list[Word], fps: float = 25.0, max_chars: int = 42,
     max_duration: float = 5.0, gap: float = 0.65,
@@ -70,6 +133,7 @@ def make_cues(
     split_sentences: bool = True, split_commas: bool = False,
     split_pauses: bool = True, start_pad: float = 0.0,
     end_pad: float = 0.0, min_duration: float = 0.8,
+    natural: bool = True,
 ) -> list[Cue]:
     """Group words at pauses, punctuation and readable line/duration limits."""
     if (fps <= 0 or max_chars < 8 or max_duration <= 0 or
@@ -86,8 +150,8 @@ def make_cues(
             proposed = _join(current + [word])
             layout = _wrap(proposed, max_chars, words_per_line)
             if ((split_pauses and word.start - previous.end > gap) or
-                    word.end - current[0].start > max_duration or
-                    len(layout.splitlines()) > max_lines or
+                    (not natural and word.end - current[0].start > max_duration) or
+                    (not natural and len(layout.splitlines()) > max_lines) or
                     (split_sentences and re.search(r"[.!?…]$", _clean(previous.text))) or
                     (split_commas and re.search(r"[,;:]$", _clean(previous.text)))):
                 groups.append(current)
@@ -95,6 +159,9 @@ def make_cues(
         current.append(word)
     if current:
         groups.append(current)
+
+    if natural:
+        groups = [part for group in groups for part in _natural_groups(group, max_chars, words_per_line, max_lines, max_duration)]
 
     result: list[Cue] = []
     frame = 1.0 / fps
@@ -121,7 +188,7 @@ def make_cues(
         # If a same-frame merge exceeded the layout limit, allow the minimum
         # extra words needed to preserve timing and avoid losing speech.
         effective_words = max(words_per_line, math.ceil(len(group) / max_lines))
-        text = _wrap(_join(group), max_chars, effective_words)
+        text = (_natural_layout(group, max_chars, words_per_line, max_lines) if natural else None) or _wrap(_join(group), max_chars, effective_words)
         result.append(Cue(round(start, 3), round(end, 3), text))
     return result
 
@@ -344,6 +411,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--export-vtt", action="store_true")
     parser.add_argument("--export-ass", action="store_true")
     parser.add_argument("--word-mode", action="store_true")
+    parser.add_argument("--fixed-word-breaks", action="store_true", help="Use strict word-count caption limits instead of natural phrase boundaries")
     parser.add_argument("--speakers", action="store_true")
     parser.add_argument("--num-speakers", type=int, choices=[2, 3, 4])
     parser.add_argument("--start-seconds", type=float, default=0)
@@ -444,7 +512,8 @@ def main(argv: list[str] | None = None) -> int:
                          split_pauses=not args.no_pause_split,
                          start_pad=args.start_pad_ms / 1000,
                          end_pad=args.end_pad_ms / 1000,
-                         min_duration=0 if args.word_mode else args.min_cue_duration)
+                         min_duration=0 if args.word_mode else args.min_cue_duration,
+                         natural=not args.word_mode and not args.fixed_word_breaks)
         if not cues:
             raise RuntimeError("Nutq topilmadi")
         args.output.parent.mkdir(parents=True, exist_ok=True)

@@ -90,3 +90,7 @@ Qo‘shimcha sozlamalarda model, In/Out/full, dubl tanlovi, pauza, gap chegarasi
 Ehtiyotkor rejim aniq takrorlar uchun; ikkinchi rejim faqat kichik yordamchi so‘z farqlariga ruxsat beradi. Son, inkor, mazmunli so‘z yoki ishonch darajasi pastligi gapni avtomatik o‘chirishdan saqlaydi. Qasddan qaytarilgan gap ham dublga o‘xshashi mumkin — tayyor montajni tekshiring. Har qanday parafrazani semantik tushunib kesadigan LLM tizimi qo‘shilmagan. Hech qanday API kaliti/obuna talab qilinmaydi; o‘rnatilgandan keyin offline ishlaydi.
 
 Reels hozir Premiere uchun beta. After Effects’da captions ishlaydi. Nested/multicam’ni flatten qiling, audio/video sinxron bo‘lsin, transition/effekt/subtitrlarni keyin qo‘shing. 9:16 tanlovi markazdan crop qiladi. Tahlil timeline mixer effektlaridan oldingi manba audio kanalidan olinadi. Bir nechta video/audio treklar birga siljiydi. [Tadqiqot va tekshiruvlar](docs/REELS-RESEARCH.md).
+
+## Tabiiy subtitr bo‘linishi
+
+Oddiy subtitr rejimida gap/pauza chegaralari va o‘zbekcha yordamchi so‘zlar hisobga olinadi. “Taxminiy so‘z / qator” qat’iy sanash emas: iborani tugatish uchun 1–2 so‘z ortishi mumkin. Qatorlar, belgilar va davomiylik chegaralari saqlanadi. So‘zma-so‘z animatsiya rejimi avvalgidek bir so‘zdan almashadi. Bu lokal qoidalar asosidagi bo‘linish; tinish belgisi yoki tanilgan matn xato bo‘lsa, natijani tahrirlash kerak bo‘lishi mumkin.
