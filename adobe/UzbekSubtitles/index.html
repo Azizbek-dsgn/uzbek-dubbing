@@ -5,145 +5,101 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>UzScribe</title>
   <style>
-    :root{color-scheme:dark;--bg:#1c1d20;--card:#292a2e;--field:#202125;--text:#f4f4f5;--muted:#a9abb2;--blue:#5b9cf5}
+    :root{color-scheme:dark;--bg:#0d0d10;--card:#1b1b20;--field:#111115;--text:#f5f5f7;--muted:#a4a4af;--line:#34343d;--accent:#eeeeF2}
     *{box-sizing:border-box}[hidden]{display:none!important}
-    html{background:var(--bg)}
-    body{margin:0;min-width:250px;color:var(--text);font:13px/1.4 -apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif}
-    button,input,select{font:inherit}button{cursor:pointer}button:disabled{cursor:default;opacity:.55}
-    .app{max-width:560px;margin:auto;padding:16px 14px 0}
-    .header{display:flex;align-items:center;gap:11px;margin-bottom:16px}
-    .mark{display:grid;place-items:center;flex:none;width:38px;height:38px;border-radius:10px;background:#244673;color:#dceaff;font-size:15px;font-weight:800}
-    h1{font-size:17px;line-height:1.15;margin:0 0 3px;font-weight:700}.subtitle{margin:0;color:var(--muted);font-size:11px}
-    .section{margin:0 0 10px;padding:14px;border:1px solid #373940;border-radius:12px;background:var(--card)}
-    .section-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:11px}
-    .section-title{margin:0;font-size:12px;font-weight:700}.step{display:inline-grid;place-items:center;width:20px;height:20px;margin-right:7px;border-radius:6px;background:#3a4454;color:#cce0ff;font-size:11px}
-    .refresh{width:auto;padding:5px 8px;border:1px solid #555861;border-radius:6px;color:#e6e8ec;background:#373940;font-size:11px}.refresh:hover{background:#454851}
-    .timeline{min-height:42px;padding:9px 10px;border-radius:7px;background:#1e252d;color:#d6e7ff;font-size:12px;overflow-wrap:anywhere}.timeline:before{content:"●";color:#77b4ff;margin-right:7px;font-size:9px}
-    .field{display:block;margin-top:11px}.field:first-child{margin-top:0}.field-label{display:block;margin-bottom:5px;color:#d5d6da;font-size:11px;font-weight:600}.field-hint{display:block;margin-top:5px;color:var(--muted);font-size:10px}
-    input:not([type=checkbox]),select{display:block;width:100%;height:33px;min-width:0;padding:0 9px;border:1px solid #4c4e55;border-radius:6px;outline:0;background:var(--field);color:var(--text)}
-    input:not([type=checkbox]):focus,select:focus,button:focus-visible,summary:focus-visible{border-color:var(--blue);outline:2px solid rgba(91,156,245,.24);outline-offset:1px}input:disabled{opacity:.45}
-    .grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:0 10px}
-    .caption-stage{margin-top:12px;padding:13px 9px;border:1px solid #353942;border-radius:8px;background:linear-gradient(145deg,#171b22,#101217);text-align:center}
-    .stage-label{display:block;margin-bottom:7px;color:#9599a4;font-size:10px;text-align:left;text-transform:uppercase;letter-spacing:.08em}
-    #preview{min-height:36px;white-space:pre-line;font-size:13px;line-height:1.5;font-weight:600;text-shadow:0 1px 3px #000}
-    details{padding:0}summary{list-style:none;display:flex;align-items:center;justify-content:space-between;padding:13px 14px;cursor:pointer;font-weight:650}summary::-webkit-details-marker{display:none}summary:after{content:"⌄";font-size:18px;line-height:12px;color:#aeb3bd}details[open] summary:after{transform:rotate(180deg)}
-    .details-body{padding:0 14px 14px;border-top:1px solid #3c3e45}.subhead{margin:16px 0 7px;font-size:11px;font-weight:700;color:#d7d9de}
-    .checks{display:grid;gap:5px}.checks label{display:flex;align-items:center;gap:8px;min-height:29px;padding:5px 8px;border:1px solid #41434a;border-radius:6px;background:#222327;cursor:pointer}.checks input{width:14px;height:14px;margin:0;accent-color:var(--blue)}
-    .boundary{margin-top:8px;padding:8px;border-radius:6px;background:#202125;color:#cfd0d4;white-space:pre-line;font-size:11px}.hint{margin:8px 0 0;color:var(--muted);font-size:10px}
-    .footer{position:sticky;bottom:0;margin:0 -14px;padding:10px 14px 14px;border-top:1px solid #3c3e45;background:var(--bg);box-shadow:0 -8px 18px rgba(0,0,0,.2)}
-    .run{width:100%;min-height:40px;border:0;border-radius:7px;background:#357ddd;color:#fff;font-size:13px;font-weight:700}.run:hover:not(:disabled){background:#458bec}
-    .secondary{width:100%;min-height:34px;margin-top:6px;border:1px solid #50535b;border-radius:7px;background:#34363c;color:#e8e9ec;font-weight:600}.secondary:hover:not(:disabled){background:#40434b}
-    .action-row{display:flex;gap:7px}.action-row .secondary{margin-top:0;flex:1}.action-row .run{flex:2}
-    .review-editor{display:block;width:100%;min-height:220px;max-height:45vh;resize:vertical;margin-top:10px;padding:10px;border:1px solid #50535b;border-radius:7px;outline:0;background:#1e1f23;color:#f1f2f4;font:12px/1.55 ui-monospace,SFMono-Regular,Menlo,monospace}
-    .review-editor:focus{border-color:var(--blue)}.review-info{margin:0;color:var(--muted);font-size:11px}
-    .waveform{display:block;width:100%;height:72px;margin:10px 0;border:1px solid #444d5b;border-radius:6px;background:#141d29;cursor:crosshair}
-    .cue-list{max-height:200px;overflow:auto;margin:8px 0;border:1px solid #41434a;border-radius:7px}
-    .cue-item{display:flex;align-items:center;gap:7px;width:100%;padding:7px 9px;border:0;border-bottom:1px solid #353841;background:#22252b;color:var(--text);text-align:left;font-size:11px}
-    .cue-item:last-child{border-bottom:0}.cue-item:hover,.cue-item.selected{background:#354964}.cue-item .time{flex:none;color:#a8c8ee}.cue-item .weak{color:#ffc16e}
-    .review-tools{display:flex;gap:7px;align-items:end;margin:9px 0}.review-tools .field{flex:1;margin:0}.review-tools button{height:33px;margin:0;padding:0 9px;white-space:nowrap}
-    .glossary{display:block;width:100%;min-height:78px;resize:vertical;padding:8px;border:1px solid #4c4e55;border-radius:6px;background:var(--field);color:var(--text);font:11px/1.5 ui-monospace,SFMono-Regular,Menlo,monospace}
-    #status{max-height:110px;overflow:auto;margin:0 0 8px;padding:8px 9px;border-radius:6px;background:#263342;color:#d5e7ff;white-space:pre-wrap;overflow-wrap:anywhere;font-size:11px}#status:empty{display:none}
-    /* Quiet, compact layout: one visible task, optional detail below. */
-    :root{--bg:#181a1b;--card:#222526;--field:#191c1d;--text:#f4f5f2;--muted:#a7adaa;--blue:#98c9b8}
-    .app{padding:20px 16px 0}.header{margin-bottom:23px}.mark{width:32px;height:32px;background:#2b4038;color:#c2e2d2;font-size:11px}.subtitle{font-size:11px}
-    .section{padding:0;border:0;border-radius:0;background:none;margin-bottom:19px}.section-head{margin-bottom:7px}.section-title{color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.08em}.step{display:none}
-    .timeline{min-height:45px;padding:12px 13px;border:1px solid #383e3b;border-radius:9px;background:var(--card);color:var(--text)}.timeline:before{color:var(--blue)}
-    .refresh{border:0;background:transparent;color:var(--blue)}.refresh:hover{background:transparent;text-decoration:underline}
-    input:not([type=checkbox]),select,.glossary,.review-editor{border-color:#3a403d;border-radius:8px}.field-label{color:#dbdfdc}
-    .caption-stage{padding:17px 10px;background:#141817;border-color:#363e39;border-radius:9px}.stage-label{color:var(--muted)}
-    details.section{border-top:1px solid #3a403d}summary{padding:13px 0;color:#dce0de}.details-body{padding:0 0 15px;border:0}
-    .checks label{border:0;background:none;padding:4px 0}.boundary{border-left:2px solid #638f80}.footer{border-color:#3a403d;background:#181a1bf2;backdrop-filter:blur(12px)}
-    .run{background:var(--blue);color:#10231b}.run:hover:not(:disabled){background:#b4dccc}.secondary{background:#292d2b;border-color:#48514c}.secondary:hover:not(:disabled){background:#343b37}
-    .cue-item{background:#252a27}.cue-item:hover,.cue-item.selected{background:#34483e}.cue-item .weak{color:#f2bd7d}
-    .cue-text{display:block;width:100%;min-height:68px;resize:vertical;padding:9px;border:1px solid #49514c;border-radius:8px;background:var(--field);color:var(--text)}
-    #status{background:transparent;color:#b7d8ca;padding:0}.review-editor{min-height:190px}
-    @media(max-width:310px){.app{padding-left:10px;padding-right:10px}.footer{margin:0 -10px;padding-left:10px;padding-right:10px}.grid{gap:0 7px}}
-    /* UzScribe: dark, spacious cards inspired by the supplied reference. */
-    :root{--bg:#08080b;--card:#1c1c20;--field:#121216;--text:#fafafa;--muted:#a2a2aa;--blue:#f7f7f9}
-    html{background:var(--bg)}
-    body{min-width:250px;background:var(--bg);color:var(--text);font-size:13px;line-height:1.45}
-    .app{max-width:580px;padding:24px 16px 0}
-    .header{align-items:center;margin:0 0 22px;gap:12px}
-    .mark{display:block;width:42px;height:42px;border:1px solid #44444b;border-radius:11px;object-fit:cover;background:#25252b}
-    h1{font-size:27px;line-height:1.1;letter-spacing:-.055em;font-weight:760;margin:0 0 4px}
-    .subtitle{color:#92929c;font-size:11px}
-    .section{margin:0 0 10px;padding:16px;border:1px solid #303036;border-radius:20px;background:var(--card)}
-    .section-head{margin-bottom:12px}
-    .section-title{color:#f2f2f5;font-size:13px;letter-spacing:0;text-transform:none;font-weight:690}
-    .refresh{padding:5px 8px;border-radius:8px;color:#c9c9d1;font-size:11px}
-    .refresh:hover{color:#fff;text-decoration:none;background:#303036}
-    .timeline{min-height:49px;padding:14px;border:1px solid #38383f;border-radius:13px;background:#141418;color:#f0f0f4;font-size:12px}
-    .timeline:before{color:#ededf0}
-    .field{margin-top:13px}.field-label{margin-bottom:6px;color:#d6d6dc;font-size:11px;font-weight:600}
-    .field-hint,.hint{color:#a4a4ae}
-    input:not([type=checkbox]),select,.glossary,.cue-text,.review-editor{min-height:39px;border:1px solid #414148;border-radius:11px;background:#121216;color:#f6f6f8;padding-left:11px;padding-right:11px}
-    input:not([type=checkbox]):focus,select:focus,button:focus-visible,summary:focus-visible,.review-editor:focus{border-color:#eeeef2;outline:2px solid #ffffff35;outline-offset:1px}
-    select{color-scheme:dark}
-    .grid{gap:0 10px}
-    .caption-stage{margin-top:14px;padding:17px 14px;border:1px solid #38383f;border-radius:14px;background:#121216;text-align:left}
-    .stage-label{margin-bottom:9px;color:#92929b;letter-spacing:.04em;text-transform:none;font-size:10px}
-    #preview{min-height:38px;font-size:16px;line-height:1.32;font-weight:660;letter-spacing:-.025em;text-shadow:none}
-    details.section{padding:0;border:1px solid #303036;border-radius:17px;background:var(--card)}
-    details.section>summary{padding:15px 16px;color:#f0f0f2;font-size:12px}
-    details.section>.details-body{padding:0 16px 16px;border:0}
-    .details-body{border-color:#3b3b42}
-    .checks label{border:0;background:#29292e;border-radius:9px;padding:7px 9px}
-    .checks input{accent-color:#f4f4f6}
-    .boundary{border:1px solid #3b3b42;border-radius:10px;background:#121216;color:#d5d5db}
-    .footer{margin:0 -16px;padding:12px 16px 16px;border-top:1px solid #303036;background:#08080bf2;box-shadow:0 -10px 20px #08080b99}
-    .run{min-height:44px;border-radius:12px;background:#f6f6f8;color:#111115;font-size:13px;font-weight:720}
-    .run:hover:not(:disabled){background:#dedee4}
-    .secondary{min-height:38px;border:1px solid #414148;border-radius:11px;background:#28282e;color:#f1f1f4}
-    .secondary:hover:not(:disabled){background:#37373d}
-    .cue-list{border-color:#3b3b42;border-radius:12px}
-    .cue-item{background:#242429;border-color:#3b3b42}
-    .cue-item:hover,.cue-item.selected{background:#393940}
-    .cue-item .time{color:#c9c9d1}
-    #status{color:#d1d1d9}
-    @media(max-width:310px){.app{padding:18px 10px 0}.section{padding:12px;border-radius:16px}.footer{margin:0 -10px;padding:10px}}
-    #reelStatus{white-space:pre-wrap;overflow-wrap:anywhere;font-size:11px}.retake{padding:10px 0;border-bottom:1px solid #38383f}.retake p{margin:5px 0}.retake label{display:flex;gap:7px;align-items:center}
-    .mode-tabs{display:flex;gap:5px;padding:5px;background:#1c1c20;border-radius:13px;margin-bottom:16px}.mode-tabs button{flex:1;border:0;border-radius:9px;padding:9px;background:transparent;color:#a2a2aa}.mode-tabs button[aria-selected=true]{background:#38383f;color:#fff}.pod-row{display:grid;grid-template-columns:1fr 1fr 30px;gap:6px;margin-top:9px}.pod-row button{border:0;background:transparent;color:#aaa}.pod-row .field-label{grid-column:1/-1}#podStatus{white-space:pre-wrap;overflow-wrap:anywhere;font-size:11px}#podStatus:empty{display:none}
+    html,body{height:100%;margin:0;background:var(--bg);color:var(--text)}
+    body{min-width:250px;font:13px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif}
+    button,input,select,textarea{font:inherit}button{cursor:pointer}button:disabled{cursor:default;opacity:.5}
+    .app{display:flex;flex-direction:column;height:100vh;max-width:620px;margin:auto;padding:14px 12px 0;overflow:hidden}
+    .header{display:flex;align-items:center;gap:10px;margin-bottom:14px;flex:none}
+    .mark{width:34px;height:34px;border:1px solid var(--line);border-radius:10px;object-fit:cover}
+    h1{margin:0;font-size:21px;line-height:1.2;letter-spacing:-.04em}.subtitle{margin:2px 0 0;color:var(--muted);font-size:10px}
+    .mode-tabs{display:flex;flex:none;gap:3px;padding:4px;background:var(--card);border:1px solid #26262e;border-radius:12px;margin-bottom:14px}
+    .mode-tabs button{flex:1;min-height:34px;padding:6px;border:0;border-radius:8px;color:var(--muted);background:transparent;font-weight:600}
+    .mode-tabs button[aria-selected=true]{color:var(--text);background:#373740}
+    .workflow{display:flex;flex:1;min-height:0;flex-direction:column;overflow:hidden}
+    .page-body{flex:1;min-height:0;overflow-y:auto;overflow-x:hidden;padding:0 2px 8px;scrollbar-width:thin;scrollbar-color:#494952 transparent}
+    .page-body::-webkit-scrollbar{width:5px}.page-body::-webkit-scrollbar-thumb{background:#494952;border-radius:5px}
+    .section{margin:0 0 10px;padding:13px;border:1px solid #2e2e36;border-radius:14px;background:var(--card)}
+    .section-head{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:10px}
+    .section-title{margin:0;font-size:12px;font-weight:650}.step{display:none}
+    .refresh{padding:4px 7px;border:0;border-radius:6px;background:transparent;color:var(--muted);font-size:11px}.refresh:hover{background:#303039;color:var(--text)}
+    .timeline{margin:0;padding:10px 11px;min-height:38px;background:var(--field);border:1px solid var(--line);border-radius:9px;overflow-wrap:anywhere;font-size:12px}
+    .timeline:before{content:"●";margin-right:7px;color:#bdcbbf;font-size:8px}
+    .field{display:block;margin-top:11px}.field:first-child{margin-top:0}.field-label{display:block;margin-bottom:5px;font-size:11px;color:#d3d3db;font-weight:550}
+    input:not([type=checkbox]),select{width:100%;min-width:0;height:36px;padding:0 10px;border:1px solid #41414b;border-radius:8px;background:var(--field);color:var(--text)}
+    textarea{max-width:100%;color:var(--text);background:var(--field);border:1px solid #41414b;border-radius:8px;outline:none}
+    button:focus-visible,input:focus,select:focus,textarea:focus,summary:focus-visible{outline:2px solid #bdbdcf;outline-offset:2px}
+    .grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:0 10px}.grid .field{margin-top:11px}
+    .field-hint,.hint{display:block;color:var(--muted);font-size:11px;line-height:1.5}.field-hint{margin-top:5px}.hint{margin:8px 0 0}
+    .caption-stage{margin-top:12px;padding:12px;border:1px solid var(--line);border-radius:10px;background:var(--field)}
+    .stage-label{display:block;margin-bottom:8px;color:var(--muted);font-size:10px}
+    #preview{min-height:32px;white-space:pre-line;font-size:16px;line-height:1.35;font-weight:600;letter-spacing:-.02em}
+    details.section{padding:0}summary{list-style:none;display:flex;align-items:center;justify-content:space-between;gap:8px;padding:12px 13px;cursor:pointer;font-size:12px;font-weight:600}
+    summary::-webkit-details-marker{display:none}summary:after{content:"+";color:var(--muted);font-size:16px;font-weight:400}details[open]>summary:after{content:"−"}
+    .details-body{padding:0 13px 13px}.details-body>details{border-top:1px solid var(--line);margin-top:12px}.details-body>details>summary{padding:12px 0}.details-body>details>.details-body{padding:0 0 10px}
+    .subhead{margin:14px 0 8px;font-size:11px;color:#d4d4dc}.checks{display:grid;gap:4px;margin-top:8px}
+    .checks label{display:flex;gap:8px;align-items:center;min-height:33px;padding:5px 0;cursor:pointer;color:#dedee5;font-size:12px}
+    input[type=checkbox]{width:15px;height:15px;margin:0;flex:none;accent-color:#ececf2}
+    .boundary{margin-top:10px;padding:9px;border:1px solid var(--line);border-radius:8px;white-space:pre-line;color:var(--muted);font-size:11px}
+    .glossary{width:100%;min-height:76px;resize:vertical;padding:9px;font:12px/1.5 ui-monospace,SFMono-Regular,Menlo,monospace}
+    .footer{flex:none;padding:10px 2px 12px;border-top:1px solid #2e2e36;background:var(--bg)}
+    .footer>.hint{font-size:10px;margin-top:7px}.footer [role=status]{max-height:86px;overflow:auto;margin:0 0 9px;white-space:pre-wrap;overflow-wrap:anywhere;font-size:12px;color:#d6d6df}
+    .footer [role=status]:empty{display:none}
+    .run{width:100%;min-height:42px;padding:8px 10px;border:0;border-radius:10px;background:var(--accent);color:#141419;font-weight:700}.run:hover:not(:disabled){background:#dcdce5}
+    .secondary{width:100%;min-height:36px;margin-top:7px;padding:7px 10px;border:1px solid #45454f;border-radius:9px;background:#25252d;color:var(--text);font-size:12px;font-weight:550}.secondary:hover:not(:disabled){background:#33333d}
+    .action-row{display:flex;gap:7px}.action-row .secondary{margin:0;flex:1}.action-row .run{flex:2}
+    .review-info{margin:0;color:var(--muted);font-size:11px}.cue-list{max-height:190px;overflow:auto;margin:9px 0;border:1px solid var(--line);border-radius:9px}
+    .cue-item{display:flex;align-items:center;gap:7px;width:100%;padding:8px;border:0;border-bottom:1px solid var(--line);background:#22222a;color:var(--text);text-align:left;font-size:12px}.cue-item:last-child{border-bottom:0}.cue-item.selected,.cue-item:hover{background:#3a3a47}.cue-item .time{flex:none;color:#bdbdca}.cue-item .weak{color:#f0bd85}
+    .cue-text{display:block;width:100%;min-height:75px;padding:10px;resize:vertical}.review-editor{display:block;width:100%;min-height:180px;margin-top:10px;padding:10px;resize:vertical;font:12px/1.55 ui-monospace,SFMono-Regular,Menlo,monospace}
+    .waveform{display:block;width:100%;height:72px;margin:10px 0;border:1px solid var(--line);border-radius:8px;background:#16161e;cursor:crosshair}
+    .review-tools{display:flex;gap:7px;align-items:end;margin:9px 0}.review-tools .field{flex:1;margin:0}.review-tools button{height:36px;width:auto;margin:0;white-space:nowrap}
+    .pod-row{display:grid;grid-template-columns:1fr 1fr 28px;gap:7px;margin-top:11px;padding-top:10px;border-top:1px solid var(--line)}.pod-row .field-label{grid-column:1/-1}.pod-row button{border:0;border-radius:6px;background:transparent;color:var(--muted)}.pod-row button:hover{background:#34343d;color:#fff}
+    .retake{padding:10px 0;border-bottom:1px solid var(--line)}.retake p{margin:6px 0;font-size:12px}.retake label{display:flex;align-items:center;gap:8px;font-size:12px}
+    .result-path{overflow-wrap:anywhere}.result-path summary{padding:10px 0;color:var(--muted);font-size:11px}
+    @media(max-width:320px){.app{padding:10px 8px 0}.section{padding:11px}.grid{gap:0 7px}.review-tools{flex-wrap:wrap}.review-tools .field{flex-basis:100%}}
   </style>
 </head>
 <body>
   <main class="app">
     <header class="header"><img class="mark" src="assets/uzscribe-logo.jpg" alt="" aria-hidden="true"><div><h1>UzScribe</h1><p class="subtitle">by Meyor Vision</p></div></header>
     <nav class="mode-tabs" aria-label="Ish turi"><button id="captionsTab" type="button" aria-selected="true">Subtitr</button><button id="podcastTab" type="button" aria-selected="false">Podcast</button><button id="reelsTab" type="button" aria-selected="false">Reels</button></nav>
-    <div id="captionPage">
+    <div id="captionPage" class="workflow"><div class="page-body">
     <section class="section" aria-labelledby="sourceTitle">
-      <div class="section-head"><h2 class="section-title" id="sourceTitle">Faol timeline</h2><button id="refresh" class="refresh" type="button">Yangilash</button></div>
+      <div class="section-head"><h2 class="section-title" id="sourceTitle">Video manbasi</h2><button id="refresh" class="refresh" type="button">Yangilash</button></div>
       <div id="timeline" class="timeline" aria-live="polite">Timeline tekshirilmoqda…</div>
-      <label class="field" for="range"><span class="field-label">Qaysi qism?</span><select id="range"><option value="auto">In/Out bo‘lsa shu, aks holda to‘liq</option><option value="inout">Faqat In/Out · AE Work Area</option><option value="full">Butun timeline</option></select></label>
-      <label class="field" for="audioTrack"><span class="field-label">Ovoz · Premiere</span><select id="audioTrack"><option value="all">Barcha eshitiladigan treklar</option></select></label>
+      <label class="field" for="range"><span class="field-label">Qaysi qism?</span><select id="range"><option value="auto">In/Out yoki to‘liq video</option><option value="inout">Faqat In/Out · AE Work Area</option><option value="full">To‘liq video</option></select></label>
+      <label class="field" for="audioTrack"><span class="field-label">Nutq audiosi</span><select id="audioTrack"><option value="all">Timeline’dagi barcha ovozlar</option></select></label>
+        <label class="field" for="model"><span class="field-label">Nutq modeli</span><select id="model"><option value="large-v3">UzScribe Global</option></select></label>
+        <span id="modelHint" class="field-hint">Model qurilmada ishlaydi.</span>
     </section>
     <section class="section" aria-labelledby="layoutTitle">
       <div class="section-head"><h2 class="section-title" id="layoutTitle">Subtitr</h2></div>
-      <div class="grid"><label class="field" for="lines"><span class="field-label">Qatorlar</span><input id="lines" type="number" min="1" max="3" step="1" value="2"></label><label class="field" for="words"><span class="field-label">Taxminiy so‘z / qator</span><input id="words" type="number" min="1" max="8" step="1" value="3"></label></div>
-      <div class="caption-stage"><span class="stage-label">Taxminiy ko‘rinish</span><div id="preview">Bugun o‘zbekcha subtitrlar<br>aniq vaqt bilan chiqadi</div></div>
+      <div class="grid"><label class="field" for="lines"><span class="field-label">Qatorlar</span><input id="lines" type="number" min="1" max="3" step="1" value="2"></label><label class="field" for="words"><span class="field-label">So‘z / qator · taxminiy</span><input id="words" type="number" min="1" max="8" step="1" value="3"></label></div>
+      <div class="caption-stage"><span class="stage-label">Subtitr namunasi · gapga mos bo‘linadi</span><div id="preview">Bugun o‘zbekcha subtitrlar<br>aniq vaqt bilan chiqadi</div></div>
       <div id="animationField" hidden><label class="field" for="animation"><span class="field-label">Animatsiya · After Effects</span><select id="animation"><option value="none">Yo‘q</option><option value="composer">Animation Composer’da ochish</option></select></label>
       <span id="animationHint" class="field-hint">AE’da subtitr qatlamlari tanlanib, Composer ochiladi.</span></div>
     </section>
     <details class="section" id="advanced">
-      <summary>Qo‘shimcha sozlamalar</summary>
+      <summary>Matn va qo‘shimcha sozlamalar</summary>
       <div class="details-body">
-        <label class="field" for="model"><span class="field-label">Nutq modeli</span><select id="model"><option value="large-v3">UzScribe Global</option></select></label>
-        <span id="modelHint" class="field-hint">Model qurilmada ishlaydi.</span>
+
         <div class="checks"><label><input id="literary" type="checkbox" checked> Adabiy yozuv</label></div>
         <p class="hint">So‘zlashuvdagi ayrim shakllarni to‘g‘rilaydi; matnni natija oynasida tekshiring.</p>
-        <label class="field" for="compareModel"><span class="field-label">Ikkinchi model bilan solishtirish</span><select id="compareModel"><option value="">O‘chirilgan</option></select></label>
+        <details><summary>Matn uzunligi va modelni solishtirish</summary><div class="details-body"><label class="field" for="compareModel"><span class="field-label">Ikkinchi model bilan solishtirish</span><select id="compareModel"><option value="">O‘chirilgan</option></select></label>
         <label class="field" for="style"><span class="field-label">Matn uzunligi</span><select id="style"><option value="short">Qisqa</option><option value="medium" selected>O‘rtacha</option><option value="long">Uzun</option><option value="custom">Qo‘lda sozlangan</option></select></label>
         <div class="grid"><label class="field" for="chars"><span class="field-label">Belgi / qator</span><input id="chars" type="number" min="8" max="80" step="1" value="42"></label><label class="field" for="duration"><span class="field-label">Eng uzun subtitr · s</span><input id="duration" type="number" min="1" max="10" step="0.1" value="5"></label></div>
-        <h3 class="subhead">Gaplarni qayerda bo‘lish</h3><p class="hint">Gapga mos avtomatik bo‘linadi. So‘z soni taxminiy: iborani tugatish uchun qatorga 1–2 so‘z qo‘shilishi mumkin.</p>
+        </div></details><details><summary>Gap bo‘linishi va tinish belgilari</summary><div class="details-body"><p class="hint">Gapga mos avtomatik bo‘linadi. So‘z soni taxminiy: iborani tugatish uchun qatorga 1–2 so‘z qo‘shilishi mumkin.</p>
         <div class="checks"><label><input id="restoreSentences" type="checkbox" checked> Gap va tinish belgilarini tiklash</label><label><input id="splitSentences" type="checkbox" checked> Nuqta, ! yoki ? dan keyin</label><label><input id="splitCommas" type="checkbox"> Vergul, ; yoki : dan keyin</label><label><input id="splitPauses" type="checkbox" checked> Pauza bo‘lganda</label></div>
         <label class="field" for="pause"><span class="field-label">Pauza chegarasi · s</span><input id="pause" type="number" min="0.1" max="2" step="0.05" value="0.65"></label>
         <div id="boundaryPreview" class="boundary"></div>
-        <h3 class="subhead">Atamalar lug‘ati</h3>
+        </div></details><details><summary>Lug‘at, yozuv va so‘zlovchilar</summary><div class="details-body"><h3 class="subhead">Atamalar lug‘ati</h3>
         <textarea id="glossary" class="glossary" spellcheck="false" placeholder="noto‘g‘ri = to‘g‘ri"></textarea>
         <p class="hint">Har qatorda bitta so‘z: xato = to‘g‘ri. Almashtirish so‘z vaqtini o‘zgartirmaydi.</p>
         <div class="grid"><label class="field" for="script"><span class="field-label">Yozuv</span><select id="script"><option value="latin">Lotin</option><option value="cyrillic">Kirill</option></select></label><label class="field" for="captionMode"><span class="field-label">Ko‘rinish</span><select id="captionMode"><option value="normal">Oddiy subtitr</option><option value="word">So‘zma-so‘z</option></select></label></div>
         <div class="checks" style="margin-top:11px"><label><input id="detectSpeakers" type="checkbox"> So‘zlovchilarni avtomatik ajratish</label></div>
         <label class="field" for="speakerCount"><span class="field-label">So‘zlovchilar soni</span><select id="speakerCount"><option value="auto">Avtomatik</option><option value="2">2 kishi</option><option value="3">3 kishi</option><option value="4">4 kishi</option></select></label>
-        <details><summary>Fayl va texnik sozlamalar</summary><div class="details-body">
+        </div></details><details><summary>Fayl va texnik sozlamalar</summary><div class="details-body">
         <div class="checks" style="margin-top:11px"><label><input id="exportVtt" type="checkbox" checked> VTT fayl ham yaratish</label><label><input id="exportAss" type="checkbox" checked> ASS fayl ham yaratish</label></div>
         <h3 class="subhead">Timing</h3>
         <div class="grid"><label class="field" for="startPad"><span class="field-label">Boshini oldinroq · ms</span><input id="startPad" type="number" min="0" max="500" step="20" value="0"></label><label class="field" for="endPad"><span class="field-label">Oxirini keyinroq · ms</span><input id="endPad" type="number" min="0" max="500" step="20" value="0"></label><label class="field" for="minCue"><span class="field-label">Minimal ko‘rinish · s</span><input id="minCue" type="number" min="0" max="3" step="0.1" value="0.8"></label><label class="field" for="fps"><span class="field-label">Timeline FPS</span><input id="fps" type="number" min="1" max="120" step="0.001" value="25"></label></div>
@@ -172,6 +128,7 @@
       <p class="hint">Matn va vaqt kodlarini tuzating. Har bir subtitr raqami, vaqt oralig‘i va matnini saqlang.</p>
       </div></details>
     </section>
+    </div>
     <div class="footer">
       <div id="status" role="status" aria-live="polite"></div>
       <div id="mainActions"><button id="run" class="run" type="button">Subtitr yaratish</button></div>
@@ -179,16 +136,16 @@
       <div id="reviewActions" class="action-row" hidden><button id="discardReview" class="secondary" type="button">SRT saqlansin</button><button id="applyReview" class="run" type="button">Timeline’ga qo‘shish</button></div>
     </div>
     </div>
-    <div id="podcastPage" hidden>
+    <div id="podcastPage" class="workflow" hidden><div class="page-body">
       <section class="section">
-        <div class="section-head"><h2 class="section-title">Podcast · Premiere Pro</h2><button id="podRefresh" class="refresh" type="button">Yangilash</button></div>
+        <div class="section-head"><h2 class="section-title">Podcast montaji</h2><button id="podRefresh" class="refresh" type="button">Yangilash</button></div>
         <p id="podTimeline" class="timeline" aria-live="polite">Timeline’ni yangilang.</p>
-        <label class="field"><span class="field-label">Qaysi qism?</span><select id="podRange"><option value="auto">In/Out bo‘lsa shu, aks holda to‘liq</option><option value="full">Butun timeline</option><option value="inout">Faqat In/Out</option></select></label>
+        <label class="field"><span class="field-label">Qaysi qism?</span><select id="podRange"><option value="auto">In/Out yoki to‘liq video</option><option value="full">To‘liq video</option><option value="inout">Faqat In/Out</option></select></label>
         <label class="field"><span class="field-label">Montaj</span><select id="podMode"><option value="cameras">Kamera almashish + pauzalar</option><option value="silence">Faqat pauzalarni kesish</option></select></label>
-        <p class="hint">Kameralar va mikrofonlar timeline’da sinxron bo‘lsin. Har odamning mikrofoni alohida audio trekda. Umumiy audio bilan pauza rejimidan foydalaning. Til avtomatik nutq faolligi orqali ishlanadi.</p>
+        <p class="hint">Har bir odamning mikrofonini kamera trekiga bog‘lang. Umumiy ovoz bo‘lsa, faqat pauzalarni kesishni tanlang.</p>
       </section>
       <section class="section">
-        <div class="section-head"><h2 class="section-title">Mikrofon → kamera</h2><button id="podAdd" class="refresh" type="button">+ Odam</button></div>
+        <div class="section-head"><h2 class="section-title">Odamlar va kameralar</h2><button id="podAdd" class="refresh" type="button">+ Odam</button></div>
         <div id="podMappings"></div>
         <label class="field"><span class="field-label">Umumiy kamera</span><select id="podWide"><option value="">Yo‘q</option></select></label>
       </section>
@@ -206,29 +163,32 @@
         <label class="field"><span class="field-label">Natija formati</span><select id="podProfile"><option value="original">Asl o‘lcham</option><option value="vertical">9:16 · 1080 × 1920</option><option value="portrait">4:5 · 1080 × 1350</option><option value="square">1:1 · 1080 × 1080</option><option value="landscape">16:9 · 1920 × 1080</option></select></label>
         <p class="hint">Yangi format markazdan crop qiladi; yuzni kuzatmaydi. Nested/multicam va tezligi o‘zgargan kliplarni avval flatten qiling. Transitionlarni montajdan keyin qo‘shing.</p>
       </div></details>
-      <section id="podReview" class="section" hidden><h2 class="section-title">Montaj tayyor</h2><p id="podSummary"></p><div id="podCuts" class="cue-list"></div><p id="podFile" class="hint"></p></section>
-      <div class="footer"><p id="podStatus" role="status" aria-live="polite"></p><button id="podRun" class="run" type="button">Montaj tayyorlash</button><button id="podCancel" class="secondary" type="button" hidden>Bekor qilish</button><button id="podImport" class="run" type="button" hidden>Yangi sequence qo‘shish</button><button id="podReset" class="secondary" type="button" hidden>Yangi montaj</button><p class="hint">Natija alohida sequence bo‘ladi. Importdan keyin kesishlarni tekshiring.</p></div>
+      <section id="podReview" class="section" hidden><h2 class="section-title">Montaj tayyor</h2><p id="podSummary"></p><div id="podCuts" class="cue-list"></div><details class="result-path"><summary>Natija fayli</summary><p id="podFile" class="hint"></p></details></section>
+      </div>
+    <div class="footer"><p id="podStatus" role="status" aria-live="polite"></p><button id="podRun" class="run" type="button">Podcast montajini tayyorlash</button><button id="podCancel" class="secondary" type="button" hidden>Bekor qilish</button><button id="podImport" class="run" type="button" hidden>Yangi sequence qo‘shish</button><button id="podReset" class="secondary" type="button" hidden>Yangi montaj</button><p class="hint">Natijani tekshiring, so‘ng yangi sequence qo‘shing.</p></div>
     </div>
-    <div id="reelsPage" hidden>
+    <div id="reelsPage" class="workflow" hidden><div class="page-body">
       <section class="section">
-        <div class="section-head"><h2 class="section-title">Reels · Premiere Pro</h2><button id="reelRefresh" class="refresh" type="button">Yangilash</button></div>
+        <div class="section-head"><h2 class="section-title">Reels’ni tozalash</h2><button id="reelRefresh" class="refresh" type="button">Yangilash</button></div>
         <p id="reelTimeline" class="timeline" aria-live="polite">Timeline tekshirilmoqda…</p>
         <label class="field"><span class="field-label">Nutq audiosi</span><select id="reelAudio"><option value="0">Audio 1</option></select></label>
-        <p class="hint">Bitta tugma: pauzalarni qisqartirish va takroriy dubllarni tozalash. Natija alohida sequence; asl montaj saqlanadi.</p>
+                <label class="field"><span class="field-label">Qaysi qism?</span><select id="reelRange"><option value="auto">In/Out yoki to‘liq video</option><option value="full">To‘liq video</option><option value="inout">Faqat In/Out</option></select></label>
+        <div class="checks" style="margin-top:12px"><label><input id="reelRetakes" type="checkbox" checked>Takroriy dubllarni tozalash</label><label><input id="reelRemoveSilence" type="checkbox" checked>Pauzalarni qisqartirish</label></div>
       </section>
-      <details class="section"><summary>Tozalash sozlamalari</summary><div class="details-body">
-        <label class="field"><span class="field-label">Qaysi qism?</span><select id="reelRange"><option value="auto">In/Out bo‘lsa shu, aks holda to‘liq</option><option value="full">Butun timeline</option><option value="inout">Faqat In/Out</option></select></label>
-        <label class="field"><span class="field-label">O‘zbekcha nutq modeli</span><select id="reelModel"></select></label>
+      <details class="section"><summary>Model va nozik sozlamalar</summary><div class="details-body">
+
+        <label class="field"><span class="field-label">Nutq modeli</span><select id="reelModel"></select></label><div class="checks"><label><input id="reelPreviewFirst" type="checkbox">Avval tekshirish, keyin timeline’ga qo‘shish</label></div>
         <label class="field"><span class="field-label">Takrorni topish</span><select id="reelStrength"><option value="safe">Ehtiyotkor · aniq takrorlar</option><option value="balanced">Yumshoq farqli dubllar ham</option></select></label>
         <label class="field"><span class="field-label">Qaysi dubl qolsin?</span><select id="reelKeep"><option value="complete">Eng to‘liq, teng bo‘lsa oxirgisi</option><option value="last">Oxirgi dubl</option></select></label>
         <div class="grid"><label class="field"><span class="field-label">Pauza chegarasi · s</span><input id="reelSilence" type="number" min="0.3" max="10" step="0.1" value="0.7"></label><label class="field"><span class="field-label">Kesish yonida saqlash · s</span><input id="reelPadding" type="number" min="0.08" max="0.5" step="0.02" value="0.18"></label><label class="field"><span class="field-label">Gap pauzasi · s</span><input id="reelGap" type="number" min="0.2" max="3" step="0.05" value="0.65"></label><label class="field"><span class="field-label">Dubl qidirish oralig‘i · s</span><input id="reelWindow" type="number" min="3" max="120" value="45"></label></div>
         <label class="field"><span class="field-label">Ovoz chegarasi · dB</span><input id="reelThreshold" type="number" min="-80" max="-10" value="-42"></label>
-        <div class="checks" style="margin-top:12px"><label><input id="reelRetakes" type="checkbox" checked>Takroriy dubllarni tozalash</label><label><input id="reelRemoveSilence" type="checkbox" checked>Pauzalarni qisqartirish</label><label><input id="reelPreviewFirst" type="checkbox">Avval natijani tekshirish</label></div>
+
         <label class="field"><span class="field-label">Kadr formati</span><select id="reelProfile"><option value="original">Asl o‘lcham</option><option value="vertical">9:16 · markazdan crop</option><option value="portrait">4:5 · markazdan crop</option><option value="square">1:1 · markazdan crop</option></select></label>
         <p class="hint">Til: o‘zbekcha. O‘xshash mazmundagi boshqa gaplar avtomatik kesilmaydi. Nutq tanish xato qilishi mumkin; kerakli dublni natijada saqlab qolish mumkin. Nested/multicam’ni flatten qiling; montajni transition, effekt va subtitrlardan oldin bajaring.</p>
       </div></details>
-      <section id="reelReview" class="section" hidden><h2 class="section-title">Tozalash natijasi</h2><p id="reelSummary"></p><div id="reelTakes"></div><button id="reelRebuild" class="secondary" type="button">Tanlov bo‘yicha qayta tayyorlash</button><p id="reelFile" class="hint"></p></section>
-      <div class="footer"><p id="reelStatus" role="status" aria-live="polite"></p><button id="reelRun" class="run" type="button">Reels’ni tozalash</button><button id="reelCancel" class="secondary" type="button" hidden>Bekor qilish</button><button id="reelImport" class="secondary" type="button" hidden>Yangi sequence qo‘shish</button><p class="hint">Yaratilgan sequence’ni Project panelidan oching. Asl video va sequence o‘zgarmaydi.</p></div>
+      <section id="reelReview" class="section" hidden><h2 class="section-title">Tozalash natijasi</h2><p id="reelSummary"></p><div id="reelTakes"></div><button id="reelRebuild" class="secondary" type="button">Tanlov bo‘yicha qayta tayyorlash</button><details class="result-path"><summary>Natija fayli</summary><p id="reelFile" class="hint"></p></details></section>
+      </div>
+    <div class="footer"><p id="reelStatus" role="status" aria-live="polite"></p><button id="reelRun" class="run" type="button">Reels’ni tozalash</button><button id="reelCancel" class="secondary" type="button" hidden>Bekor qilish</button><button id="reelImport" class="secondary" type="button" hidden>Yangi sequence qo‘shish</button><p class="hint">Natija Project panelida alohida sequence bo‘ladi.</p></div>
     </div>
   </main>
   <script src="panel.js"></script>

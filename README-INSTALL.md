@@ -94,3 +94,7 @@ Reels hozir Premiere uchun beta. After Effects’da captions ishlaydi. Nested/mu
 ## Tabiiy subtitr bo‘linishi
 
 Oddiy subtitr rejimida gap/pauza chegaralari va o‘zbekcha yordamchi so‘zlar hisobga olinadi. “Taxminiy so‘z / qator” qat’iy sanash emas: iborani tugatish uchun 1–2 so‘z ortishi mumkin. Qatorlar, belgilar va davomiylik chegaralari saqlanadi. So‘zma-so‘z animatsiya rejimi avvalgidek bir so‘zdan almashadi. Bu lokal qoidalar asosidagi bo‘linish; tinish belgisi yoki tanilgan matn xato bo‘lsa, natijani tahrirlash kerak bo‘lishi mumkin.
+
+## Panel boshqaruvi
+
+Asosiy tugma oynaning pastida doim ko‘rinadi; sozlamalar alohida aylantiriladi. Subtitr uchun nutq modeli asosiy sahifada. Matn uzunligi, gap bo‘linishi, lug‘at va texnik sozlamalar nomlangan ochiladigan bo‘limlarga yig‘ilgan. Reels sahifasida audio, qism va pauza/takroriy dubl tanlovlari darhol ko‘rinadi. Natija fayli yo‘li alohida ochiladigan bo‘limda.
