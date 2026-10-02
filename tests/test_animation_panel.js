@@ -1,6 +1,6 @@
 const fs=require('fs'),vm=require('vm'),path=require('path'),os=require('os'),assert=require('assert'),EventEmitter=require('events');
 const source=fs.readFileSync('adobe/UzbekSubtitles/animation-panel.js','utf8');
-const ids=['animation','animFont','animSize','animColor','animActive','animPosition','animSafe','animSpeed','animKeywords','animLoadStyle','animSaveStyle','animStyleName','animationPreview','animationStyle','mergeCue','splitCue','wordList','saveWordTimes','refineTimes','exportAnimation','exportMogrt','importMogrt','mogrtManifest','cueText','srtEditor','workActions','cancel'];
+const ids=['animation','animFont','animSize','animColor','animActive','animPosition','animSafe','animSpeed','animKeywords','animLoadStyle','animSaveStyle','animStyleName','animationPreview','animationStyle','mergeCue','splitCue','wordList','saveWordTimes','refineTimes','exportAnimation','exportMogrt','importMogrt','mogrtManifest','cueText','srtEditor','workActions','cancel','previewAnimation','actualAnimationPreview'];
 const els={};for(const id of ids)els[id]={id,value:'',checked:false,style:{},options:[{value:''}],parentNode:{},children:[],setAttribute(){},addEventListener(k,f){this['on'+k]=f},appendChild(o){this.children.push(o);this.options.push(o)},remove(i){this.options.splice(i,1)}};
 Object.assign(els.animation,{value:'karaoke',options:[{value:'none'},{value:'composer'},{value:'karaoke'}]});
 for(const [id,value] of Object.entries({animSize:'56',animSpeed:'.16',animColor:'#ffffff',animActive:'#f5d76e',animPosition:'bottom'}))els[id].value=value;
@@ -14,9 +14,12 @@ vm.runInNewContext(source,context);bridge.onPhase('review');bridge.onHost(run.in
 els.mergeCue.onclick();assert.equal(cues.length,1);assert.equal(cues[0].end,2);assert.equal(cues[0].text,'Salom dunyo. Yangi.');
 els.cueText.selectionStart=6;els.splitCue.onclick();assert.equal(cues.length,2);assert.equal(cues[0].end,.4);assert.equal(cues[1].start,.4);assert.equal(cues[1].text,'dunyo. Yangi.');
 els.animStyleName.value='Meyor';els.animSaveStyle.onclick();assert.ok(memory['uzscribe.styles.v1'].includes('Meyor'));
+els.previewAnimation.onclick();child.emit('close',0);assert.ok(els.actualAnimationPreview.src.includes('.preview.png'));assert.equal(els.actualAnimationPreview.hidden,false);
 const row=els.wordList.children[els.wordList.children.length-1]; // markup handled by row appendChild mock; use real test elements below for timing
 els.exportAnimation.onclick();assert.ok(els.animSize.disabled);child.emit('close',1);assert.ok(message.includes('tayyorlanmadi'));assert.ok(!els.animSize.disabled);
 bridge.animateImport(run.srt,run.info);child.emit('close',0);assert.ok(imported.startsWith('uzImportCaptionOverlay('));assert.ok(imported.includes(',5,"Test","id",2)'));
 run.info.host='AEFT';bridge.onPhase('review');bridge.animateImport(run.srt,run.info);child.emit('close',0);assert.ok(imported.startsWith('uzImportAnimatedCaptions('));
-bridge.onPhase('review');imported='';bridge.animateImport(run.srt,run.info);run.cancelled=true;child.emit('close',0);assert.equal(imported,'');
+bridge.onPhase('review');imported='';bridge.animateImport(run.srt,run.info);run.cancelled=true;child.emit('close',0);assert.equal(imported,'');assert.equal(run.cancelled,false);assert.ok(message.includes('Tahriringiz saqlandi'));
+run.info.host='PPRO';run.cancelled=false;bridge.onPhase('review');cues=[{start:0,end:1,text:'Wi-Fi ishlaydi.'}];run.metadata.words=[{start:0,end:.2,text:'Wi'},{start:.2,end:.4,text:'-Fi'},{start:.4,end:1,text:' ishlaydi.'}];run.metadata.words.reverse();bridge.onReviewChanged();assert.equal(run.metadata.words.length,2);assert.equal(run.metadata.words[0].end,.4);
+const manifestPath=path.join(tmp,'manifest.json');fs.writeFileSync(path.join(tmp,'1.mogrt'),'template');fs.writeFileSync(manifestPath,JSON.stringify({schema:1,width:320,height:568,clips:[{path:'1.mogrt',start:0,end:1}]}));els.mogrtManifest.value=manifestPath;els.importMogrt.onclick();assert.ok(imported.includes(path.join(tmp,'1.mogrt').replace(/\\/g,'\\\\')));
 fs.rmSync(tmp,{recursive:true,force:true});console.log('Animation editing, themes, host dispatch, failure and cancellation OK');

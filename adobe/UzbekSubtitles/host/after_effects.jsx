@@ -119,9 +119,11 @@ function uzAnimationLayers(comp, cue, theme, offset, expose) {
         var pos = pill.property('ADBE Transform Group').property('ADBE Position');
         for (var h = 0; h < cue.runs.length; h++) {
             var r = cue.runs[h], time = Math.max(start,r.start+offset), target = [r.x+r.width/2,r.y+r.height/2];
-            if (h > 0) { var prev = cue.runs[h-1], before = Math.max(start,time-Math.min(speed,Math.max(.001,r.start-prev.start)));
-                pos.setValueAtTime(before,[prev.x+prev.width/2,prev.y+prev.height/2]); rect.property('ADBE Vector Rect Size').setValueAtTime(before,[prev.width+16,prev.height+3]); }
-            pos.setValueAtTime(time,target); rect.property('ADBE Vector Rect Size').setValueAtTime(time,[r.width+16,r.height+3]);
+            if (h > 0) {
+                var prev = cue.runs[h-1], moveEnd = Math.min(end,time+Math.min(speed,Math.max(.001,r.end-r.start)));
+                pos.setValueAtTime(time,[prev.x+prev.width/2,prev.y+prev.height/2]); rect.property('ADBE Vector Rect Size').setValueAtTime(time,[prev.width+16,prev.height+3]);
+                pos.setValueAtTime(moveEnd,target); rect.property('ADBE Vector Rect Size').setValueAtTime(moveEnd,[r.width+16,r.height+3]);
+            } else {pos.setValueAtTime(time,target);rect.property('ADBE Vector Rect Size').setValueAtTime(time,[r.width+16,r.height+3]);}
         }
         uzAnimationLinear(pos); uzAnimationLinear(rect.property('ADBE Vector Rect Size'));
     }
@@ -153,10 +155,11 @@ function uzAnimationLayers(comp, cue, theme, offset, expose) {
 }
 function uzImportAnimatedCaptions(planPath, offset, name, identity) {
     try {
-        var comp = uzAnimationComp(name,identity), plan = uzAnimationRead(planPath), count = 0;
+        var comp = uzAnimationComp(name,identity), plan = uzAnimationRead(planPath), count = 0, before = comp.numLayers;
         if (plan.schema !== 1 || plan.width !== comp.width || plan.height !== comp.height) throw new Error("Video o‘lchami o‘zgargan. Animatsiyani qayta yarating.");
         app.beginUndoGroup('UzScribe animatsiyalari');
         try {for (var i = 0; i < plan.cues.length; i++) count += uzAnimationLayers(comp,plan.cues[i],plan.theme,Number(offset),false);}
+        catch (error) {while (comp.numLayers > before) comp.layer(1).remove();throw error;}
         finally {app.endUndoGroup();}
         return count+' ta vaqtli matn qatlami yaratildi.';
     } catch (e) { return 'Animatsiya import qilinmadi: '+e.toString(); }
@@ -175,7 +178,7 @@ function uzExportCaptionMogrts(planPath, outputDir, name, identity) {
                 uzAnimationLayers(comp,cue,plan.theme,-cue.start,true); comp.motionGraphicsTemplateName = compName;
                 if (!comp.exportAsMotionGraphicsTemplate(true,folder.fsName)) throw new Error("MOGRT eksport qilinmadi: "+compName);
                 var file = new File(folder.fsName+'/'+compName+'.mogrt'); if (!file.exists) throw new Error("Eksport qilingan MOGRT topilmadi.");
-                clips.push('{"path":'+quote(file.fsName)+',"start":'+cue.start+',"end":'+cue.end+'}');
+                clips.push('{"path":'+quote(compName+'.mogrt')+',"start":'+cue.start+',"end":'+cue.end+'}');
             }
         } finally {app.endUndoGroup();}
         var manifest = new File(folder.fsName+'/manifest.json'); manifest.encoding='UTF-8'; if (!manifest.open('w')) throw new Error("Manifest yozilmadi.");

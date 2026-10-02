@@ -57,6 +57,7 @@
     .pod-row{display:grid;grid-template-columns:1fr 1fr 28px;gap:7px;margin-top:11px;padding-top:10px;border-top:1px solid var(--line)}.pod-row .field-label{grid-column:1/-1}.pod-row button{border:0;border-radius:6px;background:transparent;color:var(--muted)}.pod-row button:hover{background:#34343d;color:#fff}
     .retake{padding:10px 0;border-bottom:1px solid var(--line)}.retake p{margin:6px 0;font-size:12px}.retake label{display:flex;align-items:center;gap:8px;font-size:12px}
     .result-path{overflow-wrap:anywhere}.result-path summary{padding:10px 0;color:var(--muted);font-size:11px}
+    .actual-preview{display:block;max-width:100%;max-height:320px;margin:10px auto;border:1px solid var(--line);border-radius:9px;background:repeating-conic-gradient(#24242c 0% 25%,#1a1a21 0% 50%) 50%/16px 16px}.history-button{min-width:32px;padding:4px!important;font-size:18px!important}.review-tools{flex-wrap:wrap}
     .animation-preview{display:flex;justify-content:center;align-items:center;gap:6px;min-height:90px;background:#101015;border:1px solid var(--line);border-radius:10px;overflow:hidden;font-size:18px;font-weight:700;margin:8px 0;padding:12px;flex-wrap:wrap}
     .animation-preview span{display:inline-block;transition:color .1s,transform .14s,background .14s,opacity .14s;border-radius:6px;padding:2px}
     .word-row{display:grid;grid-template-columns:1fr 65px 65px 34px;gap:5px;margin:7px 0;align-items:center}.word-row input{padding:0 5px;height:32px;font-size:11px}.word-row button{height:32px;border:1px solid var(--line);border-radius:6px;background:var(--field);color:var(--text)}
@@ -81,6 +82,8 @@
       <div class="grid"><label class="field" for="lines"><span class="field-label">Qatorlar</span><input id="lines" type="number" min="1" max="3" step="1" value="2"></label><label class="field" for="words"><span class="field-label">So‘z / qator · taxminiy</span><input id="words" type="number" min="1" max="8" step="1" value="3"></label></div>
       <div class="caption-stage"><span class="stage-label">Subtitr namunasi · gapga mos bo‘linadi</span><div id="preview">Bugun o‘zbekcha subtitrlar<br>aniq vaqt bilan chiqadi</div></div>
       <div id="animationField"><label class="field" for="animation"><span class="field-label">Animatsiya</span><select id="animation"><option value="none">Oddiy subtitr</option><option value="karaoke">Karaoke</option><option value="pop">Soft Pop</option><option value="pill">Moving Highlight</option><option value="reveal">Word Reveal</option><option value="slide">Slide + Fade</option><option value="emphasis">Keyword Emphasis</option><option value="composer">Animation Composer · AE</option></select></label>
+      <button id="previewAnimation" class="secondary" type="button" hidden>Tanlangan subtitr animatsiyasini ko‘rish</button>
+      <img id="actualAnimationPreview" class="actual-preview" hidden alt="Tanlangan subtitr animatsiyasi">
       <div id="animationPreview" class="animation-preview" aria-label="Animatsiya namunasi"></div>
       <span id="animationHint" class="field-hint"></span>
       <details id="animationStyle"><summary>Uslub va joylashuv</summary><div class="details-body">
@@ -133,7 +136,7 @@
       <p id="reviewInfo" class="review-info"></p>
       <div id="cueList" class="cue-list" aria-label="Subtitrlar ro‘yxati"></div>
       <label class="field" for="cueText"><span class="field-label">Tanlangan subtitr matni</span><textarea id="cueText" class="cue-text" spellcheck="false"></textarea></label>
-      <div class="review-tools"><button id="mergeCue" class="secondary" type="button">Keyingisi bilan birlashtirish</button><button id="splitCue" class="secondary" type="button">Kursordan bo‘lish</button></div>
+      <div class="review-tools"><button id="undoReview" class="secondary history-button" type="button" aria-label="Tahrirni ortga qaytarish" title="Ortga qaytarish">↶</button><button id="redoReview" class="secondary history-button" type="button" aria-label="Tahrirni qayta qo‘llash" title="Qayta qo‘llash">↷</button><button id="mergeCue" class="secondary" type="button">Keyingisi bilan birlashtirish</button><button id="splitCue" class="secondary" type="button">Kursordan bo‘lish</button></div>
       <p id="compareText" class="hint"></p>
       <details><summary>Vaqt va qo‘shimcha tahrir</summary><div class="details-body">
       <details><summary>So‘z vaqtlari va urg‘u</summary><div class="details-body"><div id="wordList"></div><button id="saveWordTimes" class="secondary" type="button">So‘z vaqtlarini saqlash</button><button id="refineTimes" class="secondary" type="button">Whisper bilan vaqtni tekshirish</button><p class="hint">Boshlanish/tugash · soniyada. Matnni o‘zgartirsangiz, mos so‘z matnini ham tuzating. Whisper matni mos kelgan so‘zlargina yangilanadi; Global modeli kerak.</p></div></details>
@@ -148,7 +151,7 @@
     </div>
     <div class="footer">
       <div id="status" role="status" aria-live="polite"></div>
-      <div id="mainActions"><button id="run" class="run" type="button">Subtitr yaratish</button></div>
+      <div id="mainActions"><button id="resumeReview" class="secondary" type="button" hidden>Oxirgi tahrirni davom ettirish</button><button id="run" class="run" type="button">Subtitr yaratish</button></div>
       <div id="workActions" hidden><button id="cancel" class="secondary" type="button">Bekor qilish</button></div>
       <div id="reviewActions" class="action-row" hidden><button id="discardReview" class="secondary" type="button">SRT saqlansin</button><button id="applyReview" class="run" type="button">Timeline’ga qo‘shish</button></div>
     </div>

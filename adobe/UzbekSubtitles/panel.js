@@ -70,6 +70,63 @@
   var advanced = document.getElementById('advanced');
   var activeRun = null;
   var selectedCue = 0;
+  var undoReview = document.getElementById('undoReview'), redoReview = document.getElementById('redoReview');
+  var resumeReview = document.getElementById('resumeReview'), reviewHistory = [], historyAt = -1, historyRestoring = false;
+  var draftPath = path.join(root, 'exports', 'review-draft.json');
+  function historyControls() {
+    var available = !!(activeRun && activeRun.review && !reviewSection.hidden);
+    if (undoReview) undoReview.disabled = !available || historyAt <= 0;
+    if (redoReview) redoReview.disabled = !available || historyAt >= reviewHistory.length - 1;
+    if (resumeReview) resumeReview.hidden = !fs.existsSync(draftPath);
+  }
+  function recordReview() {
+    if (!activeRun || !activeRun.review || historyRestoring) return;
+    var snapshot = {text:srtEditor.value, metadata:JSON.parse(JSON.stringify(activeRun.metadata || null)), selected:selectedCue};
+    var previous = reviewHistory[historyAt];
+    if (!previous || previous.text !== snapshot.text || JSON.stringify(previous.metadata) !== JSON.stringify(snapshot.metadata)) {
+      reviewHistory = reviewHistory.slice(0, historyAt + 1); reviewHistory.push(snapshot);
+      if (reviewHistory.length > 40) reviewHistory.shift(); historyAt = reviewHistory.length - 1;
+    }
+    try {
+      validateSrt(snapshot.text); ensureDirectory(path.dirname(draftPath));
+      fs.writeFileSync(draftPath + '.tmp', JSON.stringify({schema:1,srt:activeRun.srt,audio:activeRun.audio,info:activeRun.info,
+        text:snapshot.text,metadata:snapshot.metadata,selected:selectedCue}), 'utf8');
+      fs.renameSync(draftPath + '.tmp', draftPath);
+    } catch (_) {} // Keep the last valid draft while the user is typing incomplete SRT.
+    historyControls();
+  }
+  function moveHistory(delta) {
+    if (!activeRun || !activeRun.review || reviewSection.hidden) return;
+    var next = historyAt + delta; if (next < 0 || next >= reviewHistory.length) return;
+    var snapshot = reviewHistory[next]; historyAt = next; historyRestoring = true;
+    try {srtEditor.value = snapshot.text; activeRun.metadata = JSON.parse(JSON.stringify(snapshot.metadata)); selectedCue = snapshot.selected; renderCues();}
+    finally {historyRestoring = false;}
+    recordReview(); historyControls(); show(delta < 0 ? 'Tahrir ortga qaytarildi.' : 'Tahrir qayta qo‘llandi.');
+  }
+  if (undoReview) undoReview.onclick = function () {moveHistory(-1);};
+  if (redoReview) redoReview.onclick = function () {moveHistory(1);};
+  if (resumeReview) resumeReview.onclick = function () {
+    if (activeRun) return;
+    var draft;
+    try {draft = JSON.parse(fs.readFileSync(draftPath, 'utf8'));validateSrt(draft.text);
+      if (draft.schema !== 1 || !draft.info || !draft.srt || path.dirname(path.resolve(draft.srt)) !== path.join(root,'exports') || !fs.existsSync(draft.srt))
+        throw new Error('Oxirgi tahrir fayli topilmadi yoki noto‘g‘ri.');
+    } catch (e) {show('Tahrir tiklanmadi: ' + e.message);return;}
+    getInfo(function (error, current) {
+      if (activeRun) return;
+      if (error) {show(error.message);return;}
+      if (current.host !== draft.info.host || current.identity !== draft.info.identity || current.name !== draft.info.name ||
+          Number(current.width) !== Number(draft.info.width) || Number(current.height) !== Number(draft.info.height) ||
+          Math.abs(current.fps - draft.info.fps) > .001 || draft.info.start < 0 || draft.info.start + draft.info.duration > current.duration + .05) {
+        show('Oxirgi tahrir uchun '+draft.info.name+' loyihasini oching. Timeline o‘lchami yoki vaqti o‘zgargan.');return;
+      }
+      activeRun = {review:true,cancelled:false,child:null,srt:draft.srt,info:draft.info,metadata:draft.metadata,
+        audio:draft.audio && fs.existsSync(draft.audio) ? draft.audio : null};
+      srtEditor.value = draft.text; selectedCue = Number(draft.selected) || 0; reviewHistory = []; historyAt = -1;
+      setPhase('review');renderCues();reviewInfo.textContent = 'Oxirgi tahrir tiklandi.';
+      show(activeRun.audio ? 'Oxirgi tahriringiz tiklandi.' : 'Tahrir tiklandi. Audio vaqtinchalik fayli yo‘q; qayta tanish uchun subtitrni yangidan yarating.');
+    }, 'full');
+  };
   var localPython = path.join(root, '.venv', process.platform === 'win32' ? 'Scripts/python.exe' : 'bin/python');
   python.value = fs.existsSync(localPython) ? localPython : (process.platform === 'win32' ? 'python' : 'python3');
   if (fs.existsSync(path.join(root, 'models', 'navai-medium', 'model.bin'))) {
@@ -314,9 +371,11 @@
         (key === 'animation' && animationField.hidden);
     });
     cancel.disabled = false;
+    historyControls();
     if (document.uzscribe.onPhase) document.uzscribe.onPhase(phase);
   }
   function finish(message) {
+    if (activeRun && activeRun.review) {removeTemp(draftPath);removeTemp(draftPath+'.tmp');}
     if (activeRun && activeRun.audio) removeTemp(activeRun.audio);
     activeRun = null; setPhase('idle'); show(message);
   }
@@ -491,6 +550,7 @@
     compareText.textContent = alternativeText ? (metadata.comparison_model + ': ' + alternativeText) : '';
     drawWaveform();
     if (document.uzscribe.onReviewChanged) document.uzscribe.onReviewChanged();
+    recordReview();
   }
   cueText.oninput = function () {
     var blocks = cueBlocks();
@@ -498,6 +558,7 @@
     var lines = blocks[selectedCue].split('\n');
     blocks[selectedCue] = lines.slice(0, 2).concat(cueText.value.replace(/\r/g, '').split('\n')).join('\n');
     srtEditor.value = blocks.join('\n\n') + '\n\n';
+    recordReview();
   };
   cueText.onchange = renderCues;
   if (waveform) waveform.onclick = function (event) {
@@ -520,7 +581,7 @@
     } catch (e) { finish('SRT ko‘rib chiqilmadi: ' + e.message); return; }
     activeRun.srt = srt;
     activeRun.info = info;
-    activeRun.review = true;
+    activeRun.review = true; reviewHistory = []; historyAt = -1;
     setPhase('review');
     selectedCue = 0; retryModel.value = model.value; renderCues();
     if (reviewSection.scrollIntoView) reviewSection.scrollIntoView({block:'start', behavior:'smooth'});
@@ -760,7 +821,8 @@
     renderCues(); show('So‘zlovchi belgisi yangilandi.');
   };
   retryCue.onclick = function () {
-    if (!activeRun || !activeRun.review || !activeRun.audio) return;
+    if (!activeRun || !activeRun.review) return;
+    if (!activeRun.audio) {show('Qayta tanish audiosi saqlanmagan. Subtitrni yangidan yarating.');return;}
     var cues;
     try { validateSrt(srtEditor.value); cues = cueData(); }
     catch (e) { show(e.message); return; }
@@ -810,5 +872,6 @@
   };
   refresh.onclick = refreshTimeline;
   range.onchange = refreshTimeline;
+  historyControls();
   refreshTimeline();
 }());

@@ -37,6 +37,20 @@ def postscript_name(path,fallback):
     except (OSError,ValueError,struct.error):pass
     return fallback
 
+def joined_words(words):
+    # Combine actual ASR fragments with their original timing envelope.
+    result=[]
+    for source in words:
+        word=dict(source);raw=str(word.get('text',''));part=raw.strip().translate(str.maketrans('‘’ʻʼ',"''''"))
+        if not part:continue
+        attached=part[0] in ',.!?:;)]}' or (part[0] in "'-" and raw[:1] and not raw[:1].isspace())
+        if attached and result:
+            previous=result[-1];previous['text']+=part;previous['end']=max(float(previous['end']),float(word['end']))
+            scores=[w.get('confidence') for w in (previous,word) if isinstance(w.get('confidence'),(int,float))]
+            if scores:previous['confidence']=min(scores)
+        else:word['text']=part;result.append(word)
+    return result
+
 def make_plan(data):
     theme=dict(data.get('theme',{}));preset=theme.get('preset','karaoke')
     if preset not in PRESETS:raise ValueError('Animatsiya presetini tekshiring.')
@@ -51,6 +65,9 @@ def make_plan(data):
     theme['fontFamily']=font.getname()[0];theme['fontPostscript']=postscript_name(fp,font.getname()[0]);theme['font']=fp
     highlights={lexical(t) for t in theme.get('keywords',[])}
     words=sorted(data.get('words',[]),key=lambda w:float(w['start']))
+    normalized=joined_words(words)
+    targets=[lexical(token) for cue in data.get('cues',[]) for token in str(cue['text']).split()]
+    if targets==[lexical(w['text']) for w in normalized]:words=normalized
     previous=0
     for w in words:
         a,b=float(w['start']),float(w['end'])
@@ -156,30 +173,46 @@ def render(plan,output):
         signal.signal(signal.SIGTERM,old);temp.unlink(missing_ok=True)
 
 
+def preview(plan,output,cue_index=0):
+    if not 0<=cue_index<len(plan['cues']):raise ValueError('Subtitr preview raqami noto‘g‘ri.')
+    cue=plan['cues'][cue_index];length=min(6.,cue['end']-cue['start']);fps=min(12.,plan['fps'])
+    ratio=min(400/plan['width'],320/plan['height'],1)
+    size=(max(1,round(plan['width']*ratio)),max(1,round(plan['height']*ratio)))
+    frames=[]
+    for i in range(max(2,math.ceil(length*fps))):
+        rendered=frame(plan,cue['start']+min(length-1e-6,i/fps))
+        frames.append(rendered.resize(size,Image.Resampling.LANCZOS))
+    output=Path(output);temporary=output.with_name(output.stem+'.partial.png')
+    try:
+        frames[0].save(temporary,format='PNG',save_all=True,append_images=frames[1:],duration=round(1000/fps),loop=0,disposal=1,blend=0)
+        temporary.replace(output)
+    finally:temporary.unlink(missing_ok=True)
+
 def refine(data,audio,output):
     try:from .cli import transcribe
     except ImportError:from cli import transcribe
-    recognized=transcribe(Path(audio),'large-v3','auto')
+    recognized=joined_words([{'text':w.text,'start':w.start,'end':w.end} for w in transcribe(Path(audio),'large-v3','auto')])
     original=data.get('words',[]);matched=0;result=[dict(w) for w in original]
-    match=SequenceMatcher(None,[lexical(w['text']) for w in original],[lexical(w.text) for w in recognized],autojunk=False)
+    match=SequenceMatcher(None,[lexical(w['text']) for w in original],[lexical(w['text']) for w in recognized],autojunk=False)
     for block in match.get_matching_blocks():
         for i in range(block.size):
             old=result[block.a+i];new=recognized[block.b+i]
-            old.update(start=new.start,end=new.end);matched+=1
+            old.update(start=new['start'],end=new['end']);matched+=1
     # Reject insufficient agreement rather than inventing timings for different words.
     if not original or matched/len(original)<.8:raise ValueError('Whisper matni yetarlicha mos kelmadi. So‘z vaqtlarini qo‘lda tekshiring; oldingi vaqtlar saqlandi.')
     if any(a['end']>b['start']+.04 for a,b in zip(result,result[1:])):raise ValueError('Moslashtirilgan so‘z vaqtlari to‘qnashdi. Oldingi vaqtlar saqlandi.')
     Path(output).write_text(json.dumps({'words':result,'matched':matched,'total':len(original)},ensure_ascii=False),encoding='utf-8')
 
 def main():
-    p=argparse.ArgumentParser();p.add_argument('--input',type=Path,required=True);p.add_argument('--output',type=Path,required=True);p.add_argument('--plan-only',action='store_true');p.add_argument('--refine-audio')
+    p=argparse.ArgumentParser();p.add_argument('--input',type=Path,required=True);p.add_argument('--output',type=Path,required=True);p.add_argument('--plan-only',action='store_true');p.add_argument('--refine-audio');p.add_argument('--preview',action='store_true');p.add_argument('--cue-index',type=int,default=0)
     a=p.parse_args()
     try:
         a.output.parent.mkdir(parents=True,exist_ok=True)
         data=json.loads(a.input.read_text(encoding='utf-8'))
         if a.refine_audio:refine(data,a.refine_audio,a.output);return 0
         plan=make_plan(data);a.output.with_suffix('.plan.json').write_text(json.dumps(plan,ensure_ascii=False),encoding='utf-8')
-        if not a.plan_only:render(plan,a.output)
+        if a.preview:preview(plan,a.output,a.cue_index)
+        elif not a.plan_only:render(plan,a.output)
     except (OSError,ValueError,KeyError,ImportError,subprocess.SubprocessError) as e:print(str(e),file=__import__('sys').stderr);return 1
     except KeyboardInterrupt:return 130
     print('UZANIM Tayyor.',flush=True);return 0

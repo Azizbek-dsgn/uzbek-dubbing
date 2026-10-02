@@ -102,3 +102,7 @@ Asosiy tugma oynaning pastida doim ko‘rinadi; sozlamalar alohida aylantiriladi
 ## 0.5.0 — subtitr animatsiyalari
 
 Olti animatsiya, uslub saqlash, so‘z vaqti/urg‘u tahriri, subtitrni birlashtirish va bo‘lish qo‘shildi. AE’da matn qatlamlari, Premiere’da shaffof MOV, AE orqali MOGRT eksporti: [qo‘llanma](docs/ANIMATIONS.md). Yangilash uchun yuqoridagi o‘rnatish buyrug‘ini yana bajaring; modellar qayta yuklanmaydi, mavjud fayllar tekshiriladi. Adobe’ni qayta oching.
+
+### 0.5.1 — tahrir va haqiqiy preview
+
+Tanlangan subtitrning haqiqiy animatsiya preview’i, 40 qadam Undo/Redo va oxirgi tahrirni tiklash qo‘shildi. Wi‑Fi kabi ASR bo‘laklari asl timing bilan moslashtiriladi. AE import xatosida yaratilgan qatlamlar tozalanadi; MOGRT manifestlari boshqa kompyuterga butun papka bilan ko‘chadi.

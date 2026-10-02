@@ -1,7 +1,7 @@
 import copy,tempfile,unittest
 from pathlib import Path
 from unittest.mock import patch
-from subtitles.animations import make_plan,frame,render,refine,PRESETS
+from subtitles.animations import make_plan,frame,render,refine,PRESETS,preview,joined_words
 from subtitles.cli import Word
 
 class AnimationTests(unittest.TestCase):
@@ -40,3 +40,20 @@ class AnimationTests(unittest.TestCase):
             self.assertEqual(data,before);self.assertIn('dunyo.',output.read_text())
             with patch('subtitles.cli.transcribe',return_value=[Word(0,1,'Boshqa')]):
                 with self.assertRaisesRegex(ValueError,'mos kelmadi'):refine(data,'audio.wav',output)
+
+    def test_asr_fragments_share_original_envelope(self):
+        data=self.data();data['cues'][0]['text']='Wi-Fi ishlaydi.';data['words']=[{'start':0,'end':.2,'text':'Wi'},{'start':.2,'end':.4,'text':'-Fi'},{'start':.4,'end':1,'text':' ishlaydi.'}]
+        before=copy.deepcopy(data);plan=make_plan(data);self.assertEqual(plan['cues'][0]['runs'][0]['text'],'Wi-Fi');self.assertEqual(plan['cues'][0]['runs'][0]['start'],0);self.assertEqual(plan['cues'][0]['runs'][0]['end'],.4);self.assertEqual(data,before)
+        # An explicit cue boundary still allows separate fragment captions.
+        data['cues']=[{'start':0,'end':.2,'text':'Wi'},{'start':.2,'end':.4,'text':'-Fi'},{'start':.4,'end':1,'text':'ishlaydi.'}];self.assertEqual(len(make_plan(data)['cues']),3)
+    def test_true_preview_is_animated_transparent_and_preserves_aspect(self):
+        from PIL import Image
+        with tempfile.TemporaryDirectory() as tmp:
+            for preset in PRESETS:
+                output=Path(tmp)/f'{preset}.png';plan=make_plan(self.data(preset));preview(plan,output)
+                with Image.open(output) as image:
+                    self.assertTrue(image.is_animated);self.assertGreaterEqual(image.n_frames,2);self.assertLessEqual(image.height,320)
+                    self.assertLess(abs(image.width/image.height-320/568),.01);image.seek(1);self.assertEqual(image.convert('RGBA').getpixel((0,0))[3],0)
+                self.assertFalse(output.with_name(output.stem+'.partial.png').exists())
+    def test_preview_validates_selected_cue(self):
+        with self.assertRaises(ValueError):preview(make_plan(self.data()),'unused.png',-1)
