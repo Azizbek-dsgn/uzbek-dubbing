@@ -120,7 +120,7 @@ Mahalliy tekshiruv: 70 Python test, 8 Node test to‘plami va haqiqiy AIFF → W
 
 ### 0.6.1 — Renuvo sinov integratsiyasi
 
-Avtomatik obuna adapteri, imzolangan webhook tekshiruvi va panelda “Obunani boshqarish”. Public beta community rejimida; Renuvo sandbox/API kaliti va real provayder acceptance alohida talab qilinadi. [Ulanish](billing/RENUVO.md).
+Avtomatik obuna adapteri, imzolangan webhook tekshiruvi va panelda “Obunani boshqarish”. Public beta community rejimida; Renuvo sandbox/API kaliti va real provayder acceptance alohida talab qilinadi. [Ulanish](https://github.com/Azizbek-dsgn/uzbek-dubbing/blob/feat/uzbek-subtitles-adobe/billing/RENUVO.md).
 
 ### 0.6.0 — obuna uchun tayyor tizim
 
