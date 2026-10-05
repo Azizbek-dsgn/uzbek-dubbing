@@ -5,87 +5,76 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>UzScribe</title>
   <style>
-    :root{color-scheme:dark;--bg:#0d0d10;--card:#1b1b20;--field:#111115;--text:#f5f5f7;--muted:#a4a4af;--line:#34343d;--accent:#eeeeF2}
+    :root{color-scheme:dark;--bg:#101012;--card:#1d1d20;--field:#151518;--text:#f5f5f5;--muted:#a7a7af;--line:#343439;--accent:#f4f4f5}
     *{box-sizing:border-box}[hidden]{display:none!important}
     html,body{height:100%;margin:0;background:var(--bg);color:var(--text)}
-    body{min-width:250px;font:13px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif}
-    button,input,select,textarea{font:inherit}button{cursor:pointer}button:disabled{cursor:default;opacity:.5}
-    .app{display:flex;flex-direction:column;height:100vh;max-width:620px;margin:auto;padding:14px 12px 0;overflow:hidden}
-    .header{display:flex;align-items:center;gap:10px;margin-bottom:14px;flex:none}
-    .mark{width:34px;height:34px;border:1px solid var(--line);border-radius:10px;object-fit:cover}
-    h1{margin:0;font-size:21px;line-height:1.2;letter-spacing:-.04em}.subtitle{margin:2px 0 0;color:var(--muted);font-size:10px}
-    #subscription{flex:none;max-height:42vh;overflow:auto}#subscription:not([open]){overflow:visible}
-    .mode-tabs{display:flex;flex:none;gap:3px;padding:4px;background:var(--card);border:1px solid #26262e;border-radius:12px;margin-bottom:14px}
-    .mode-tabs button{flex:1;min-height:34px;padding:6px;border:0;border-radius:8px;color:var(--muted);background:transparent;font-weight:600}
-    .mode-tabs button[aria-selected=true]{color:var(--text);background:#373740}
-    .workflow{display:flex;flex:1;min-height:0;flex-direction:column;overflow:hidden}
-    .page-body{flex:1;min-height:0;overflow-y:auto;overflow-x:hidden;padding:0 2px 8px;scrollbar-width:thin;scrollbar-color:#494952 transparent}
-    .page-body::-webkit-scrollbar{width:5px}.page-body::-webkit-scrollbar-thumb{background:#494952;border-radius:5px}
-    .section{margin:0 0 10px;padding:13px;border:1px solid #2e2e36;border-radius:14px;background:var(--card)}
-    .section-head{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:10px}
-    .section-title{margin:0;font-size:12px;font-weight:650}.step{display:none}
-    .refresh{padding:4px 7px;border:0;border-radius:6px;background:transparent;color:var(--muted);font-size:11px}.refresh:hover{background:#303039;color:var(--text)}
-    .timeline{margin:0;padding:10px 11px;min-height:38px;background:var(--field);border:1px solid var(--line);border-radius:9px;overflow-wrap:anywhere;font-size:12px}
-    .timeline:before{content:"●";margin-right:7px;color:#bdcbbf;font-size:8px}
-    .field{display:block;margin-top:11px}.field:first-child{margin-top:0}.field-label{display:block;margin-bottom:5px;font-size:11px;color:#d3d3db;font-weight:550}
-    input:not([type=checkbox]),select{width:100%;min-width:0;height:36px;padding:0 10px;border:1px solid #41414b;border-radius:8px;background:var(--field);color:var(--text)}
-    textarea{max-width:100%;color:var(--text);background:var(--field);border:1px solid #41414b;border-radius:8px;outline:none}
-    button:focus-visible,input:focus,select:focus,textarea:focus,summary:focus-visible{outline:2px solid #bdbdcf;outline-offset:2px}
-    .grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:0 10px}.grid .field{margin-top:11px}
-    .field-hint,.hint{display:block;color:var(--muted);font-size:11px;line-height:1.5}.field-hint{margin-top:5px}.hint{margin:8px 0 0}
-    .caption-stage{margin-top:12px;padding:12px;border:1px solid var(--line);border-radius:10px;background:var(--field)}
-    .stage-label{display:block;margin-bottom:8px;color:var(--muted);font-size:10px}
-    #preview{min-height:32px;white-space:pre-line;font-size:16px;line-height:1.35;font-weight:600;letter-spacing:-.02em}
-    details.section{padding:0}summary{list-style:none;display:flex;align-items:center;justify-content:space-between;gap:8px;padding:12px 13px;cursor:pointer;font-size:12px;font-weight:600}
-    summary::-webkit-details-marker{display:none}summary:after{content:"+";color:var(--muted);font-size:16px;font-weight:400}details[open]>summary:after{content:"−"}
-    .details-body{padding:0 13px 13px}.details-body>details{border-top:1px solid var(--line);margin-top:12px}.details-body>details>summary{padding:12px 0}.details-body>details>.details-body{padding:0 0 10px}
-    .subhead{margin:14px 0 8px;font-size:11px;color:#d4d4dc}.checks{display:grid;gap:4px;margin-top:8px}
-    .checks label{display:flex;gap:8px;align-items:center;min-height:33px;padding:5px 0;cursor:pointer;color:#dedee5;font-size:12px}
-    input[type=checkbox]{width:15px;height:15px;margin:0;flex:none;accent-color:#ececf2}
-    .boundary{margin-top:10px;padding:9px;border:1px solid var(--line);border-radius:8px;white-space:pre-line;color:var(--muted);font-size:11px}
-    .glossary{width:100%;min-height:76px;resize:vertical;padding:9px;font:12px/1.5 ui-monospace,SFMono-Regular,Menlo,monospace}
-    .footer{flex:none;padding:10px 2px 12px;border-top:1px solid #2e2e36;background:var(--bg)}
-    .footer>.hint{font-size:10px;margin-top:7px}.footer [role=status]{max-height:86px;overflow:auto;margin:0 0 9px;white-space:pre-wrap;overflow-wrap:anywhere;font-size:12px;color:#d6d6df}
-    .footer [role=status]:empty{display:none}
-    .run{width:100%;min-height:42px;padding:8px 10px;border:0;border-radius:10px;background:var(--accent);color:#141419;font-weight:700}.run:hover:not(:disabled){background:#dcdce5}
-    .secondary{width:100%;min-height:36px;margin-top:7px;padding:7px 10px;border:1px solid #45454f;border-radius:9px;background:#25252d;color:var(--text);font-size:12px;font-weight:550}.secondary:hover:not(:disabled){background:#33333d}
-    .action-row{display:flex;gap:7px}.action-row .secondary{margin:0;flex:1}.action-row .run{flex:2}
-    .review-info{margin:0;color:var(--muted);font-size:11px}.cue-list{max-height:190px;overflow:auto;margin:9px 0;border:1px solid var(--line);border-radius:9px}
-    .cue-item{display:flex;align-items:center;gap:7px;width:100%;padding:8px;border:0;border-bottom:1px solid var(--line);background:#22222a;color:var(--text);text-align:left;font-size:12px}.cue-item:last-child{border-bottom:0}.cue-item.selected,.cue-item:hover{background:#3a3a47}.cue-item .time{flex:none;color:#bdbdca}.cue-item .weak{color:#f0bd85}
-    .cue-text{display:block;width:100%;min-height:75px;padding:10px;resize:vertical}.review-editor{display:block;width:100%;min-height:180px;margin-top:10px;padding:10px;resize:vertical;font:12px/1.55 ui-monospace,SFMono-Regular,Menlo,monospace}
-    .waveform{display:block;width:100%;height:72px;margin:10px 0;border:1px solid var(--line);border-radius:8px;background:#16161e;cursor:crosshair}
-    .review-tools{display:flex;gap:7px;align-items:end;margin:9px 0}.review-tools .field{flex:1;margin:0}.review-tools button{height:36px;width:auto;margin:0;white-space:nowrap}
-    .pod-row{display:grid;grid-template-columns:1fr 1fr 28px;gap:7px;margin-top:11px;padding-top:10px;border-top:1px solid var(--line)}.pod-row .field-label{grid-column:1/-1}.pod-row button{border:0;border-radius:6px;background:transparent;color:var(--muted)}.pod-row button:hover{background:#34343d;color:#fff}
-    .retake{padding:10px 0;border-bottom:1px solid var(--line)}.retake p{margin:6px 0;font-size:12px}.retake label{display:flex;align-items:center;gap:8px;font-size:12px}
-    .result-path{overflow-wrap:anywhere}.result-path summary{padding:10px 0;color:var(--muted);font-size:11px}
-    .actual-preview{display:block;max-width:100%;max-height:320px;margin:10px auto;border:1px solid var(--line);border-radius:9px;background:repeating-conic-gradient(#24242c 0% 25%,#1a1a21 0% 50%) 50%/16px 16px}.history-button{min-width:32px;padding:4px!important;font-size:18px!important}.review-tools{flex-wrap:wrap}
-    .animation-preview{display:flex;justify-content:center;align-items:center;gap:6px;min-height:90px;background:#101015;border:1px solid var(--line);border-radius:10px;overflow:hidden;font-size:18px;font-weight:700;margin:8px 0;padding:12px;flex-wrap:wrap}
-    .animation-preview span{display:inline-block;transition:color .1s,transform .14s,background .14s,opacity .14s;border-radius:6px;padding:2px}
-    .word-row{display:grid;grid-template-columns:1fr 65px 65px 34px;gap:5px;margin:7px 0;align-items:center}.word-row input{padding:0 5px;height:32px;font-size:11px}.word-row button{height:32px;border:1px solid var(--line);border-radius:6px;background:var(--field);color:var(--text)}
-    @media(max-width:320px){.app{padding:10px 8px 0}.section{padding:11px}.grid{gap:0 7px}.review-tools{flex-wrap:wrap}.review-tools .field{flex-basis:100%}}
+    body{min-width:250px;font:13px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif}
+    button,input,select,textarea{font:inherit}button{cursor:pointer}button:disabled{cursor:default;opacity:.45}
+    .app{display:flex;flex-direction:column;height:100vh;max-width:660px;margin:auto;padding:18px 16px 0;overflow:hidden}
+    .header{position:relative;display:flex;align-items:center;gap:10px;min-height:40px;margin-bottom:18px;flex:none;z-index:3}.header>div{flex:1}
+    .mark{width:38px;height:38px;border-radius:12px;object-fit:cover;border:1px solid var(--line)}
+    h1{margin:0;font-size:22px;line-height:1.1;letter-spacing:-.04em}.subtitle{margin:4px 0 0;color:var(--muted);font-size:10px}
+    .host-badge{color:var(--muted);font-size:10px;white-space:nowrap}.host-badge:empty{display:none}
+    .account{flex:none}.account>summary{width:34px;height:34px;padding:0;justify-content:center;border:1px solid var(--line);border-radius:50%;font-size:22px;line-height:1;background:var(--card)}.account>summary:after{display:none}
+    .account>.details-body{position:absolute;right:0;top:50px;width:100%;max-width:360px;max-height:calc(100vh - 110px);overflow:auto;background:#222225;border:1px solid #424247;border-radius:16px;padding:18px;box-shadow:0 16px 40px #0009}.release-tag{font-size:10px;color:var(--muted);margin:3px 0 12px}
+    .mode-tabs{display:flex;flex:none;gap:4px;padding:4px;background:var(--card);border-radius:13px;margin-bottom:12px}
+    .mode-tabs button{flex:1;min-height:38px;padding:6px;border:0;border-radius:10px;color:var(--muted);background:transparent;font-weight:600;font-size:12px}.mode-tabs button[aria-selected=true]{background:#37373c;color:#fff}.mode-tabs button:hover:not(:disabled){color:#fff}
+    .workflow{display:flex;flex:1;min-height:0;flex-direction:column;overflow:hidden}.page-body{flex:1;min-height:0;overflow-y:auto;overflow-x:hidden;padding:0 1px 8px;scrollbar-width:thin;scrollbar-color:#444448 transparent}.page-body::-webkit-scrollbar{width:4px}.page-body::-webkit-scrollbar-thumb{background:#444448;border-radius:5px}
+    .page-guide{font-size:11px;line-height:1.5;color:var(--muted);margin:0 2px 12px}
+    .section{margin:0 0 10px;padding:16px;border:1px solid #2b2b30;border-radius:18px;background:var(--card)}.section-head{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:12px}.section-title{margin:0;font-size:13px;font-weight:600;letter-spacing:-.015em}.step{display:inline-flex;width:20px;height:20px;align-items:center;justify-content:center;background:#303035;border-radius:6px;color:var(--muted);font-size:10px;margin-right:5px;vertical-align:middle}
+    .refresh{padding:5px 8px;border:0;border-radius:7px;background:transparent;color:var(--muted);font-size:11px;white-space:nowrap}.refresh:hover{background:#303035;color:#fff}
+    .timeline{margin:0;padding:11px 12px;min-height:40px;background:var(--field);border:1px solid #303035;border-radius:10px;overflow-wrap:anywhere;font-size:12px}
+    .field{display:block;min-width:0;margin-top:12px}.field:first-child{margin-top:0}.field-label{display:block;margin-bottom:6px;font-size:11px;color:#c6c6ce;font-weight:500}
+    input:not([type=checkbox]),select{width:100%;min-width:0;height:40px;padding:0 11px;border:1px solid #3b3b42;border-radius:10px;background:var(--field);color:var(--text)}input[type=number]{font-variant-numeric:tabular-nums}input[type=color]{padding:5px}
+    textarea{max-width:100%;color:var(--text);background:var(--field);border:1px solid #3b3b42;border-radius:10px}button:focus,summary:focus{outline:none}input:focus,select:focus,textarea:focus,body[data-input=keyboard] button:focus,body[data-input=keyboard] summary:focus{outline:2px solid #c8c8d5;outline-offset:2px}
+    .grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:0 10px}.grid .field{margin-top:12px}body[data-host=AEFT] .source-options{grid-template-columns:1fr}
+    .field-hint,.hint{display:block;color:var(--muted);font-size:11px;line-height:1.55}.field-hint{margin-top:6px}.hint{margin:10px 0 0}
+    .caption-stage{margin-top:14px;padding:14px;background:#111114;border:1px solid #2d2d33;border-radius:12px;text-align:center}.stage-label{display:block;margin-bottom:9px;color:#8f8f99;font-size:10px}#preview{min-height:36px;white-space:pre-line;font-size:17px;line-height:1.35;font-weight:600;letter-spacing:-.02em}
+    details.section{padding:0}summary{list-style:none;display:flex;align-items:center;justify-content:space-between;gap:10px;padding:14px 16px;cursor:pointer;font-size:12px;font-weight:500}summary::-webkit-details-marker{display:none}summary:after{content:'+';color:var(--muted);font-size:17px;font-weight:400}details[open]>summary:after{content:'−'}
+    .details-body{padding:0 16px 16px}.details-body>details{border-top:1px solid var(--line);margin-top:14px}.details-body>details>summary{padding:13px 0}.details-body>details>.details-body{padding:0 0 10px}
+    .model-disclosure{margin-top:12px;border-top:1px solid var(--line)}.model-disclosure>summary{padding:11px 0 0;font-size:11px}.model-disclosure .details-body{padding:12px 0 0}.summary-value{margin-left:auto;color:#c3c3cc;font-size:10px;max-width:65%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .subhead{margin:15px 0 8px;font-size:11px;color:#d4d4dc}.checks{display:grid;gap:6px;margin-top:12px}.checks label{display:flex;gap:10px;align-items:center;min-height:36px;padding:6px 0;cursor:pointer;color:#dedee5;font-size:12px}input[type=checkbox]{width:17px;height:17px;margin:0;flex:none;accent-color:#ececf2}
+    .boundary{margin-top:10px;padding:10px;background:var(--field);border-radius:9px;white-space:pre-line;color:var(--muted);font-size:11px}.glossary{width:100%;min-height:76px;resize:vertical;padding:10px;font:12px/1.5 ui-monospace,SFMono-Regular,Menlo,monospace}
+    .footer{flex:none;padding:12px 1px 15px;border-top:1px solid #2c2c31;background:var(--bg)}.footer>.hint{font-size:10px;margin-top:8px}.footer [role=status]{max-height:72px;overflow:auto;margin:0 0 10px;white-space:pre-wrap;overflow-wrap:anywhere;font-size:12px;color:#d6d6df}.footer [role=status]:empty{display:none}
+    .run{width:100%;min-height:44px;padding:10px 14px;border:0;border-radius:12px;background:var(--accent);color:#17171b;font-weight:650;font-size:13px}.run:hover:not(:disabled){background:#dcdce5}.secondary{width:100%;min-height:38px;margin-top:8px;padding:8px 11px;border:1px solid #3c3c43;border-radius:10px;background:#27272c;color:var(--text);font-size:11px;font-weight:500}.secondary:hover:not(:disabled){background:#333339}
+    .action-row{display:flex;gap:8px}.action-row .secondary{margin:0;flex:1}.action-row .run{flex:2}
+    .review-info{margin:0;color:var(--muted);font-size:11px}.cue-list{max-height:220px;overflow:auto;margin:12px 0;border:1px solid var(--line);border-radius:10px}.cue-item{display:flex;align-items:center;gap:8px;width:100%;min-height:42px;padding:10px;border:0;border-bottom:1px solid #343439;background:#202024;color:var(--text);text-align:left;font-size:12px}.cue-item:last-child{border-bottom:0}.cue-item.selected{background:#36363e;box-shadow:inset 3px 0 #eee}.cue-item:hover{background:#303036}.cue-item .time{flex:none;color:#bdbdca;font-size:10px;font-variant-numeric:tabular-nums}.cue-item .weak{color:#f0bd85}
+    .cue-text{display:block;width:100%;min-height:85px;padding:12px;resize:vertical;line-height:1.6}.review-editor{display:block;width:100%;min-height:180px;margin-top:10px;padding:10px;resize:vertical;font:12px/1.55 ui-monospace,SFMono-Regular,Menlo,monospace}.waveform{display:block;width:100%;height:72px;margin:12px 0;border:1px solid var(--line);border-radius:9px;background:#16161e;cursor:crosshair}
+    .review-tools{display:flex;flex-wrap:wrap;gap:7px;align-items:flex-end;margin:10px 0}.review-tools .field{flex:1;margin:0;min-width:120px}.review-tools button{min-height:36px;width:auto;margin:0;white-space:nowrap}.history-button{min-width:34px;padding:4px!important;font-size:18px!important}
+    .pod-row{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr) 28px;gap:8px;margin-top:12px;padding:12px;border:1px solid var(--line);border-radius:12px;background:var(--field)}.pod-row .field-label{grid-column:1/-1}.pod-row button{border:0;border-radius:6px;background:transparent;color:var(--muted)}.pod-row button:hover{background:#34343d;color:#fff}
+    .retake{padding:12px 0;border-bottom:1px solid var(--line)}.retake p{margin:7px 0;font-size:12px}.retake label{display:flex;align-items:center;gap:10px;font-size:12px}.result-path{overflow-wrap:anywhere}.result-path summary{padding:10px 0;color:var(--muted);font-size:11px}
+    .actual-preview{display:block;max-width:100%;max-height:280px;margin:12px auto;border:1px solid var(--line);border-radius:12px;background:repeating-conic-gradient(#24242c 0% 25%,#1a1a21 0% 50%) 50%/16px 16px}.animation-preview{display:flex;justify-content:center;align-items:center;gap:5px;min-height:74px;background:#111114;border:1px solid #303035;border-radius:12px;overflow:hidden;font-size:17px;font-weight:600;margin:10px 0;padding:12px;flex-wrap:wrap}.animation-preview span{display:inline-block;transition:color .1s,transform .14s,background .14s,opacity .14s;border-radius:5px;padding:2px}
+    .word-row{display:grid;grid-template-columns:minmax(0,1fr) 59px 59px 30px;gap:5px;margin:8px 0;align-items:center}.word-row input{padding:0 5px;height:34px;font-size:11px}.word-row button{height:34px;border:1px solid var(--line);border-radius:7px;background:var(--field);color:var(--text)}
+    .text-example{display:flex;justify-content:center;flex-wrap:wrap;gap:8px;padding:32px 10px;margin-top:14px;border-radius:12px;background:var(--field)}.text-example span{padding:7px 10px;border:1px dashed #6a6a76;border-radius:6px;font-size:16px;font-weight:500}.inline-help{margin-top:10px;border-top:1px solid var(--line)}.inline-help>summary{padding:12px 0;color:var(--muted);font-size:11px}.inline-help .details-body{padding:0 0 4px}
+    @media(max-width:340px){.app{padding:12px 10px 0}.header{margin-bottom:12px;gap:8px}.mark{width:32px;height:32px}.host-badge{font-size:9px}h1{font-size:20px}.section{padding:12px;border-radius:14px}.details-body{padding:0 12px 12px}summary{padding:12px}.grid{gap:0 8px}.page-guide{font-size:10px}.review-tools .field{flex-basis:100%}.word-row{grid-template-columns:minmax(0,1fr) 49px 49px 27px;gap:4px}.footer{padding-bottom:10px}}
+    @media(max-width:280px){.host-badge{display:none}}
+    @media(max-height:520px){.app{padding-top:10px}.header{margin-bottom:10px;min-height:32px}.mode-tabs{margin-bottom:8px}.page-guide{margin-bottom:8px}.footer{padding:9px 1px}.footer [role=status]{max-height:48px}}
+    @media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important;transition:none!important;animation:none!important}}
   </style>
 </head>
 <body>
   <main class="app">
-    <header class="header"><img class="mark" src="assets/uzscribe-logo.jpg" alt="" aria-hidden="true"><div><h1>UzScribe</h1><p class="subtitle">by Meyor Vision</p></div></header>
-    <details class="section" id="subscription"><summary>Obuna</summary><div class="details-body"><p id="licenseStatus" class="hint" role="status"></p><label class="field"><span class="field-label">Litsenziya kaliti</span><input id="licenseKey" type="password" autocomplete="off" placeholder="UZS-…"></label><div class="action-row" style="margin-top:10px"><button id="activateLicense" class="secondary" type="button">Faollashtirish</button><button id="refreshLicense" class="secondary" type="button">Holatni yangilash</button></div><label class="field"><span class="field-label">Tarif · so‘mda</span><select id="licensePlan"><option value="monthly">Pro · 30 kun</option><option value="yearly">Pro · 365 kun</option></select></label><button id="buyLicense" class="secondary" type="button">Obuna olish / uzaytirish</button><button id="manageSubscription" class="refresh" type="button" hidden>Obunani boshqarish</button><button id="releaseLicense" class="refresh" type="button">Bu kompyuterni uzish</button><p class="hint" id="renewalHint">Kartadan avtomatik pul yechilmaydi. Pro litsenziyasi internet tekshiruvidan keyin 3 kungacha offline ishlaydi.</p></div></details>
-    <nav class="mode-tabs" aria-label="Ish turi"><button id="captionsTab" type="button" aria-selected="true">Subtitr</button><button id="textToolsTab" type="button" aria-selected="false" hidden>Matn</button><button id="podcastTab" type="button" aria-selected="false">Podcast</button><button id="reelsTab" type="button" aria-selected="false">Reels</button></nav>
-    <div id="captionPage" class="workflow"><div class="page-body">
+    <header class="header"><img class="mark" src="assets/uzscribe-logo.jpg" alt="" aria-hidden="true"><div><h1>UzScribe</h1><p class="subtitle">by Meyor Vision</p></div><span id="hostBadge" class="host-badge"></span><details class="account" id="subscription"><summary aria-label="Hisob va obuna" title="Hisob va obuna">⋯</summary><div class="details-body"><h2 class="section-title">Hisob va obuna</h2><p class="release-tag">UzScribe 0.6.6</p><p id="licenseStatus" class="hint" role="status"></p><label class="field"><span class="field-label">Litsenziya kaliti</span><input id="licenseKey" type="password" autocomplete="off" placeholder="UZS-…"></label><div class="action-row" style="margin-top:10px"><button id="activateLicense" class="secondary" type="button">Faollashtirish</button><button id="refreshLicense" class="secondary" type="button">Holatni yangilash</button></div><label class="field"><span class="field-label">Tarif · so‘mda</span><select id="licensePlan"><option value="monthly">Pro · 30 kun</option><option value="yearly">Pro · 365 kun</option></select></label><button id="buyLicense" class="secondary" type="button">Obuna olish / uzaytirish</button><button id="manageSubscription" class="refresh" type="button" hidden>Obunani boshqarish</button><button id="releaseLicense" class="refresh" type="button">Bu kompyuterni uzish</button><p class="hint" id="renewalHint">Kartadan avtomatik pul yechilmaydi. Pro litsenziyasi internet tekshiruvidan keyin 3 kungacha offline ishlaydi.</p></div></details></header>
+    
+    <nav class="mode-tabs" role="tablist" aria-label="Ish turi"><button id="captionsTab" type="button" role="tab" aria-controls="captionPage" aria-selected="true">Subtitr</button><button id="textToolsTab" type="button" role="tab" aria-controls="textToolsPage" aria-selected="false" hidden>Matn</button><button id="podcastTab" type="button" role="tab" aria-controls="podcastPage" aria-selected="false">Podcast</button><button id="reelsTab" type="button" role="tab" aria-controls="reelsPage" aria-selected="false">Reels</button></nav>
+    <div id="captionPage" role="tabpanel" aria-labelledby="captionsTab" class="workflow"><div class="page-body"><p id="captionGuide" class="page-guide">Timeline’ni tanlang. Subtitrni yarating, tekshiring va qo‘shing.</p>
     <section class="section" aria-labelledby="sourceTitle">
-      <div class="section-head"><h2 class="section-title" id="sourceTitle">Video manbasi</h2><button id="refresh" class="refresh" type="button">Yangilash</button></div>
+      <div class="section-head"><h2 class="section-title" id="sourceTitle"><span class="step">1</span> Video</h2><button id="refresh" class="refresh" type="button">Yangilash</button></div>
       <div id="timeline" class="timeline" aria-live="polite">Timeline tekshirilmoqda…</div>
-      <label class="field" for="range"><span class="field-label">Qaysi qism?</span><select id="range"><option value="auto">In/Out yoki to‘liq video</option><option value="inout">Faqat In/Out · AE Work Area</option><option value="full">To‘liq video</option></select></label>
+      <div class="grid source-options">      <label class="field" for="range"><span class="field-label">Qaysi qism?</span><select id="range"><option value="auto">In/Out yoki to‘liq video</option><option value="inout">Faqat In/Out · AE Work Area</option><option value="full">To‘liq video</option></select></label>
       <label class="field" for="audioTrack"><span class="field-label">Nutq audiosi</span><select id="audioTrack"><option value="all">Timeline’dagi barcha ovozlar</option></select></label>
-        <label class="field" for="model"><span class="field-label">Nutq modeli</span><select id="model"><option value="large-v3">UzScribe Global</option></select></label>
+</div>
+      <details class="model-disclosure"><summary><span>Nutq modeli</span><span id="modelSummary" class="summary-value">UzScribe Global</span></summary><div class="details-body">        <label class="field" for="model"><span class="field-label">Nutq modeli</span><select id="model"><option value="large-v3">UzScribe Global</option></select></label>
         <span id="modelHint" class="field-hint">Model qurilmada ishlaydi.</span>
+</div></details>
     </section>
     <section class="section" aria-labelledby="layoutTitle">
-      <div class="section-head"><h2 class="section-title" id="layoutTitle">Subtitr</h2></div>
-      <div class="grid"><label class="field" for="lines"><span class="field-label">Qatorlar</span><input id="lines" type="number" min="1" max="3" step="1" value="2"></label><label class="field" for="words"><span class="field-label">So‘z / qator · taxminiy</span><input id="words" type="number" min="1" max="8" step="1" value="3"></label></div>
-      <label id="aeLayerModeField" class="field" hidden><span class="field-label">Timeline’ga qo‘shish · After Effects</span><select id="aeLayerMode"><option value="cue">Har bir subtitr — bitta layer</option><option value="words">Har bir so‘z — alohida layer</option></select><span class="field-hint">So‘zlar alohida bo‘lsa ham bir qator bo‘lib joylashadi.</span></label>
-      <div class="caption-stage"><span class="stage-label">Subtitr namunasi · gapga mos bo‘linadi</span><div id="preview">Bugun o‘zbekcha subtitrlar<br>aniq vaqt bilan chiqadi</div></div>
+      <div class="section-head"><h2 class="section-title" id="layoutTitle"><span class="step">2</span> Ko‘rinish</h2></div>
+      <div class="grid"><label class="field" for="lines"><span class="field-label">Qator soni</span><input id="lines" type="number" min="1" max="3" step="1" value="2"></label><label class="field" for="words"><span class="field-label">So‘z / qator</span><input id="words" type="number" min="1" max="8" step="1" value="3"></label></div>
+      <label id="aeLayerModeField" class="field" hidden><span class="field-label">Layerlar</span><select id="aeLayerMode"><option value="cue">Subtitr — bitta layer</option><option value="words">So‘zlar — alohida layer</option></select><span class="field-hint">Ikkala usulda ham qator joylashuvi saqlanadi.</span></label>
+      <div class="caption-stage"><span class="stage-label">Namuna · gapga mos bo‘linadi</span><div id="preview">Bugun o‘zbekcha subtitrlar<br>aniq vaqt bilan chiqadi</div></div>
       <div id="animationField"><label class="field" for="animation"><span class="field-label">Animatsiya</span><select id="animation"><option value="none">Oddiy subtitr</option><option value="karaoke">Karaoke</option><option value="pop">Soft Pop</option><option value="pill">Moving Highlight</option><option value="reveal">Word Reveal</option><option value="slide">Slide + Fade</option><option value="emphasis">Keyword Emphasis</option><option value="composer">Animation Composer · AE</option></select></label>
-      <button id="previewAnimation" class="secondary" type="button" hidden>Tanlangan subtitr animatsiyasini ko‘rish</button>
+      <button id="previewAnimation" class="secondary" type="button" hidden>Animatsiyani ko‘rish</button>
       <img id="actualAnimationPreview" class="actual-preview" hidden alt="Tanlangan subtitr animatsiyasi">
       <div id="animationPreview" class="animation-preview" aria-label="Animatsiya namunasi"></div>
       <span id="animationHint" class="field-hint"></span>
@@ -101,12 +90,12 @@
       </div></details></div>
     </section>
     <details class="section" id="advanced">
-      <summary>Matn va qo‘shimcha sozlamalar</summary>
+      <summary>Qo‘shimcha sozlamalar</summary>
       <div class="details-body">
 
         <div class="checks"><label><input id="literary" type="checkbox" checked> Adabiy yozuv</label></div>
         <p class="hint">So‘zlashuvdagi ayrim shakllarni to‘g‘rilaydi; matnni natija oynasida tekshiring.</p>
-        <details><summary>Matn uzunligi va modelni solishtirish</summary><div class="details-body"><label class="field" for="compareModel"><span class="field-label">Ikkinchi model bilan solishtirish</span><select id="compareModel"><option value="">O‘chirilgan</option></select></label>
+        <details><summary>Matn uzunligi va aniqlik</summary><div class="details-body"><label class="field" for="compareModel"><span class="field-label">Ikkinchi model bilan solishtirish</span><select id="compareModel"><option value="">O‘chirilgan</option></select></label>
         <label class="field" for="style"><span class="field-label">Matn uzunligi</span><select id="style"><option value="short">Qisqa</option><option value="medium" selected>O‘rtacha</option><option value="long">Uzun</option><option value="custom">Qo‘lda sozlangan</option></select></label>
         <div class="grid"><label class="field" for="chars"><span class="field-label">Belgi / qator</span><input id="chars" type="number" min="8" max="80" step="1" value="42"></label><label class="field" for="duration"><span class="field-label">Eng uzun subtitr · s</span><input id="duration" type="number" min="1" max="10" step="0.1" value="5"></label></div>
         </div></details><details><summary>Gap bo‘linishi va tinish belgilari</summary><div class="details-body"><p class="hint">Gapga mos avtomatik bo‘linadi. So‘z soni taxminiy: iborani tugatish uchun qatorga 1–2 so‘z qo‘shilishi mumkin.</p>
@@ -119,7 +108,7 @@
         <div class="grid"><label class="field" for="script"><span class="field-label">Yozuv</span><select id="script"><option value="latin">Lotin</option><option value="cyrillic">Kirill</option></select></label><label class="field" for="captionMode"><span class="field-label">Ko‘rinish</span><select id="captionMode"><option value="normal">Oddiy subtitr</option><option value="word">So‘zma-so‘z</option></select></label></div>
         <div class="checks" style="margin-top:11px"><label><input id="detectSpeakers" type="checkbox"> So‘zlovchilarni avtomatik ajratish</label></div>
         <label class="field" for="speakerCount"><span class="field-label">So‘zlovchilar soni</span><select id="speakerCount"><option value="auto">Avtomatik</option><option value="2">2 kishi</option><option value="3">3 kishi</option><option value="4">4 kishi</option></select></label>
-        </div></details><details><summary>Fayl va texnik sozlamalar</summary><div class="details-body">
+        </div></details><details><summary>Eksport va texnik sozlamalar</summary><div class="details-body">
         <div class="checks" style="margin-top:11px"><label><input id="exportVtt" type="checkbox" checked> VTT fayl ham yaratish</label><label><input id="exportAss" type="checkbox" checked> ASS fayl ham yaratish</label></div>
         <h3 class="subhead">Timing</h3>
         <div class="grid"><label class="field" for="startPad"><span class="field-label">Boshini oldinroq · ms</span><input id="startPad" type="number" min="0" max="500" step="20" value="0"></label><label class="field" for="endPad"><span class="field-label">Oxirini keyinroq · ms</span><input id="endPad" type="number" min="0" max="500" step="20" value="0"></label><label class="field" for="minCue"><span class="field-label">Minimal ko‘rinish · s</span><input id="minCue" type="number" min="0" max="3" step="0.1" value="0.8"></label><label class="field" for="fps"><span class="field-label">Timeline FPS</span><input id="fps" type="number" min="1" max="120" step="0.001" value="25"></label></div>
@@ -135,11 +124,11 @@
       </div>
     </details>
     <section class="section" id="reviewSection" hidden aria-labelledby="reviewTitle">
-      <div class="section-head"><h2 class="section-title" id="reviewTitle">Subtitrlarni tekshirish</h2></div>
+      <div class="section-head"><h2 class="section-title" id="reviewTitle"><span class="step">3</span> Natijani tekshirish</h2></div>
       <p id="reviewInfo" class="review-info"></p>
       <div id="cueList" class="cue-list" aria-label="Subtitrlar ro‘yxati"></div>
-      <label class="field" for="cueText"><span class="field-label">Tanlangan subtitr matni</span><textarea id="cueText" class="cue-text" spellcheck="false"></textarea></label>
-      <div class="review-tools"><button id="undoReview" class="secondary history-button" type="button" aria-label="Tahrirni ortga qaytarish" title="Ortga qaytarish">↶</button><button id="redoReview" class="secondary history-button" type="button" aria-label="Tahrirni qayta qo‘llash" title="Qayta qo‘llash">↷</button><button id="mergeCue" class="secondary" type="button">Keyingisi bilan birlashtirish</button><button id="splitCue" class="secondary" type="button">Kursordan bo‘lish</button></div>
+      <label class="field" for="cueText"><span class="field-label">Matnni tahrirlash</span><textarea id="cueText" class="cue-text" spellcheck="false"></textarea></label>
+      <div class="review-tools"><button id="undoReview" class="secondary history-button" type="button" aria-label="Tahrirni ortga qaytarish" title="Ortga qaytarish">↶</button><button id="redoReview" class="secondary history-button" type="button" aria-label="Tahrirni qayta qo‘llash" title="Qayta qo‘llash">↷</button><button id="mergeCue" class="secondary" type="button">Birlashtirish</button><button id="splitCue" class="secondary" type="button">Bo‘lish</button></div>
       <p id="compareText" class="hint"></p>
       <details><summary>Vaqt va qo‘shimcha tahrir</summary><div class="details-body">
       <details><summary>So‘z vaqtlari va urg‘u</summary><div class="details-body"><div id="wordList"></div><button id="saveWordTimes" class="secondary" type="button">So‘z vaqtlarini saqlash</button><button id="refineTimes" class="secondary" type="button">Whisper bilan vaqtni tekshirish</button><p class="hint">Boshlanish/tugash · soniyada. Matnni o‘zgartirsangiz, mos so‘z matnini ham tuzating. Whisper matni mos kelgan so‘zlargina yangilanadi; Global modeli kerak.</p></div></details>
@@ -156,30 +145,31 @@
       <div id="status" role="status" aria-live="polite"></div>
       <div id="mainActions"><button id="resumeReview" class="secondary" type="button" hidden>Oxirgi tahrirni davom ettirish</button><button id="run" class="run" type="button">Subtitr yaratish</button></div>
       <div id="workActions" hidden><button id="cancel" class="secondary" type="button">Bekor qilish</button></div>
-      <div id="reviewActions" class="action-row" hidden><button id="discardReview" class="secondary" type="button">SRT saqlansin</button><button id="applyReview" class="run" type="button">Timeline’ga qo‘shish</button></div>
+      <div id="reviewActions" class="action-row" hidden><button id="discardReview" class="secondary" type="button">Faqat SRT saqlash</button><button id="applyReview" class="run" type="button">Timeline’ga qo‘shish</button></div>
     </div>
     </div>
-    <div id="textToolsPage" class="workflow" hidden><div class="page-body">
-      <section class="section"><h2 class="section-title">Matnni so‘zlarga ajratish</h2><p class="hint">Timeline’dan bitta text layerni tanlang. Har bir so‘z alohida layerga ajraladi; shrift, qatorlar va joylashuv saqlanadi.</p><div id="textToolsInfo" class="timeline" aria-live="polite">Bitta text layerni tanlang.</div><button id="textToolsRefresh" class="refresh" type="button">Tanlovni tekshirish</button><p class="hint">Joylashuv saqlanishi uchun har nusxada asl matn qoladi, faqat bitta so‘z ko‘rinadi. Asl layer o‘chirilmaydi, ko‘rinishi o‘chiriladi. Undo bilan qaytarish mumkin.</p></section>
-      </div><div class="footer"><p id="textToolsStatus" role="status" aria-live="polite"></p><button id="textToolsSplit" class="run" type="button">So‘zlarni alohida layer qilish</button></div>
+    <div id="textToolsPage" role="tabpanel" aria-labelledby="textToolsTab" class="workflow" hidden><div class="page-body">
+      <section class="section"><h2 class="section-title">Matnni so‘zlarga ajratish</h2><p class="hint">Timeline’dan bitta text layerni tanlang. So‘zlar alohida layerlarga ajraladi, joylashuv saqlanadi.</p><div id="textToolsInfo" class="timeline" aria-live="polite">Bitta text layerni tanlang.</div><button id="textToolsRefresh" class="refresh" type="button">Tanlovni tekshirish</button><div class="text-example" aria-hidden="true"><span>Har</span><span>so‘z</span><span>alohida</span></div><p class="hint">Asl layer saqlanadi. Undo bilan qaytarish mumkin.</p><details class="inline-help"><summary>Qanday ishlaydi?</summary><div class="details-body"><p class="hint">Joylashuv saqlanishi uchun nusxada to‘liq matn qoladi, faqat bitta so‘z ko‘rinadi. Matnni almashtirish uchun asl layerni tahrirlab, qayta ajrating.</p></div></details></section>
+      </div><div class="footer"><p id="textToolsStatus" role="status" aria-live="polite"></p><button id="textToolsSplit" class="run" type="button">So‘zlarga ajratish</button></div>
     </div>
-    <div id="podcastPage" class="workflow" hidden><div class="page-body">
+    <div id="podcastPage" role="tabpanel" aria-labelledby="podcastTab" class="workflow" hidden><div class="page-body"><p class="page-guide">Mikrofonlarni kameraga bog‘lang. Montajni tekshirib qo‘shing.</p>
       <section class="section">
-        <div class="section-head"><h2 class="section-title">Podcast montaji</h2><button id="podRefresh" class="refresh" type="button">Yangilash</button></div>
+        <div class="section-head"><h2 class="section-title"><span class="step">1</span> Video va montaj</h2><button id="podRefresh" class="refresh" type="button">Yangilash</button></div>
         <p id="podTimeline" class="timeline" aria-live="polite">Timeline’ni yangilang.</p>
-        <label class="field"><span class="field-label">Qaysi qism?</span><select id="podRange"><option value="auto">In/Out yoki to‘liq video</option><option value="full">To‘liq video</option><option value="inout">Faqat In/Out</option></select></label>
-        <label class="field"><span class="field-label">Montaj</span><select id="podMode"><option value="cameras">Kamera almashish + pauzalar</option><option value="silence">Faqat pauzalarni kesish</option></select></label>
-        <p class="hint">Har bir odamning mikrofonini kamera trekiga bog‘lang. Umumiy ovoz bo‘lsa, faqat pauzalarni kesishni tanlang.</p>
+        <div class="grid source-options"><label class="field"><span class="field-label">Qaysi qism?</span><select id="podRange"><option value="auto">In/Out yoki to‘liq video</option><option value="full">To‘liq video</option><option value="inout">Faqat In/Out</option></select></label>
+        <label class="field"><span class="field-label">Montaj</span><select id="podMode"><option value="cameras">Kameralar va pauzalar</option><option value="silence">Faqat pauzalarni kesish</option></select></label>
+</div>
+        <details class="inline-help"><summary>Umumiy mikrofon bilan ishlash</summary><div class="details-body"><p class="hint">Har bir odamga alohida mikrofon va kamera trekini bog‘lang. Umumiy ovoz bo‘lsa, “Faqat pauzalarni kesish”ni tanlang.</p></div></details>
       </section>
       <section class="section">
-        <div class="section-head"><h2 class="section-title">Odamlar va kameralar</h2><button id="podAdd" class="refresh" type="button">+ Odam</button></div>
+        <div class="section-head"><h2 class="section-title"><span class="step">2</span> Mikrofon va kamera</h2><button id="podAdd" class="refresh" type="button">+ Odam</button></div>
         <div id="podMappings"></div>
         <label class="field"><span class="field-label">Umumiy kamera</span><select id="podWide"><option value="">Yo‘q</option></select></label>
       </section>
       <details class="section"><summary>Montaj sozlamalari</summary><div class="details-body">
         <div class="grid">
           <label class="field"><span class="field-label">Eng qisqa kadr · s</span><input id="podShot" type="number" min="0.5" max="30" step="0.1" value="2.5"></label>
-          <label class="field"><span class="field-label">Nutqqa javob · s</span><input id="podReaction" type="number" min="0.1" max="3" step="0.05" value="0.35"></label>
+          <label class="field"><span class="field-label">Kamera almashish tezligi · s</span><input id="podReaction" type="number" min="0.1" max="3" step="0.05" value="0.35"></label>
           <label class="field"><span class="field-label">Pauza chegarasi · s</span><input id="podSilence" type="number" min="0.3" max="10" step="0.1" value="1"></label>
           <label class="field"><span class="field-label">Pauza yonida saqlash · s</span><input id="podPadding" type="number" min="0" max="1" step="0.05" value="0.2"></label>
           <label class="field"><span class="field-label">Ovoz chegarasi · dB</span><input id="podThreshold" type="number" min="-80" max="-10" value="-42"></label>
@@ -192,19 +182,20 @@
       </div></details>
       <section id="podReview" class="section" hidden><h2 class="section-title">Montaj tayyor</h2><p id="podSummary"></p><div id="podCuts" class="cue-list"></div><details class="result-path"><summary>Natija fayli</summary><p id="podFile" class="hint"></p></details></section>
       </div>
-    <div class="footer"><p id="podStatus" role="status" aria-live="polite"></p><button id="podRun" class="run" type="button">Podcast montajini tayyorlash</button><button id="podCancel" class="secondary" type="button" hidden>Bekor qilish</button><button id="podImport" class="run" type="button" hidden>Yangi sequence qo‘shish</button><button id="podReset" class="secondary" type="button" hidden>Yangi montaj</button><p class="hint">Natijani tekshiring, so‘ng yangi sequence qo‘shing.</p></div>
+    <div class="footer"><p id="podStatus" role="status" aria-live="polite"></p><button id="podRun" class="run" type="button">Montajni tayyorlash</button><button id="podCancel" class="secondary" type="button" hidden>Bekor qilish</button><button id="podImport" class="run" type="button" hidden>Timeline’ga qo‘shish</button><button id="podReset" class="secondary" type="button" hidden>Yangi montaj</button><p class="hint">Natijani tekshiring, so‘ng yangi sequence qo‘shing.</p></div>
     </div>
-    <div id="reelsPage" class="workflow" hidden><div class="page-body">
+    <div id="reelsPage" role="tabpanel" aria-labelledby="reelsTab" class="workflow" hidden><div class="page-body"><p class="page-guide">Pauza va takroriy dubllarni bir tugmada tozalang.</p>
       <section class="section">
-        <div class="section-head"><h2 class="section-title">Reels’ni tozalash</h2><button id="reelRefresh" class="refresh" type="button">Yangilash</button></div>
+        <div class="section-head"><h2 class="section-title">Video va tozalash</h2><button id="reelRefresh" class="refresh" type="button">Yangilash</button></div>
         <p id="reelTimeline" class="timeline" aria-live="polite">Timeline tekshirilmoqda…</p>
-        <label class="field"><span class="field-label">Nutq audiosi</span><select id="reelAudio"><option value="0">Audio 1</option></select></label>
+        <div class="grid source-options"><label class="field"><span class="field-label">Nutq audiosi</span><select id="reelAudio"><option value="0">Audio 1</option></select></label>
                 <label class="field"><span class="field-label">Qaysi qism?</span><select id="reelRange"><option value="auto">In/Out yoki to‘liq video</option><option value="full">To‘liq video</option><option value="inout">Faqat In/Out</option></select></label>
-        <div class="checks" style="margin-top:12px"><label><input id="reelRetakes" type="checkbox" checked>Takroriy dubllarni tozalash</label><label><input id="reelRemoveSilence" type="checkbox" checked>Pauzalarni qisqartirish</label></div>
+</div>
+        <div class="checks" style="margin-top:12px"><label><input id="reelRetakes" type="checkbox" checked>Takroriy dubllarni tozalash</label><label><input id="reelRemoveSilence" type="checkbox" checked>Pauzalarni qisqartirish</label><label><input id="reelPreviewFirst" type="checkbox">Natijani avval tekshirish</label></div>
       </section>
-      <details class="section"><summary>Model va nozik sozlamalar</summary><div class="details-body">
+      <details class="section"><summary>Qo‘shimcha sozlamalar</summary><div class="details-body">
 
-        <label class="field"><span class="field-label">Nutq modeli</span><select id="reelModel"></select></label><div class="checks"><label><input id="reelPreviewFirst" type="checkbox">Avval tekshirish, keyin timeline’ga qo‘shish</label></div>
+        <label class="field"><span class="field-label">Nutq modeli</span><select id="reelModel"></select></label>
         <label class="field"><span class="field-label">Takrorni topish</span><select id="reelStrength"><option value="safe">Ehtiyotkor · aniq takrorlar</option><option value="balanced">Yumshoq farqli dubllar ham</option></select></label>
         <label class="field"><span class="field-label">Qaysi dubl qolsin?</span><select id="reelKeep"><option value="complete">Eng to‘liq, teng bo‘lsa oxirgisi</option><option value="last">Oxirgi dubl</option></select></label>
         <div class="grid"><label class="field"><span class="field-label">Pauza chegarasi · s</span><input id="reelSilence" type="number" min="0.3" max="10" step="0.1" value="0.7"></label><label class="field"><span class="field-label">Kesish yonida saqlash · s</span><input id="reelPadding" type="number" min="0.08" max="0.5" step="0.02" value="0.18"></label><label class="field"><span class="field-label">Gap pauzasi · s</span><input id="reelGap" type="number" min="0.2" max="3" step="0.05" value="0.65"></label><label class="field"><span class="field-label">Dubl qidirish oralig‘i · s</span><input id="reelWindow" type="number" min="3" max="120" value="45"></label></div>
@@ -215,7 +206,7 @@
       </div></details>
       <section id="reelReview" class="section" hidden><h2 class="section-title">Tozalash natijasi</h2><p id="reelSummary"></p><div id="reelTakes"></div><button id="reelRebuild" class="secondary" type="button">Tanlov bo‘yicha qayta tayyorlash</button><details class="result-path"><summary>Natija fayli</summary><p id="reelFile" class="hint"></p></details></section>
       </div>
-    <div class="footer"><p id="reelStatus" role="status" aria-live="polite"></p><button id="reelRun" class="run" type="button">Reels’ni tozalash</button><button id="reelCancel" class="secondary" type="button" hidden>Bekor qilish</button><button id="reelImport" class="secondary" type="button" hidden>Yangi sequence qo‘shish</button><p class="hint">Natija Project panelida alohida sequence bo‘ladi.</p></div>
+    <div class="footer"><p id="reelStatus" role="status" aria-live="polite"></p><button id="reelRun" class="run" type="button">Reels’ni tozalash</button><button id="reelCancel" class="secondary" type="button" hidden>Bekor qilish</button><button id="reelImport" class="secondary" type="button" hidden>Timeline’ga qo‘shish</button><p class="hint">Natija Project panelida alohida sequence bo‘ladi.</p></div>
     </div>
   </main>
   <script src="license-panel.js"></script>
@@ -224,5 +215,6 @@
   <script src="podcast-panel.js"></script>
   <script src="reels-panel.js"></script>
   <script src="text-tools-panel.js"></script>
+  <script src="panel-ui.js"></script>
 </body>
 </html>

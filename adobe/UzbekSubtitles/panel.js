@@ -325,7 +325,7 @@
     var host=adobeHost();if(host)hostUi(host);
     getInfo(function (err, info) {
       if (activeRun) return;
-      if (err) { timeline.textContent = err.message; return; }
+      if (err) { timeline.textContent = err.message.replace(/^Error:\s*/, ''); return; }
       timeline.textContent = (info.host==='AEFT'&&info.layer_name ? info.layer_name : info.name) + ' · ' + info.duration.toFixed(2) + ' s · ' +
         (info.marked ? ('boshlanish ' + info.start.toFixed(2) + ' s') : 'to‘liq') +
         ' · ' + info.fps.toFixed(3) + ' fps';
