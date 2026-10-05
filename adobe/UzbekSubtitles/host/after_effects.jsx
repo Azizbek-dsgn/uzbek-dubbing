@@ -191,8 +191,8 @@ function uzAnimationComp(name, identity) {
 function uzAnimationRGB(hex) {return [parseInt(hex.substr(1,2),16)/255,parseInt(hex.substr(3,2),16)/255,parseInt(hex.substr(5,2),16)/255];}
 function uzAnimationHold(prop) { for (var i = 1; i <= prop.numKeys; i++) prop.setInterpolationTypeAtKey(i, KeyframeInterpolationType.HOLD, KeyframeInterpolationType.HOLD); }
 function uzAnimationLinear(prop) { for (var i = 1; i <= prop.numKeys; i++) prop.setInterpolationTypeAtKey(i, KeyframeInterpolationType.LINEAR, KeyframeInterpolationType.LINEAR); }
-function uzAnimationLayers(comp, cue, theme, offset, expose) {
-    var start = cue.start + offset, end = Math.min(cue.end + offset, comp.duration), count = 0;
+function uzAnimationLayers(comp, cue, theme, offset, expose, cueIndex) {
+    var start = Math.max(0,cue.start + offset), end = Math.min(cue.end + offset, comp.duration), count = 0;
     if (start >= comp.duration || end <= start) return 0;
     var preset = theme.preset, color = uzAnimationRGB(theme.color), active = uzAnimationRGB(theme.active);
     var speed = Math.min(theme.speed, (end - start)/2), pill = null;
@@ -213,7 +213,7 @@ function uzAnimationLayers(comp, cue, theme, offset, expose) {
         uzAnimationLinear(pos); uzAnimationLinear(rect.property('ADBE Vector Rect Size'));
     }
     for (var i = 0; i < cue.runs.length; i++) {
-        var run = cue.runs[i], layer = comp.layers.addText(run.text); layer.name = 'UzScribe · '+run.text;
+        var run = cue.runs[i], layer = comp.layers.addText(run.text); layer.name = cueIndex ? uzCaptionLayerName(cueIndex,run.text)+' · So‘z '+(i+1) : 'UzScribe · '+run.text;
         var source = layer.property('ADBE Text Properties').property('ADBE Text Document'), doc = source.value;
         doc.fontSize = cue.size; try {doc.font = theme.fontPostscript || theme.fontFamily;} catch (_) {}
         doc.fillColor = preset === 'emphasis' && run.emphasis ? active : color; doc.applyFill = true; doc.applyStroke = true; doc.strokeColor = [0,0,0]; doc.strokeWidth = Math.max(1,Math.round(cue.size/32));
@@ -221,7 +221,8 @@ function uzAnimationLayers(comp, cue, theme, offset, expose) {
         var bounds = layer.sourceRectAtTime(start,false), transform = layer.property('ADBE Transform Group');
         transform.property('ADBE Anchor Point').setValue([bounds.left+bounds.width/2,bounds.top+bounds.height/2]);
         var position = [run.x+run.width/2,run.y+bounds.height/2]; transform.property('ADBE Position').setValue(position);
-        layer.inPoint = preset === 'reveal' ? Math.max(start,run.start+offset) : start; layer.outPoint = end;
+        layer.startTime = start; layer.inPoint = start; layer.outPoint = end;
+        if (preset === 'reveal') {var reveal=transform.property('ADBE Opacity');if(run.start+offset>start)reveal.setValueAtTime(start,0);reveal.setValueAtTime(Math.max(start,run.start+offset),100);uzAnimationHold(reveal);}
         var on = Math.max(start,run.start+offset), off = Math.min(end,run.end+offset);
         if (preset === 'karaoke' || preset === 'pop') {
             doc = source.value; doc.fillColor = active; source.setValueAtTime(on,doc); doc = source.value; doc.fillColor = color; source.setValueAtTime(off,doc);
@@ -331,12 +332,16 @@ function uzCaptionCueLayer(comp, cue, theme, offset, index) {
     }
     return 1;
 }
-function uzImportAnimatedCaptions(planPath, offset, name, identity) {
+function uzImportAnimatedCaptions(planPath, offset, name, identity, layerMode, selectForComposer, presetOverride) {
     try {
         var comp = uzAnimationComp(name,identity), plan = uzAnimationRead(planPath), count = 0, before = comp.numLayers;
         if (plan.schema !== 1 || plan.width !== comp.width || plan.height !== comp.height) throw new Error("Video o‘lchami o‘zgargan. Animatsiyani qayta yarating.");
+        if (presetOverride === 'none') plan.theme.preset='none';
         app.beginUndoGroup('UzScribe animatsiyalari');
-        try {for (var i = 0; i < plan.cues.length; i++) count += uzCaptionCueLayer(comp,plan.cues[i],plan.theme,Number(offset)||0,i+1);}
+        try {
+            for (var i = 0; i < plan.cues.length; i++) count += layerMode === 'words' ? uzAnimationLayers(comp,plan.cues[i],plan.theme,Number(offset)||0,false,i+1) : uzCaptionCueLayer(comp,plan.cues[i],plan.theme,Number(offset)||0,i+1);
+            if (selectForComposer) {var selected=comp.selectedLayers;for(var j=0;j<selected.length;j++)selected[j].selected=false;for(var k=1;k<=comp.numLayers-before;k++){var added=comp.layer(k);if(added.property('ADBE Text Properties'))added.selected=true;}}
+        }
         catch (error) {while (comp.numLayers > before) comp.layer(1).remove();throw error;}
         finally {app.endUndoGroup();}
         return count+' ta vaqtli matn qatlami yaratildi.';

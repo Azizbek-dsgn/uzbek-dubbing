@@ -161,7 +161,7 @@
     splitCommas: splitCommas, splitPauses: splitPauses, startPad: startPad,
     endPad: endPad, minCue: minCue, glossary: glossary, python: python,
     premierePreset: premierePreset,
-    compareModel: compareModel, script: scriptChoice, captionMode: captionMode,
+    compareModel: compareModel, script: scriptChoice, captionMode: captionMode, aeLayerMode: document.getElementById('aeLayerMode'),
     exportVtt: exportVtt, exportAss: exportAss, detectSpeakers: detectSpeakers,
     speakerCount: speakerCount, batchDir: batchDir, animation: animation
   };
@@ -311,6 +311,7 @@
     jsonCall((ae?'uzAeTimelineInfo(':'uzTimelineInfo(') + JSON.stringify(selectedRange || range.value) + ')', callback, ae?aeScript:hostScript);
   }
   function hostUi(host) {
+      document.getElementById('aeLayerModeField').hidden=host!=='AEFT';
       Array.prototype.forEach.call(range.options,function(option){
         if(option.value==='auto')option.textContent=host==='AEFT'?'Tanlangan video layer':'In/Out yoki to‘liq video';
         if(option.value==='full')option.textContent=host==='AEFT'?'Tanlangan layer · to‘liq':'To‘liq video';
@@ -345,7 +346,7 @@
       audioTrack.disabled = info.host !== 'PPRO';
       animationField.hidden = false;
       animation.disabled = false;
-      animationHint.textContent = info.host === 'AEFT' ? 'Har bir subtitr — timeline’da alohida matn layeri. So‘z animatsiyasi layer ichida.' : 'Shaffof animatsiya klipi uchun bo‘sh video trek kerak.';
+      animationHint.textContent = info.host === 'AEFT' ? 'Subtitr yoki alohida so‘z layerlarini tanlang. Qator joylashuvi saqlanadi.' : 'Shaffof animatsiya klipi uchun bo‘sh video trek kerak.';
       if (document.uzscribe.onHost) document.uzscribe.onHost(info);
     });
   }
@@ -612,7 +613,7 @@
     } else finish(message + '\nSRT saqlandi: ' + srt);
   }
   function importCaptions(srt, info, audio) {
-    if (document.uzscribe.animateImport && /^(karaoke|pop|pill|reveal|slide|emphasis)$/.test(animation.value)) {document.uzscribe.animateImport(srt, info);return;}
+    if (document.uzscribe.animateImport && (/^(karaoke|pop|pill|reveal|slide|emphasis)$/.test(animation.value) || (info.host==='AEFT' && document.getElementById('aeLayerMode').value==='words'))) {document.uzscribe.animateImport(srt, info);return;}
     var speakerLabels = activeRun && activeRun.metadata && activeRun.metadata.cues ?
       activeRun.metadata.cues.map(function (cue) { return cue.speaker || ''; }) : [];
     var expression = info.host === 'AEFT'
@@ -651,7 +652,7 @@
     if (compareModel.value && compareModel.value !== model.value) args.push('--compare-model', compareModel.value);
     if (exportVtt.checked) args.push('--export-vtt');
     if (exportAss.checked) args.push('--export-ass');
-    if (captionMode.value === 'word') args.push('--word-mode');
+    if (captionMode.value === 'word' && !(adobeHost()==='AEFT' && document.getElementById('aeLayerMode').value==='words')) args.push('--word-mode');
     if (detectSpeakers.checked) {
       args.push('--speakers');
       if (speakerCount.value !== 'auto') args.push('--num-speakers', speakerCount.value);
@@ -798,7 +799,7 @@
       '--fps', fps.value];
     if (exportVtt.checked) args.push('--export-vtt');
     if (exportAss.checked) args.push('--export-ass');
-    if (captionMode.value === 'word') args.push('--word-mode');
+    if (captionMode.value === 'word' && !(adobeHost()==='AEFT' && document.getElementById('aeLayerMode').value==='words')) args.push('--word-mode');
     if (savedFields.literary.checked) args.push('--literary');
     if (detectSpeakers.checked) {
       args.push('--speakers');

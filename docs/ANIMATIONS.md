@@ -57,3 +57,7 @@ Mahalliy Node host testlari layer soni, butun matn, range indekslari (paragraph 
 ## After Effects: selected video (0.6.3)
 
 Select exactly one video layer with audio in the composition timeline. Automatic/full range uses that layer’s visible in/out range; Work Area mode uses its intersection with the selected layer. Only the selected layer’s audio is rendered from a disposable composition copy. The original audio, solo, lock and guide settings are preserved; native rendering keeps stretch, time remapping and audio effects. Captions appear in the original composition at the corresponding timeline times, with one editable text layer per cue.
+
+## After Effects: layer mode (0.6.4)
+
+“Timeline’ga qo‘shish” offers a whole subtitle text layer (default) or separate editable word layers. Word layers keep the subtitle group’s shared in/out range and measured row positions, including explicit line breaks. This preserves your 3–4 word row settings. Animation and word timing remain independent of subtitle segmentation. Word Reveal uses opacity within the shared range. Plain subtitles and Animation Composer support both modes; Composer selects the imported text layers.
