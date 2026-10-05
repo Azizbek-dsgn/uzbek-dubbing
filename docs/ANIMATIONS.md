@@ -61,3 +61,7 @@ Select exactly one video layer with audio in the composition timeline. Automatic
 ## After Effects: layer mode (0.6.4)
 
 “Timeline’ga qo‘shish” offers a whole subtitle text layer (default) or separate editable word layers. Word layers keep the subtitle group’s shared in/out range and measured row positions, including explicit line breaks. This preserves your 3–4 word row settings. Animation and word timing remain independent of subtitle segmentation. Word Reveal uses opacity within the shared range. Plain subtitles and Animation Composer support both modes; Composer selects the imported text layers.
+
+## Matn tools (0.6.5)
+
+In After Effects, open Matn, select one static text layer, and choose “So‘zlarni alohida layer qilish”. A ten-word layer produces ten separately selectable text layers. Native copies retain paragraph wrapping, character styles, transforms, parenting and timing; character opacity selectors isolate each word without text reflow. Each copy deliberately retains the full Source Text so positions stay unchanged. Editing that full text can affect the saved ranges: edit your original and split again after changing wording. The original is disabled only after all copies succeed, remains available, and the entire operation is one Undo group. Source Text expressions/keyframes and track mattes are rejected with an actionable message; partial copies are removed on failure. Adobe rendering has not been verified by the automated mocks.

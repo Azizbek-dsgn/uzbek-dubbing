@@ -192,7 +192,7 @@ def _verify_installation(runtime: Path, panel: Path, python: Path) -> None:
                   "large_full_600m" / "best.pt")
     if not checkpoint.is_file() or checkpoint.stat().st_size < 100_000_000:
         raise RuntimeError("GigaAM Uzbek 600M checkpointi to‘liq o‘rnatilmadi")
-    for name in ("CSXS/manifest.xml", "index.html", "panel.js", "license-core.js", "license-panel.js", "license-config.json", "animation-panel.js", "podcast-panel.js", "reels-panel.js",
+    for name in ("CSXS/manifest.xml", "index.html", "panel.js", "license-core.js", "license-panel.js", "license-config.json", "animation-panel.js", "podcast-panel.js", "reels-panel.js", "text-tools-panel.js",
                  "assets/uzscribe-logo.jpg"):
         if not (panel / name).is_file():
             raise RuntimeError(f"Adobe panel fayli yetishmayapti: {name}")

@@ -69,7 +69,7 @@
   <main class="app">
     <header class="header"><img class="mark" src="assets/uzscribe-logo.jpg" alt="" aria-hidden="true"><div><h1>UzScribe</h1><p class="subtitle">by Meyor Vision</p></div></header>
     <details class="section" id="subscription"><summary>Obuna</summary><div class="details-body"><p id="licenseStatus" class="hint" role="status"></p><label class="field"><span class="field-label">Litsenziya kaliti</span><input id="licenseKey" type="password" autocomplete="off" placeholder="UZS-…"></label><div class="action-row" style="margin-top:10px"><button id="activateLicense" class="secondary" type="button">Faollashtirish</button><button id="refreshLicense" class="secondary" type="button">Holatni yangilash</button></div><label class="field"><span class="field-label">Tarif · so‘mda</span><select id="licensePlan"><option value="monthly">Pro · 30 kun</option><option value="yearly">Pro · 365 kun</option></select></label><button id="buyLicense" class="secondary" type="button">Obuna olish / uzaytirish</button><button id="manageSubscription" class="refresh" type="button" hidden>Obunani boshqarish</button><button id="releaseLicense" class="refresh" type="button">Bu kompyuterni uzish</button><p class="hint" id="renewalHint">Kartadan avtomatik pul yechilmaydi. Pro litsenziyasi internet tekshiruvidan keyin 3 kungacha offline ishlaydi.</p></div></details>
-    <nav class="mode-tabs" aria-label="Ish turi"><button id="captionsTab" type="button" aria-selected="true">Subtitr</button><button id="podcastTab" type="button" aria-selected="false">Podcast</button><button id="reelsTab" type="button" aria-selected="false">Reels</button></nav>
+    <nav class="mode-tabs" aria-label="Ish turi"><button id="captionsTab" type="button" aria-selected="true">Subtitr</button><button id="textToolsTab" type="button" aria-selected="false" hidden>Matn</button><button id="podcastTab" type="button" aria-selected="false">Podcast</button><button id="reelsTab" type="button" aria-selected="false">Reels</button></nav>
     <div id="captionPage" class="workflow"><div class="page-body">
     <section class="section" aria-labelledby="sourceTitle">
       <div class="section-head"><h2 class="section-title" id="sourceTitle">Video manbasi</h2><button id="refresh" class="refresh" type="button">Yangilash</button></div>
@@ -159,6 +159,10 @@
       <div id="reviewActions" class="action-row" hidden><button id="discardReview" class="secondary" type="button">SRT saqlansin</button><button id="applyReview" class="run" type="button">Timeline’ga qo‘shish</button></div>
     </div>
     </div>
+    <div id="textToolsPage" class="workflow" hidden><div class="page-body">
+      <section class="section"><h2 class="section-title">Matnni so‘zlarga ajratish</h2><p class="hint">Timeline’dan bitta text layerni tanlang. Har bir so‘z alohida layerga ajraladi; shrift, qatorlar va joylashuv saqlanadi.</p><div id="textToolsInfo" class="timeline" aria-live="polite">Bitta text layerni tanlang.</div><button id="textToolsRefresh" class="refresh" type="button">Tanlovni tekshirish</button><p class="hint">Joylashuv saqlanishi uchun har nusxada asl matn qoladi, faqat bitta so‘z ko‘rinadi. Asl layer o‘chirilmaydi, ko‘rinishi o‘chiriladi. Undo bilan qaytarish mumkin.</p></section>
+      </div><div class="footer"><p id="textToolsStatus" role="status" aria-live="polite"></p><button id="textToolsSplit" class="run" type="button">So‘zlarni alohida layer qilish</button></div>
+    </div>
     <div id="podcastPage" class="workflow" hidden><div class="page-body">
       <section class="section">
         <div class="section-head"><h2 class="section-title">Podcast montaji</h2><button id="podRefresh" class="refresh" type="button">Yangilash</button></div>
@@ -219,5 +223,6 @@
   <script src="animation-panel.js"></script>
   <script src="podcast-panel.js"></script>
   <script src="reels-panel.js"></script>
+  <script src="text-tools-panel.js"></script>
 </body>
 </html>

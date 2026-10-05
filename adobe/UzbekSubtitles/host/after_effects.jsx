@@ -369,3 +369,53 @@ function uzExportCaptionMogrts(planPath, outputDir, name, identity) {
         return clips.length+' ta MOGRT saqlandi.\nManifest: '+manifest.fsName;
     } catch (e) {return 'MOGRT eksport qilinmadi: '+e.toString();}
 }
+
+// Isolate characters without reflowing text: duplication preserves native typography,
+// paragraph wrapping, transforms, parenting, timing and per-character styling.
+function uzTextWordRanges(text) {
+    var ranges=[],re=/\S+/g,m;
+    while((m=re.exec(text))!==null) {
+        var start=text.substr(0,m.index).replace(/[\r\n]/g,'').length;
+        ranges.push({text:m[0],start:start,end:start+m[0].length});
+    }
+    return {ranges:ranges,length:text.replace(/[\r\n]/g,'').length};
+}
+function uzSelectedTextLayer() {
+    var comp=app.project && app.project.activeItem;
+    if(!comp || !(comp instanceof CompItem))throw new Error('Avval After Effects kompozitsiyasini oching.');
+    if(comp.selectedLayers.length!==1)throw new Error('Timeline’dan bitta text layerni tanlang.');
+    var layer=comp.selectedLayers[0],props=layer.property('ADBE Text Properties');
+    if(!props)throw new Error('Tanlangan layer matn emas. Bitta text layerni tanlang.');
+    var source=props.property('ADBE Text Document');
+    if(source.expressionEnabled || source.numKeys>0)throw new Error('Source Text o‘zgaruvchan. Avval matn expression/keyframe’larini oddiy matnga aylantiring.');
+    if(layer.hasTrackMatte || layer.isTrackMatte)throw new Error('Track Matte bog‘langan. Avval matnni matte’dan ajrating.');
+    if(!layer.enabled)throw new Error('Tanlangan text layerning ko‘rinishini yoqing.');
+    var layout=uzTextWordRanges(String(source.value.text));
+    if(!layout.ranges.length)throw new Error('Text layer bo‘sh. Avval matn yozing.');
+    return {comp:comp,layer:layer,layout:layout};
+}
+function uzTextSplitInfo() {
+    try {var r=uzSelectedTextLayer();return '{"name":"'+uzAeJson(r.layer.name)+'","words":'+r.layout.ranges.length+'}';}
+    catch(e){return '{"error":"'+uzAeJson(e.toString())+'"}';}
+}
+function uzSplitTextWords() {
+    var copies=[],original=null,enabled,selected,undo=false;
+    try {
+        var r=uzSelectedTextLayer();original=r.layer;enabled=original.enabled;selected=original.selected;
+        app.beginUndoGroup('UzScribe · Matnni so‘zlarga ajratish');undo=true;
+        for(var i=0;i<r.layout.ranges.length;i++) {
+            var word=r.layout.ranges[i],copy=original.duplicate();copies.push(copy);copy.locked=false;
+            copy.name=uzCaptionLayerName(i+1,word.text);copy.comment='UzScribe · '+word.text+' · Joylashuv uchun asl matn saqlangan.';
+            if(word.start>0)uzCaptionAnimator(copy,{start:0,end:word.start},'ADBE Text Opacity',0,'UzScribe · Oldingi so‘zlarni yashirish').setValue(100);
+            if(word.end<r.layout.length)uzCaptionAnimator(copy,{start:word.end,end:r.layout.length},'ADBE Text Opacity',0,'UzScribe · Keyingi so‘zlarni yashirish').setValue(100);
+            copy.selected=true;
+        }
+        // Disable only after every copy is complete. The original stays recoverable.
+        original.enabled=false;original.selected=false;
+        return '{"success":true,"count":'+copies.length+'}';
+    }catch(e){
+        for(var j=copies.length-1;j>=0;j--){try{copies[j].remove();}catch(_){}}
+        if(original){try{original.enabled=enabled;original.selected=selected;}catch(_){}}
+        return '{"error":"'+uzAeJson(e.toString())+'"}';
+    }finally{if(undo)app.endUndoGroup();}
+}
