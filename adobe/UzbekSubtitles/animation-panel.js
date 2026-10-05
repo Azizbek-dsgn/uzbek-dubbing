@@ -4,27 +4,31 @@
   if (!bridge) return;
   var fs = require('fs'), path = require('path'), cp = require('child_process');
   function el(id) {return document.getElementById(id);}
-  var fields = {font:'animFont',size:'animSize',color:'animColor',active:'animActive',position:'animPosition',safe:'animSafe',speed:'animSpeed',keywords:'animKeywords'};
-  var presets = /^(karaoke|pop|pill|reveal|slide|emphasis)$/;
+  var fields = {font:'animFont',size:'animSize',color:'animColor',active:'animActive',position:'animPosition',safe:'animSafe',speed:'animSpeed',keywords:'animKeywords',accentFont:'animAccentFont',layout:'animLayout',shape:'animShape',shapeColor:'animShapeColor',shapeOpacity:'animShapeOpacity',radius:'animRadius',padding:'animPadding',textSweep:'animTextSweep',shapeSweep:'animShapeSweep',textSweepIntensity:'animTextSweepIntensity',shapeSweepIntensity:'animShapeSweepIntensity',sweepColor:'animSweepColor',sweepDuration:'animSweepDuration',sweepWidth:'animSweepWidth',sweepAngle:'animSweepAngle',stroke:'animStroke'};
+  var presets = /^(saas|apple|bounce|elastic|typewriter|editorial|kinetic|neon|cinematic|sticker|marker|minimal)$/;
+  var migration={karaoke:'saas',pop:'bounce',pill:'marker',reveal:'typewriter',slide:'apple',emphasis:'editorial'};
+  var recipes={saas:['line','card','#A6A0FF'],apple:['line','none','#FFFFFF'],bounce:['line','word','#BEF264'],elastic:['split','pill','#FFC6A8'],typewriter:['line','none','#A5E5FF'],editorial:['hero','underline','#EBC8A0'],kinetic:['stack','none','#E8FF70'],neon:['line','outline','#71F5DC'],cinematic:['quote','none','#E2D7C7'],sticker:['split','tag','#FFD670'],marker:['line','word','#FF90B3'],minimal:['line','none','#FFFFFF']};
+  var checks={safe:true,textSweep:true,shapeSweep:true};
+  var numerics=['size','speed','shapeOpacity','radius','padding','textSweepIntensity','shapeSweepIntensity','sweepDuration','sweepWidth','sweepAngle','stroke'];
   var key = 'uzscribe.animation.v1', stylesKey = 'uzscribe.styles.v1', phase = 'idle', host = '', rows = [];
   function read(key, fallback) {try {return JSON.parse(localStorage.getItem(key)) || fallback;} catch (_) {return fallback;}}
   function lex(s) {return String(s).toLowerCase().replace(/[‘’ʻʼ]/g,"'").replace(/[.,!?;:…\s]/g,'');}
   function theme() {
     var value = {preset:el('animation').value};
-    Object.keys(fields).forEach(function (k) {var input=el(fields[k]);value[k]=k==='safe'?input.checked:input.value;});
-    value.size=Number(value.size);value.speed=Number(value.speed);
+    Object.keys(fields).forEach(function (k) {var input=el(fields[k]);value[k]=checks[k]?input.checked:input.value;});
+    numerics.forEach(function(k){value[k]=Number(value[k]);});
     value.keywords=value.keywords.split(',').map(function(s){return s.trim();}).filter(Boolean);
     return value;
   }
   function restore(t) {
-    Object.keys(fields).forEach(function (k) {if(t[k]===undefined)return;var input=el(fields[k]);if(k==='safe')input.checked=!!t[k];else input.value=k==='keywords'?(Array.isArray(t[k])?t[k].join(', '):t[k]):t[k];});
-    if(t.preset && presets.test(t.preset))el('animation').value=t.preset;
-    if(el('animFont').value && !fs.existsSync(el('animFont').value))el('animFont').value='';
+    Object.keys(fields).forEach(function (k) {if(t[k]===undefined)return;var input=el(fields[k]);if(checks[k])input.checked=!!t[k];else input.value=k==='keywords'?(Array.isArray(t[k])?t[k].join(', '):t[k]):t[k];});
+    if(t.preset){var preset=migration[t.preset]||t.preset;if(presets.test(preset))el('animation').value=preset;}
+    ['animFont','animAccentFont'].forEach(function(id){if(el(id).value&&!fs.existsSync(el(id).value))el(id).value='';});
     preview();
   }
   function save() {el('actualAnimationPreview').hidden=true;localStorage.setItem(key,JSON.stringify(theme()));preview();}
   var fontDirs = process.platform==='win32'?[path.join(process.env.WINDIR || 'C:/Windows','Fonts')]:['/System/Library/Fonts/Supplemental','/Library/Fonts'];
-  fontDirs.forEach(function(dir){try {fs.readdirSync(dir).filter(function(n){return /\.(ttf|otf)$/i.test(n);}).sort().forEach(function(n){var option=document.createElement('option');option.value=path.join(dir,n);option.textContent=n.replace(/\.(ttf|otf)$/i,'');el('animFont').appendChild(option);});}catch(_){}});
+  fontDirs.forEach(function(dir){try {fs.readdirSync(dir).filter(function(n){return /\.(ttf|otf)$/i.test(n);}).sort().forEach(function(n){var option=document.createElement('option');option.value=path.join(dir,n);option.textContent=n.replace(/\.(ttf|otf)$/i,'');el('animFont').appendChild(option);var accent=document.createElement('option');accent.value=option.value;accent.textContent=option.textContent;el('animAccentFont').appendChild(accent);});}catch(_){}});
   function stylesList() {var input=el('animLoadStyle');while(input.options.length>1)input.remove(1);Object.keys(read(stylesKey,{})).sort().forEach(function(n){var o=document.createElement('option');o.value=n;o.textContent=n;input.appendChild(o);});}
   el('animSaveStyle').onclick=function(){if(phase!=='idle'&&phase!=='review')return;var name=el('animStyleName').value.trim();if(!name)return bridge.show('Uslub nomini kiriting.');var styles=read(stylesKey,{});if(name==='__proto__'||name==='constructor')return;styles[name]=theme();localStorage.setItem(stylesKey,JSON.stringify(styles));stylesList();bridge.show('Uslub saqlandi: '+name);};
   el('animLoadStyle').onchange=function(){var t=read(stylesKey,{})[this.value];if(t){restore(t);save();}};
@@ -35,15 +39,29 @@
     sample.forEach(function(w){var span=document.createElement('span');span.textContent=w;span.style.color=t.color;area.appendChild(span);previewWords.push(span);});
     tick=0;area.style.alignItems=t.position==='top'?'flex-start':t.position==='bottom'?'flex-end':'center';area.style.paddingBottom=t.position==='bottom'&&t.safe?'22px':'12px';paintPreview();
   }
+  function designValues(t){var r=recipes[t.preset]||['line','none','#FFFFFF'];return {layout:t.layout==='auto'?r[0]:t.layout,shape:t.shape==='auto'?r[1]:t.shape};}
   function paintPreview() {
-    var t=theme(),index=Math.floor(tick/6)%sample.length;
-    previewWords.forEach(function(span,i){span.style.transitionDuration=t.speed+'s';var active=i===index;span.style.color=(t.preset==='karaoke'||t.preset==='pop')&&active||t.preset==='emphasis'&&(i===1||t.keywords.some(function(w){return lex(w)===lex(sample[i]);}))?t.active:t.color;
-      span.style.background=t.preset==='pill'&&active?t.active+'b0':'transparent';
-      span.style.opacity=t.preset==='reveal'&&i>index?'0':'1';
-      span.style.transform=t.preset==='pop'&&active?'scale(1.14)':t.preset==='slide'?'translateY('+Math.max(0,14-tick*3)+'px)':'scale(1)';
-    });tick=(tick+1)%30;
+    var t=theme(),index=Math.floor(tick/6)%sample.length,d=designValues(t),area=el('animationPreview');
+    area.style.background=d.shape==='card'||d.shape==='pill'||d.shape==='tag'?t.shapeColor:'#111114';
+    area.style.borderColor=d.shape==='outline'?t.active:'#303035';
+    area.style.borderRadius=d.shape==='pill'?'40px':Math.min(30,t.radius)+'px';
+    area.style.flexDirection=d.layout==='stack'||d.layout==='hero'||d.layout==='stair'?'column':'row';
+    previewWords.forEach(function(span,i){var active=i===index,featured=i===2||t.keywords.some(function(w){return lex(w)===lex(sample[i]);});
+      span.style.transitionDuration=t.speed+'s';span.style.color=active||featured&&d.layout!=='line'?t.active:t.color;
+      span.style.fontSize=d.layout==='hero'?(featured?'1.65em':'.8em'):d.layout==='stack'||d.layout==='split'?(i%2?'0.85em':'1.25em'):'1em';
+      span.style.fontWeight=d.layout==='hero'&&!featured?'400':'700';
+      span.style.background=d.shape==='word'&&active?t.shapeColor:'transparent';if(d.shape==='word'&&active)span.style.color='#15151b';
+      span.style.borderBottom=d.shape==='underline'&&active?'2px solid '+t.active:'2px solid transparent';
+      span.style.opacity=/^(typewriter|kinetic|elastic|sticker)$/.test(t.preset)&&i>index?'0':'1';
+      span.style.transform=/^(bounce|neon|elastic|sticker)$/.test(t.preset)&&active?'translateY(-3px) scale(1.12)':d.layout==='stair'?'translateX('+(i%3*7)+'px)':'scale(1)';
+      span.style.textShadow=t.preset==='neon'?'0 0 8px '+t.active:'none';
+      span.style.filter=t.textSweep&&tick%30<9?'brightness('+(1+(tick%9)/12)+')':'none';
+    });
+    var styled=d.layout!=='line'||!!t.accentFont;
+    el('animationHint').textContent=presets.test(t.preset)?(host==='AEFT'?(styled?'Dizayn uchun alohida so‘z layerlari yaratiladi.':'Bitta qator yoki alohida so‘z layerlari.'):'Shaffof animatsiya bo‘sh video trekka qo‘shiladi.')+' Namuna taxminiy; “Animatsiyani ko‘rish” haqiqiy natijani ko‘rsatadi.':'';
+    tick=(tick+1)%30;
   }
-  Object.keys(fields).forEach(function(k){el(fields[k]).onchange=save;});el('animation').addEventListener('change',save);
+  Object.keys(fields).forEach(function(k){el(fields[k]).onchange=save;});el('animation').addEventListener('change',function(){var recipe=recipes[this.value];if(recipe){el('animLayout').value='auto';el('animShape').value='auto';el('animActive').value=recipe[2];el('animShapeColor').value=/^(word|underline|outline|tag)$/.test(recipe[1])?recipe[2]:'#20212a';}save();});
   el('aeLayerMode').addEventListener('change',preview);
   restore(read(key,{}));stylesList();preview();setInterval(paintPreview,100);
   function state() {var s=bridge.state();if(!s.run || !s.run.review)throw Error('Avval subtitr yarating va natijani tekshirish oynasini oching.');return s;}
@@ -71,7 +89,7 @@
   bridge.onReviewChanged=function(){var s=bridge.state();el('wordList').innerHTML='';rows=[];el('actualAnimationPreview').hidden=true;el('animationPreview').hidden=!presets.test(el('animation').value);if(!s.run)return;normalizeMetadata(s);if(s.run.info&&bridge.onHost)bridge.onHost(s.run.info);
     matching(s).forEach(function(w){var row=document.createElement('div');row.className='word-row';var text=document.createElement('input');text.value=w.text;text.setAttribute('aria-label','So‘z matni');
       var start=document.createElement('input'),end=document.createElement('input');[start,end].forEach(function(input){input.type='number';input.step='0.01';input.min='0';});start.value=w.start.toFixed(3);end.value=w.end.toFixed(3);start.setAttribute('aria-label',w.text+' boshlanishi');end.setAttribute('aria-label',w.text+' tugashi');
-      var button=document.createElement('button');button.type='button';button.textContent='★';button.title='So‘zga urg‘u berish';button.onclick=function(){var current=theme().keywords;if(!current.some(function(t){return lex(t)===lex(text.value);}))current.push(text.value);el('animKeywords').value=current.join(', ');el('animation').value='emphasis';save();bridge.show('Urg‘u berildi: '+text.value);};
+      var button=document.createElement('button');button.type='button';button.textContent='★';button.title='So‘zga urg‘u berish';button.onclick=function(){var current=theme().keywords;if(!current.some(function(t){return lex(t)===lex(text.value);}))current.push(text.value);el('animKeywords').value=current.join(', ');el('animation').value='editorial';save();bridge.show('Urg‘u berildi: '+text.value);};
       [text,start,end,button].forEach(function(input){row.appendChild(input);});el('wordList').appendChild(row);rows.push({word:w,text:text,start:start,end:end});});
   };
   el('saveWordTimes').onclick=guard(function(){var s=state(),cue=s.cues[s.selected],changes=rows.map(function(r){var a=Number(r.start.value),b=Number(r.end.value),t=r.text.value.trim();if(!t||/\s/.test(t)||!isFinite(a+b)||a<cue.start-.001||b>cue.end+.001||b<=a)throw Error('So‘z matni yoki vaqti subtitrga mos emas.');return {text:t,start:a,end:b};});
@@ -79,7 +97,7 @@
     changes.forEach(function(w,i){rows[i].word.start=w.start;rows[i].word.end=w.end;rows[i].word.text=w.text;});s.cues[s.selected].text=changes.map(function(w){return w.text;}).join(' ');bridge.edit(s.cues,metadataCues(s,s.cues),s.selected);bridge.show('So‘z vaqtlari saqlandi.');});
   function pythonJob(s,args,callback) {
     var child,error='',closed=false;
-    try {child=cp.spawn(bridge.python.value,[path.join(bridge.root,'subtitles','animations.py')].concat(args),{env:Object.assign({},process.env,{HF_HUB_OFFLINE:'1'})});}catch(e){callback(e);return;}
+    try {child=cp.spawn(bridge.python.value,[path.join(bridge.root,'subtitles','animations.py')].concat(args),{env:Object.assign({},process.env,{HF_HUB_OFFLINE:'1',PYTHONUTF8:'1',PYTHONIOENCODING:'utf-8'})});}catch(e){callback(e);return;}
     s.run.child=child;
     if(process.platform==='win32'){child.kill=function(){try {cp.spawn('taskkill',['/PID',String(child.pid),'/T','/F']);return true;}catch(_){return false;}};}
     if(child.stdout)child.stdout.on('data',function(chunk){if(s.run.cancelled)return;var lines=String(chunk).trim().split(/\r?\n/);bridge.show('Animatsiya / vaqt: '+lines[lines.length-1]);});
@@ -87,7 +105,7 @@
     function done(e){if(closed)return;closed=true;if(bridge.state().run!==s.run)return;s.run.child=null;if(s.run.cancelled){s.run.cancelled=false;bridge.phase('review');bridge.show('Bekor qilindi. Tahriringiz saqlandi.');return;}callback(e);}
     child.on('error',done);child.on('close',function(code){done(code===0?null:Error(error||'Animatsiya tayyorlanmadi.'));});
   }
-  function config(s) {normalizeMetadata(s);var t=theme();if(!presets.test(t.preset)){if(s.run.info.host==='AEFT' && el('aeLayerMode').value==='words')t.preset='slide';else throw Error('Avval animatsiya presetini tanlang.');}var info=s.run.info;if(s.cues.length&&s.cues[s.cues.length-1].end>info.duration+.05)throw Error('Subtitr vaqti tanlangan oraliqdan chiqdi. SRT vaqtini tuzating.');if(!info.width||!info.height)throw Error('Video o‘lchami aniqlanmadi. Timeline’ni yangilang.');return {schema:1,width:info.width,height:info.height,fps:info.fps,theme:t,cues:s.cues,words:s.run.metadata&&s.run.metadata.words||[]};}
+  function config(s) {normalizeMetadata(s);var t=theme();if(!presets.test(t.preset)){if(s.run.info.host==='AEFT' && el('aeLayerMode').value==='words')t.preset='apple';else throw Error('Avval animatsiya presetini tanlang.');}var info=s.run.info;if(s.cues.length&&s.cues[s.cues.length-1].end>info.duration+.05)throw Error('Subtitr vaqti tanlangan oraliqdan chiqdi. SRT vaqtini tuzating.');if(!info.width||!info.height)throw Error('Video o‘lchami aniqlanmadi. Timeline’ni yangilang.');return {schema:1,width:info.width,height:info.height,fps:info.fps,theme:t,cues:s.cues,words:s.run.metadata&&s.run.metadata.words||[]};}
   function files(s) {var base=s.run.srt.replace(/\.srt$/i,'')+'-animation';return {input:base+'.input.json',mov:base+'.mov',plan:base+'.plan.json'};}
   function build(s,onlyPlan,callback) {if(bridge.authorize && !bridge.authorize("animations")){callback(new Error("Obunani faollashtiring."));return;}var f=files(s);try {fs.writeFileSync(f.input,JSON.stringify(config(s)), 'utf8');}catch(e){callback(e);return;}bridge.phase('working');bridge.show(onlyPlan?'Animatsiya qatlamlarini tayyorlayapman...':'Shaffof animatsiyani tayyorlayapman...');var args=['--input',f.input,'--output',f.mov];if(onlyPlan)args.push('--plan-only');pythonJob(s,args,function(err){callback(err,f);});}
   bridge.animateImport=function(srt,info){if(bridge.authorize && !bridge.authorize("animations")){bridge.phase("review");return;}var s=bridge.state();normalizeMetadata(s);build(s,info.host==='AEFT',function(err,f){if(err)return bridge.problem(err.message,srt);

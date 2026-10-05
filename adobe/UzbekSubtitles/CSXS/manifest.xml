@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<ExtensionManifest Version="7.0" ExtensionBundleId="uz.azizbek.subtitles" ExtensionBundleVersion="0.7.0" ExtensionBundleName="UzScribe">
+<ExtensionManifest Version="7.0" ExtensionBundleId="uz.azizbek.subtitles" ExtensionBundleVersion="0.8.0" ExtensionBundleName="UzScribe">
   <ExtensionList>
-    <Extension Id="uz.azizbek.subtitles.panel" Version="0.7.0"/>
+    <Extension Id="uz.azizbek.subtitles.panel" Version="0.8.0"/>
   </ExtensionList>
   <ExecutionEnvironment>
     <HostList>

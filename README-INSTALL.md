@@ -186,3 +186,7 @@ GigaAM, NavAI, ONNX speakers, Rubai generation and animation font loading.
 Dynamic model code caches now live in the plugin runtime, avoiding a separate
 home-directory cache permission requirement. This is a test of existing models
 plus fresh public speaker downloads, not a clean Windows/Intel installation.
+
+### 0.8.0 · Caption design studio
+
+12 replacement presets, 6 manual typography layouts plus automatic selection, configurable shape backgrounds and independent text/shape light sweeps. Installed system fonts are reused; no extra model or browser download is needed. After Effects creates editable native layers; Premiere imports a transparent MOV overlay. Close/reopen the panel after updating. See [animation guide](docs/ANIMATIONS.md).

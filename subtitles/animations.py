@@ -6,7 +6,9 @@ from pathlib import Path
 from difflib import SequenceMatcher
 from PIL import Image,ImageDraw,ImageFont
 
-PRESETS={'karaoke','pop','pill','reveal','slide','emphasis'}
+try:from . import caption_design as design
+except ImportError:import caption_design as design
+PRESETS=set(design.RECIPES)
 def lexical(text):
     return re.sub(r"[^\w']",'',text.casefold().translate(str.maketrans('‘’ʻʼ',"''''")))
 def color(value):
@@ -52,17 +54,18 @@ def joined_words(words):
     return result
 
 def make_plan(data):
-    theme=dict(data.get('theme',{}));preset=theme.get('preset','karaoke')
+    theme=dict(data.get('theme',{}));preset=design.MIGRATION.get(theme.get('preset'),theme.get('preset','saas'))
     if preset not in PRESETS:raise ValueError('Animatsiya presetini tekshiring.')
     width=int(data.get('width',1920));height=int(data.get('height',1080));fps=float(data.get('fps',25))
     if not 64<=width<=7680 or not 64<=height<=7680 or not 1<=fps<=120:raise ValueError('Video o‘lchami/FPS noto‘g‘ri.')
     size=float(theme.get('size',56));speed=float(theme.get('speed',.16))
     if not 16<=size<=160 or not .05<=speed<=.6:raise ValueError('Shrift/animatsiya tezligini tekshiring.')
-    theme.update(preset=preset,color=color(theme.get('color','#FFFFFF')),active=color(theme.get('active','#F5D76E')),
+    theme.update(preset=preset,color=color(theme.get('color','#FFFFFF')),active=color(theme.get('active',design.RECIPES[preset][3])),
                  position=theme.get('position','bottom'),safe=bool(theme.get('safe',True)),speed=speed)
     if theme['position'] not in {'top','center','bottom'}:raise ValueError('Subtitr joylashuvini tekshiring.')
     fp=font_path(theme.get('font',''));base_size=max(14,round(size*height/1080));font=ImageFont.truetype(fp,base_size)
     theme['fontFamily']=font.getname()[0];theme['fontPostscript']=postscript_name(fp,font.getname()[0]);theme['font']=fp
+    design.prepare(theme,color,font_path,postscript_name)
     highlights={lexical(t) for t in theme.get('keywords',[])}
     words=sorted(data.get('words',[]),key=lambda w:float(w['start']))
     normalized=joined_words(words)
@@ -83,9 +86,9 @@ def make_plan(data):
             matches=[w for w in words if float(w['start'])<b and float(w['end'])>a]
         else:cursor+=len(tokens)
         # Punctuation edits are safe; changing recognized words needs explicit timing edits.
-        if preset!='slide' and [lexical(w['text']) for w in matches]!=[lexical(t) for t in tokens]:
-            raise ValueError(f'{index+1}-subtitr matni so‘z vaqtlariga mos emas. Qayta taning yoki so‘z vaqtlarini tuzating; Slide + Fade vaqtli so‘zsiz ham ishlaydi.')
-        if preset!='slide' and any(min(b,float(w['end']))<=max(a,float(w['start'])) for w in matches):
+        if preset not in {'apple','minimal','cinematic','saas'} and [lexical(w['text']) for w in matches]!=[lexical(t) for t in tokens]:
+            raise ValueError(f'{index+1}-subtitr matni so‘z vaqtlariga mos emas. Qayta taning yoki so‘z vaqtlarini tuzating; Apple, Minimal, Cinematic va SaaS qator vaqti bilan ham ishlaydi.')
+        if preset not in {'apple','minimal','cinematic','saas'} and any(min(b,float(w['end']))<=max(a,float(w['start'])) for w in matches):
             raise ValueError(f'{index+1}-subtitr so‘zlari vaqt oralig‘iga sig‘madi. So‘z vaqtlari yoki SRT chegaralarini tekshiring.')
         f=font;fs=base_size
         # Wrap by measured pixels, then reduce only if a single word is too wide.
@@ -107,43 +110,21 @@ def make_plan(data):
         for li,line in enumerate(lines):
             x=(width-float(f.getlength(' '.join(line))))/2
             for token in line:
-                w=matches[token_index] if matches and preset!='slide' else None
+                w=matches[token_index] if len(matches)==len(tokens) and [lexical(m['text']) for m in matches]==[lexical(t) for t in tokens] else None
                 runs.append({'text':token,'start':max(a,float(w['start'])) if w else a,
                              'end':min(b,float(w['end'])) if w else b,'x':round(x,2),'y':round(y+li*line_height,2),
                              'width':round(float(f.getlength(token)),2),'height':line_height,'emphasis':lexical(token) in highlights})
                 x+=float(f.getlength(token+' '));token_index+=1
-        plans.append({'start':a,'end':b,'text':text,'size':fs,'runs':runs})
+        cue={'start':a,'end':b,'text':text,'size':fs,'runs':runs}
+        design.layout(cue,theme,width,height,lexical);plans.append(cue)
     if not plans:raise ValueError('Subtitr yo‘q.')
-    return {'schema':1,'width':width,'height':height,'fps':fps,'duration':plans[-1]['end'],'theme':theme,'cues':plans}
+    return {'schema':1,'designVersion':2,'width':width,'height':height,'fps':fps,'duration':plans[-1]['end'],'theme':theme,'cues':plans}
 
 @lru_cache(maxsize=64)
 def load_font(path,size):return ImageFont.truetype(path,size)
 
 def frame(plan,time):
-    image=Image.new('RGBA',(plan['width'],plan['height']),(0,0,0,0))
-    cue=next((c for c in plan['cues'] if c['start']<=time<c['end']),None)
-    if cue is None:return image
-    theme=plan['theme'];preset=theme['preset'];f=load_font(theme['font'],cue['size']);draw=ImageDraw.Draw(image)
-    active=next((r for r in cue['runs'] if r['start']<=time<r['end']),None)
-    if preset=='pill' and active:
-        i=cue['runs'].index(active);prev=cue['runs'][max(0,i-1)];progress=min(1,max(0,(time-active['start'])/theme['speed']))
-        x=prev['x']+(active['x']-prev['x'])*progress;y=prev['y']+(active['y']-prev['y'])*progress
-        w=prev['width']+(active['width']-prev['width'])*progress
-        draw.rounded_rectangle((x-8,y-3,x+w+8,y+active['height']-4),radius=10,fill=theme['active']+'B0')
-    for r in cue['runs']:
-        if preset=='reveal' and time<r['start']:continue
-        fill=theme['active'] if ((preset in {'karaoke','pop'} and r is active) or (preset=='emphasis' and r['emphasis'])) else theme['color']
-        x,y=r['x'],r['y'];rf=f
-        if preset=='pop' and r is active:
-            phase=min(1,max(0,(time-r['start'])/theme['speed']));scale=1+.14*math.sin(math.pi*phase)
-            rf=load_font(theme['font'],max(12,round(cue['size']*scale)))
-            x-=(float(rf.getlength(r['text']))-r['width'])/2;y-=(rf.size-f.size)/2
-        alpha=255
-        if preset=='slide':
-            p=min(1,max(0,(time-cue['start'])/theme['speed']));p=1-(1-p)**3;y+=24*(1-p)
-            alpha=round(255*min(p,max(0,(cue['end']-time)/min(theme['speed'],(cue['end']-cue['start'])/2))))
-        draw.text((x,y),r['text'],font=rf,fill=fill+f'{alpha:02X}',stroke_width=max(1,round(cue['size']/32)),stroke_fill=(0,0,0,alpha),anchor='lt')
-    return image
+    return design.frame(plan,time)
 
 def render(plan,output):
     import imageio_ffmpeg

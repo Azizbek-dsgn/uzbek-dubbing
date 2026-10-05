@@ -5,7 +5,7 @@ from subtitles.animations import make_plan,frame,render,refine,PRESETS,preview,j
 from subtitles.cli import Word
 
 class AnimationTests(unittest.TestCase):
-    def data(self,preset='karaoke'):
+    def data(self,preset='saas'):
         return {'width':320,'height':568,'fps':12,'theme':{'preset':preset,'keywords':['yangi']},'cues':[{'start':0,'end':1,'text':'Salom yangi dunyo.'}],'words':[{'start':0,'end':.3,'text':'Salom'},{'start':.3,'end':.6,'text':'yangi'},{'start':.6,'end':1,'text':'dunyo.'}]}
     def test_presets_are_transparent_and_safe(self):
         for preset in PRESETS:
@@ -21,11 +21,38 @@ class AnimationTests(unittest.TestCase):
                     video=media.streams.video[0];self.assertEqual(video.codec_context.name,'qtrle');frames=list(media.decode(video));self.assertEqual(len(frames),12);rgba=frames[5].to_ndarray(format='rgba');self.assertEqual(rgba[0,0,3],0);self.assertGreater(rgba[:,:,3].max(),0)
                 self.assertFalse(output.with_name(output.stem+'.partial.mov').exists())
     def test_text_changes_require_explicit_word_times(self):
-        data=self.data();data['cues'][0]['text']='Mutlaqo boshqa gap.'
+        data=self.data('bounce');data['cues'][0]['text']='Mutlaqo boshqa gap.'
         with self.assertRaisesRegex(ValueError,'mos emas'):make_plan(data)
         data['theme']['preset']='slide';self.assertTrue(make_plan(data)['cues'])
     def test_rounding_does_not_assign_neighbor_word(self):
         data=self.data();data['cues']=[{'start':0,'end':.32,'text':'Salom'},{'start':.32,'end':1,'text':'yangi dunyo.'}];plan=make_plan(data);self.assertEqual(len(plan['cues'][0]['runs']),1);self.assertEqual(len(plan['cues'][1]['runs']),2)
+    def test_design_layouts_and_independent_sweeps(self):
+        from subtitles.caption_design import LAYOUTS
+        from PIL import ImageChops
+        for layout in LAYOUTS:
+            data=self.data('bounce');data['theme'].update(layout=layout,shape='card')
+            plan=make_plan(data);cue=plan['cues'][0]
+            self.assertEqual([r['text'] for r in cue['runs']],['Salom','yangi','dunyo.'])
+            for r in cue['runs']:
+                self.assertTrue(r['motion']);self.assertGreaterEqual(r['x'],0);self.assertLessEqual(r['x']+r['width'],320)
+                self.assertGreaterEqual(r['start'],cue['start']);self.assertLessEqual(r['end'],cue['end'])
+            if layout in {'hero','split','stack','stair'}:self.assertGreater(len({r['size'] for r in cue['runs']}),1)
+        data=self.data('apple');data['theme'].update(shape='card',color='#101010',sweepWidth=100,sweepDuration=1)
+        original=frame(make_plan(data),.4)
+        for effect in ['textSweep','shapeSweep']:
+            changed=copy.deepcopy(data);changed['theme'][effect]=True;result=frame(make_plan(changed),.4)
+            self.assertEqual(original.getchannel('A').tobytes(),result.getchannel('A').tobytes())
+            self.assertNotEqual(original.convert('RGB').tobytes(),result.convert('RGB').tobytes())
+        invalid=self.data();invalid['theme']['sweepDuration']=float('nan')
+        with self.assertRaises(ValueError):make_plan(invalid)
+
+    def test_legacy_styles_migrate_and_new_styles_differ(self):
+        from subtitles.caption_design import MIGRATION
+        for old,new in MIGRATION.items():self.assertEqual(make_plan(self.data(old))['theme']['preset'],new)
+        self.assertFalse(set(MIGRATION)&PRESETS)
+        frames={b''.join(frame(make_plan(self.data(preset)),at).tobytes() for at in [.04,.16,.45]) for preset in PRESETS}
+        self.assertEqual(len(frames),len(PRESETS))
+
     def test_invalid_times_and_style_are_rejected(self):
         for change in [lambda d:d['theme'].update(color='red'),lambda d:d['words'][0].update(end=0),lambda d:d.update(width=0),lambda d:d['theme'].update(speed=0)]:
             data=self.data();change(data)

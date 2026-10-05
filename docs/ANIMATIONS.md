@@ -1,12 +1,54 @@
-# UzScribe 0.5.1: captions and animation
+# UzScribe 0.8.0 · Caption design studio
 
 ## Panel
 
-Choose one of six presets: **Karaoke**, **Soft Pop**, **Moving Highlight**, **Word Reveal**, **Slide + Fade**, **Keyword Emphasis**. The panel shows a looping sample. In review, **Tanlangan subtitr animatsiyasini ko‘rish** renders the selected caption with the same planner/font/layout engine used for MOV export. The transparent animated PNG preview preserves aspect ratio, downsizes to at most 400×320, runs at up to 12 fps and loops the first six seconds. It previews caption graphics, without source footage or audio. Theme/caption changes hide the previous rendered preview until regenerated. Exact full-resolution output is computed from the active sequence/composition dimensions.
+The six earlier public presets have been replaced with twelve original recipes:
 
-Under **Uslub va joylashuv**, choose a locally installed TTF/OTF font, reference font size at 1080p, text/highlight colors, position, animation duration and Reels safe placement. Portrait safe mode keeps lower captions above the bottom 23% and uses 80% of frame width; inspect the final video for your platform's current UI. Save named styles locally; styles and models retain their upstream identity.
+| Recipe | Default design | Motion |
+| --- | --- | --- |
+| SaaS | Rounded dark card, subtle accent | Rise + fade |
+| Apple | Clean typography | Gentle scale and float |
+| Bounce | Active word background | Timed bounce |
+| Elastic | Two levels in a capsule | Overshoot + settle |
+| Typewriter | Clean line | Timed word entrance |
+| Editorial | One large featured word | Rise |
+| Kinetic | Alternating large/small blocks | Word slam |
+| Neon | Glowing text, border | Bounce |
+| Cinematic | Left aligned quote | Slow float |
+| Sticker | Two sizes on a tag | Tilt + elastic |
+| Marker | Active word background | Rise |
+| Minimal | Clean line | Fade |
 
-Review tools:
+Apple and SaaS are visual style labels, not official third-party products. Existing locally saved styles migrate to the nearest new recipe. Compatibility readers for old native plans remain internal; the old presets are no longer selectable.
+
+Choose **Animatsiya**, then optionally expand **Uslub va joylashuv**. Layout can be overridden with line, featured word, alternating blocks, two levels, staircase or quote. Featured words come from the comma-separated emphasis list; absent a selection, a long word is used as a typographic accent. This is deterministic visual emphasis, not semantic understanding. Caption text/order and actual ASR timings stay unchanged. Fonts are measured locally, long words shrink to fit, and explicit line breaks are respected.
+
+Base font and accent font are independently selectable from installed TTF/OTF fonts. Regular/bold system Arial is the portable fallback. No Apple font files are redistributed. Customer fonts must exist on the target machine. Position, size, safe portrait placement, motion duration and stroke are adjustable.
+
+**Fon shakli va yorug‘lik** combines background and effects into one collapsed group: card, capsule, active-word shape, underline, outline or tag; background color, opacity, corner radius and padding; independent text/shape light sweep toggles and intensities; shared sweep color, width, angle and duration. Text automatically contrasts with active-word/tag backgrounds. No shape means the shape sweep has no target. Every recipe can use any of these shapes and both sweeps.
+
+The looping panel sample is approximate and labeled accordingly. In review, **Animatsiyani ko‘rish** generates the actual caption APNG with the same planner/font/layout engine used for Premiere MOV export, preserving aspect ratio (maximum 400×320, up to 12fps, first six seconds). Any theme/edit change invalidates that image. Preview shows caption graphics without source video/audio.
+
+## Adobe output
+
+**After Effects:** native editable text, shape, text animator and transform keyframes. Simple uniform lines retain one text layer per cue when that mode is selected; designed layouts and mixed fonts require editable word layers automatically, announced in the panel. Word layers retain the whole cue's in/out window and their planned positions. Both manual layer modes remain. Text and shape get independent native **CC Light Sweep** effects. Neon uses native Glow. If a requested built-in effect is unavailable, import reports it and removes the attempted layers. Reinstall Adobe's bundled effects or disable the effect; nothing is silently skipped. A single Undo group covers each import. Animation Composer remains a separate handoff requiring its own installation.
+
+**Premiere:** Python/Pillow/FFmpeg generates a transparent qtrle/argb QuickTime overlay on an empty video track. Original footage is not rendered/replaced. Caption motion and alpha-clipped text/shape sweeps are baked into the overlay; they are not editable Premiere effects. Native Cycore and software sweep/glow kernels differ visually. Change the panel style and regenerate to edit; SRT is retained. Long/high-resolution exports consume time and disk space.
+
+**MOGRT:** saved AE projects can export editable Source Text controls per word, one template per cue, plus a relative-path manifest. Copy the complete template folder to Premiere and import onto an empty track. Original timing/geometry is retained; changing word count or word length needs regeneration. Export needs AE's scripting file-write permission; the plugin does not change that preference automatically.
+
+Imports roll back created layers on error. Python rendering can be cancelled without losing reviewed text. Native imports are synchronous and finish before the panel responds.
+
+## Research and verification
+
+Reviewed primary GitHub projects: [remotion-captions-kit](https://github.com/Fats403/remotion-captions-kit) for kinetic/editorial and word timing patterns, [pycaps](https://github.com/francozanardi/pycaps) for template separation and independently styled caption elements, and [auto-caption](https://github.com/sebetancurch/auto-caption) for word-focused caption workflows. Their code/runtimes are not bundled; UzScribe's geometry, motion, masks, renderer and Adobe adapter are original. This avoids a Chromium/Remotion installation requirement.
+
+Native API references: [text animator match names](https://ae-scripting.docsforadobe.dev/matchnames/layer/textlayer/), [Adobe Cycore effects](https://helpx.adobe.com/ca/after-effects/desktop/apply-effects-and-animation-presets/list-of-effects/cycore-plugins.html), [Cycore Light Sweep controls](https://www.cycorefx.com/downloads/cfx_hd_std/CycoreFX%20HD%201.8.9%20Manual.pdf).
+
+Verified on current Mac: all twelve recipes make transparent MOVs and animated PNGs; layout/text/time integrity, independent sweep masks, input validation, migration and panel host dispatch tests pass. AE 2026 scratch-comp tests exercised all 12 × 2 layer modes with separate text and shape sweeps. Native range-selector amounts are normalized to AE's -100..100 bounds, and indexed property references are reacquired before edits. Scratch comps were removed and the prior comp restored. Windows dispatch is simulated; native Windows and every Adobe 2020+ release have not been exercised.
+
+## Review tools
+
 
 - ↶ / ↷ provide 40 steps of Undo/Redo, including text, word timing and speaker metadata.
 - The last valid review is saved locally in `exports/review-draft.json`. After reopening the panel, **Oxirgi tahrirni davom ettirish** restores it only on the same sequence/composition, dimensions and frame rate. The temporary audio may have been removed by the OS; caption editing still works, while recognition then needs a fresh export. Finishing/importing or saving SRT clears the draft.
@@ -15,32 +57,7 @@ Review tools:
 - Put the text cursor before a word, then **Kursordan bo‘lish**. The split uses that word's existing start time. Overlapping/mismatched words require correction first.
 - **So‘z vaqtlari va urg‘u** allows editing each word's text, start and end in seconds. Save applies these words to the selected caption. ★ adds that word to the emphasis list.
 - **Whisper bilan vaqtni tekshirish** re-recognizes the exported audio with the installed Global model and updates matching words only. It requires at least 80% agreement, keeps the original text, and rejects conflicting timings. This is a second recognition pass, not forced alignment; Giga/Nav model accuracy is unchanged.
-- Actual ASR fragments such as `Wi` + `-Fi` are joined only when they match the caption tokenization, using their original timing envelope. Explicit separate-fragment captions remain separate. Word animations reject text/timing mismatches instead of silently inventing evenly spaced timestamps. Punctuation changes are allowed. Slide + Fade supports edited captions without word timings.
-
-## Adobe output
-
-**After Effects:** editable native text layers, one layer per word; Moving Highlight also creates a native rounded shape. Changes are in an undo group. Large transcripts create many layers. Existing Animation Composer handoff is still available as a separate choice and needs the user's installation of Composer.
-
-**Premiere:** an offline Python/Pillow renderer makes an alpha-channel QuickTime MOV (qtrle/argb). It is imported into an existing video track that is empty over the whole selected range. Create a free video track if needed. Source media is not replaced. The MOV is editable as a clip; its text is baked. SRT remains separately editable. Large/high-resolution timelines can take time and create large MOV files.
-
-**MOGRT:** in an already saved AE project, export a separate template per caption. The word Source Text controls are exposed to Essential Graphics. Export creates comps and a manifest beside the MOGRT files. In Premiere, enter that manifest's absolute path under **Animatsiya fayllari**, then import onto a free video track. Exported manifests use template paths relative to their folder. Copy the whole MOGRT folder when moving computers; existing absolute-path manifests are still supported. A failed MOGRT import can leave already inserted clips; its error reports the count. Verify the timeline before retrying. Template word timing is baked; changing word count requires regeneration.
-
-An AE animation import error removes the layers created by that attempt. Animation work can be canceled while the Python process runs; cancellation preserves the review and edited text. Synchronous Adobe imports/exports finish before the panel can respond; cancellation is disabled during those calls. SRT, plan, and rendered files remain under `exports` for reuse.
-
-## Implementation and research
-
-The planner, renderer and Adobe layer code are our own implementation. No Remotion runtime or third-party preset code is bundled.
-
-Research references:
-
-- [remotion-captions-kit](https://github.com/Fats403/remotion-captions-kit), MIT, for word-driven motion ideas.
-- [auto-caption](https://github.com/sebetancurch/auto-caption), MIT, for readable word highlight/pop conventions.
-- [OpenCut](https://github.com/SysAdminDoc/OpenCut), for available caption style approaches.
-- [Remotion licensing](https://www.remotion.dev/docs/license), considered when choosing our independent renderer.
-- [AE text match names](https://ae-scripting.docsforadobe.dev/matchnames/layer/textlayer/), [CompItem MOGRT methods](https://ae-scripting.docsforadobe.dev/item/compitem/), [Premiere track methods](https://ppro-scripting.docsforadobe.dev/sequence/track/).
-- [OpenType naming table](https://learn.microsoft.com/en-us/typography/opentype/spec/name), for resolving the PostScript font name used by AE.
-
-Pillow is installed with runtime requirements on macOS Apple Silicon/Intel and Windows. Fonts are read from the customer's OS; font files are not redistributed. FFmpeg comes from imageio-ffmpeg. Both retain their installed package/license metadata.
+- Actual ASR fragments such as `Wi` + `-Fi` are joined only when they match the caption tokenization, using their original timing envelope. Explicit separate-fragment captions remain separate. Word animations reject text/timing mismatches instead of silently inventing evenly spaced timestamps. Punctuation changes are allowed. Apple, Minimal, Cinematic and SaaS can use cue timing when word metadata does not match.
 
 ## Verification limits
 

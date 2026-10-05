@@ -96,3 +96,7 @@ python3 subtitles/cli.py --input audio.wav --output audio.uz.srt --model large-v
 SRT UTF-8 BOM bilan yoziladi. Timestamps kadrga moslanadi. Sheva, fon shovqini va aralash til xatolar keltirishi mumkin, shuning uchun yakuniy subtitrni ko‘zdan kechiring.
 
 `adobe/premiere-uxp` katalogidagi UXP panel SRT importi uchun qo‘shimcha fallback; avtomatik timeline jarayoni CEP panelida.
+
+## UzScribe 0.8.0 · Animatsiya va dizayn
+
+SaaS, Apple, Bounce, Elastic, Typewriter, Editorial, Kinetic, Neon, Cinematic, Sticker, Marker va Minimal. Katta-kichik shriftlar, 6 xil qo‘lda tanlanadigan joylashuv, fon shakllari va matn/fon uchun alohida light sweep. AE’da tahrirlanadigan layerlar; Premiere’da shaffof MOV. [Uslublar va ishlatish](docs/ANIMATIONS.md).

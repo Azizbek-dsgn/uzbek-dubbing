@@ -614,7 +614,7 @@
     } else finish(message + '\nSRT saqlandi: ' + srt);
   }
   function importCaptions(srt, info, audio) {
-    if (document.uzscribe.animateImport && (/^(karaoke|pop|pill|reveal|slide|emphasis)$/.test(animation.value) || (info.host==='AEFT' && document.getElementById('aeLayerMode').value==='words'))) {document.uzscribe.animateImport(srt, info);return;}
+    if (document.uzscribe.animateImport && (/^(saas|apple|bounce|elastic|typewriter|editorial|kinetic|neon|cinematic|sticker|marker|minimal)$/.test(animation.value) || (info.host==='AEFT' && document.getElementById('aeLayerMode').value==='words'))) {document.uzscribe.animateImport(srt, info);return;}
     var speakerLabels = activeRun && activeRun.metadata && activeRun.metadata.cues ?
       activeRun.metadata.cues.map(function (cue) { return cue.speaker || ''; }) : [];
     var expression = info.host === 'AEFT'

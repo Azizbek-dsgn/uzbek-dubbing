@@ -218,7 +218,102 @@ function uzAnimationComp(name, identity) {
 function uzAnimationRGB(hex) {return [parseInt(hex.substr(1,2),16)/255,parseInt(hex.substr(3,2),16)/255,parseInt(hex.substr(5,2),16)/255];}
 function uzAnimationHold(prop) { for (var i = 1; i <= prop.numKeys; i++) prop.setInterpolationTypeAtKey(i, KeyframeInterpolationType.HOLD, KeyframeInterpolationType.HOLD); }
 function uzAnimationLinear(prop) { for (var i = 1; i <= prop.numKeys; i++) prop.setInterpolationTypeAtKey(i, KeyframeInterpolationType.LINEAR, KeyframeInterpolationType.LINEAR); }
+// Design v2 uses the same measured geometry and motion keys as the transparent renderer.
+function uzDesignSweep(layer, cue, theme, offset, bounds, shape) {
+    if (!(shape ? theme.shapeSweep : theme.textSweep)) return;
+    var effects=layer.property('ADBE Effect Parade');
+    if (!effects || !effects.canAddProperty('CC Light Sweep')) throw new Error('CC Light Sweep topilmadi. AE Cycore effektlarini tiklang yoki light sweep’ni o‘chiring.');
+    var effect=effects.addProperty('CC Light Sweep'); effect.name=shape?'UzScribe · Fon light sweep':'UzScribe · Matn light sweep';
+    // Cycore's stable parameter indices also work in localized Adobe installations.
+    effect.property(2).setValue(theme.sweepAngle); effect.property(3).setValue(2);
+    var width=bounds.width*theme.sweepWidth/100;
+    effect.property(4).setValue(Math.max(2,width)); effect.property(5).setValue(shape?theme.shapeSweepIntensity:theme.textSweepIntensity);
+    effect.property(6).setValue(0); effect.property(8).setValue(uzAnimationRGB(theme.sweepColor));
+    var center=effect.property(1), a=Math.max(0,cue.start+offset), b=Math.min(layer.outPoint,a+theme.sweepDuration);
+    center.setValueAtTime(a,[bounds.left-width,bounds.top+bounds.height/2]);
+    center.setValueAtTime(b,[bounds.left+bounds.width+width,bounds.top+bounds.height/2]);uzAnimationLinear(center);
+}
+function uzDesignShapes(comp,cue,theme,offset,index,parent,origin,bounds) {
+    var start=Math.max(0,cue.start+offset),end=Math.min(comp.duration,cue.end+offset);
+    for(var i=0;i<(cue.shapes||[]).length;i++) {
+        var s=cue.shapes[i],layer=comp.layers.addShape();layer.name='UzScribe '+index+' · Fon '+(i+1);
+        layer.startTime=start;layer.inPoint=start;layer.outPoint=end;
+        var group=layer.property('ADBE Root Vectors Group').addProperty('ADBE Vector Group').property('ADBE Vectors Group');
+        var rect=group.addProperty('ADBE Vector Shape - Rect');rect.property('ADBE Vector Rect Size').setValue([s.width,s.height]);rect.property('ADBE Vector Rect Roundness').setValue(s.radius);
+        var paint=group.addProperty(s.outline?'ADBE Vector Graphic - Stroke':'ADBE Vector Graphic - Fill');
+        paint.property(s.outline?'ADBE Vector Stroke Color':'ADBE Vector Fill Color').setValue(uzAnimationRGB(s.color));
+        paint.property(s.outline?'ADBE Vector Stroke Opacity':'ADBE Vector Fill Opacity').setValue(s.opacity*100);
+        if(s.outline)paint.property('ADBE Vector Stroke Width').setValue(Math.max(1,cue.size/25));
+        var tr=layer.property('ADBE Transform Group'),pos=[s.x+s.width/2,s.y+s.height/2];
+        if(parent){layer.parent=parent;layer.moveAfter(parent);pos=[bounds.left+bounds.width/2+pos[0]-origin[0],bounds.top+bounds.height/2+pos[1]-origin[1]];}
+        tr.property('ADBE Position').setValue(pos);
+        var opacity=tr.property('ADBE Opacity');
+        if(s.target>=0){var run=cue.runs[s.target];opacity.setValueAtTime(start,0);opacity.setValueAtTime(Math.max(start,run.start+offset),100);opacity.setValueAtTime(Math.min(end,run.end+offset),0);uzAnimationHold(opacity);}
+        else {var speed=Math.min(theme.speed,(end-start)/2);opacity.setValueAtTime(start,0);opacity.setValueAtTime(start+speed,100);opacity.setValueAtTime(end-speed,100);opacity.setValueAtTime(end,0);uzAnimationLinear(opacity);}
+        // Shape layers are comp-sized, with a local rectangle centered on the origin.
+        uzDesignSweep(layer,cue,theme,offset,{left:-s.width/2,top:-s.height/2,width:s.width,height:s.height},true);
+    }
+}
+function uzDesignWordLayers(comp,cue,theme,offset,expose,index) {
+    var start=Math.max(0,cue.start+offset),end=Math.min(comp.duration,cue.end+offset);if(end<=start)return 0;
+    // Backgrounds first; each later text layer is above them in the native timeline.
+    uzDesignShapes(comp,cue,theme,offset,index,null,null,null);
+    for(var i=0;i<cue.runs.length;i++) {
+        var r=cue.runs[i],layer=comp.layers.addText(r.text);layer.name=uzCaptionLayerName(index||1,r.text)+' · So‘z '+(i+1);
+        layer.startTime=start;layer.inPoint=start;layer.outPoint=end;
+        var source=layer.property('ADBE Text Properties').property('ADBE Text Document'),doc=source.value;
+        doc.fontSize=r.size;doc.font=r.fontPostscript;doc.justification=ParagraphJustification.LEFT_JUSTIFY;
+        doc.applyFill=true;doc.fillColor=uzAnimationRGB(r.emphasis || (r.featured && /^(hero|split|stack)$/.test(theme.layout))?theme.active:theme.color);
+        if(theme.shape==='tag')doc.fillColor=uzAnimationRGB(theme.highlightText);
+        doc.applyStroke=theme.stroke>0;doc.strokeWidth=theme.stroke*comp.height/1080;doc.strokeColor=[0,0,0];source.setValue(doc);
+        var bounds=layer.sourceRectAtTime(start,false),tr=layer.property('ADBE Transform Group'),position=[r.x+r.width/2,r.y+r.height/2];
+        tr.property('ADBE Anchor Point').setValue([bounds.left+bounds.width/2,bounds.top+bounds.height/2]);
+        var pos=tr.property('ADBE Position'),scale=tr.property('ADBE Scale'),opacity=tr.property('ADBE Opacity'),rotation=tr.property('ADBE Rotate Z');
+        for(var k=0;k<r.motion.length;k++) {var m=r.motion[k],time=Math.max(start,Math.min(end,m.time+offset));pos.setValueAtTime(time,[position[0]+m.dx,position[1]+m.dy]);scale.setValueAtTime(time,[m.scale*100,m.scale*100]);opacity.setValueAtTime(time,m.opacity*100);rotation.setValueAtTime(time,-m.rotation);}
+        uzAnimationLinear(pos);uzAnimationLinear(scale);uzAnimationLinear(opacity);uzAnimationLinear(rotation);
+        if(theme.shape==='word' || /^(saas|bounce|elastic|neon)$/.test(theme.preset)) {
+            var amount=uzCaptionAnimator(layer,{start:0,end:r.text.length},'ADBE Text Fill Color',uzAnimationRGB(theme.shape==='word'||theme.shape==='tag'?theme.highlightText:theme.active),'UzScribe · Faol so‘z');
+            amount.setValueAtTime(start,0);amount.setValueAtTime(Math.max(start,r.start+offset),100);amount.setValueAtTime(Math.min(end,r.end+offset),0);uzAnimationHold(amount);
+        }
+        uzDesignSweep(layer,cue,theme,offset,bounds,false);
+        if(theme.preset==='neon') {var fx=layer.property('ADBE Effect Parade');if(!fx.canAddProperty('ADBE Glo2'))throw new Error('Glow effekti topilmadi.');var glow=fx.addProperty('ADBE Glo2');glow.property(3).setValue(Math.max(1,r.size*.09));glow.property(4).setValue(.3);}
+        if(expose && source.canAddToMotionGraphicsTemplate(comp))source.addToMotionGraphicsTemplateAs(comp,'So‘z '+(i+1));
+    }
+    return cue.runs.length;
+}
+function uzDesignCueLayer(comp,cue,theme,offset,index) {
+    if(cue.wordLayers)return uzDesignWordLayers(comp,cue,theme,offset,false,index);
+    // Uniform designs keep a single editable text layer; word motion uses range selectors.
+    var plain={};for(var key in theme)plain[key]=theme[key];plain.preset='none';plain.motion=null;
+    var count=uzCaptionCueLayer(comp,cue,plain,offset,index);if(!count)return 0;
+    var layer=comp.layer(1),start=layer.inPoint,end=layer.outPoint,layout=uzCaptionLayout(cue),tr=layer.property('ADBE Transform Group');
+    var source=layer.property('ADBE Text Properties').property('ADBE Text Document'),doc=source.value;
+    if(theme.shape==='tag')doc.fillColor=uzAnimationRGB(theme.highlightText);
+    doc.applyStroke=theme.stroke>0;doc.strokeWidth=theme.stroke*comp.height/1080;
+    for(var row=1;row<cue.runs.length;row++){if(cue.runs[row].row!==cue.runs[0].row){doc.leading=cue.runs[row].y-cue.runs[0].y;break;}}source.setValue(doc);
+    var bounds=layer.sourceRectAtTime(start,false),position=tr.property('ADBE Position').value;
+    uzDesignShapes(comp,cue,theme,offset,index,layer,position,bounds);
+    for(var i=0;i<layout.ranges.length;i++) {
+        var r=layout.ranges[i],run=r.run;
+        function keyAnimator(property,value,label,metric) {
+            var amount=uzCaptionAnimator(layer,r,property,value,label);
+            for(var k=0;k<run.motion.length;k++){var m=run.motion[k],at=Math.max(start,Math.min(end,m.time+offset));amount.setValueAtTime(at,metric(m));}
+            uzAnimationLinear(amount);
+        }
+        var maxX=1,maxY=1;for(var q=0;q<run.motion.length;q++){maxX=Math.max(maxX,Math.abs(run.motion[q].dx));maxY=Math.max(maxY,Math.abs(run.motion[q].dy));}
+        keyAnimator('ADBE Text Position 3D',[maxX,0,0],'UzScribe · X '+(i+1),function(m){return m.dx/maxX*100;});
+        keyAnimator('ADBE Text Position 3D',[0,maxY,0],'UzScribe · Y '+(i+1),function(m){return m.dy/maxY*100;});
+        keyAnimator('ADBE Text Scale 3D',[200,200,100],'UzScribe · Scale '+(i+1),function(m){return (m.scale-1)*100;});
+        keyAnimator('ADBE Text Opacity',0,'UzScribe · Fade '+(i+1),function(m){return (1-m.opacity)*100;});
+        if(run.emphasis || theme.shape==='word' || /^(saas|bounce|elastic|neon)$/.test(theme.preset)) {var color=uzCaptionAnimator(layer,r,'ADBE Text Fill Color',uzAnimationRGB(theme.shape==='word'||theme.shape==='tag'?theme.highlightText:theme.active),'UzScribe · Rang '+(i+1));color.setValueAtTime(start,run.emphasis?100:0);if(!run.emphasis){color.setValueAtTime(Math.max(start,run.start+offset),100);color.setValueAtTime(Math.min(end,run.end+offset),0);uzAnimationHold(color);}}
+    }
+    uzDesignSweep(layer,cue,theme,offset,bounds,false);
+    if(theme.preset==='neon'){var fx=layer.property('ADBE Effect Parade');if(!fx.canAddProperty('ADBE Glo2'))throw new Error('Glow effekti topilmadi.');var glow=fx.addProperty('ADBE Glo2');glow.property(3).setValue(Math.max(1,cue.size*.09));glow.property(4).setValue(.3);}
+    return 1;
+}
+
 function uzAnimationLayers(comp, cue, theme, offset, expose, cueIndex) {
+    if(theme.motion && cue.shapes)return uzDesignWordLayers(comp,cue,theme,offset,expose,cueIndex);
     var start = Math.max(0,cue.start + offset), end = Math.min(cue.end + offset, comp.duration), count = 0;
     if (start >= comp.duration || end <= start) return 0;
     var preset = theme.preset, color = uzAnimationRGB(theme.color), active = uzAnimationRGB(theme.active);
@@ -275,10 +370,10 @@ function uzCaptionLayout(cue) {
     var text = '', ranges = [], chars = 0, lastY = null;
     for (var i = 0; i < cue.runs.length; i++) {
         var run = cue.runs[i];
-        if (i) { if (run.y !== lastY) text += '\r'; else {text += ' '; chars++;} }
+        if (i) { if (run.row !== undefined ? run.row !== lastY : run.y !== lastY) text += '\r'; else {text += ' '; chars++;} }
         // AE index selectors count characters and spaces, but exclude paragraph breaks.
         var word = String(run.text); ranges.push({start:chars,end:chars+word.length,run:run});
-        text += word; chars += word.length; lastY = run.y;
+        text += word; chars += word.length; lastY = run.row !== undefined ? run.row : run.y;
     }
     return {text:text,ranges:ranges};
 }
@@ -298,6 +393,7 @@ function uzCaptionAnimator(layer, range, propertyName, value, label) {
     return advanced.property('ADBE Text Selector Max Amount');
 }
 function uzCaptionCueLayer(comp, cue, theme, offset, index) {
+    if(theme.motion && cue.shapes)return uzDesignCueLayer(comp,cue,theme,offset,index);
     var start = Math.max(0, cue.start + offset), end = Math.min(cue.end + offset, comp.duration);
     if (!isFinite(start + end) || end <= start || !cue.runs || !cue.runs.length) return 0;
     var layout = uzCaptionLayout(cue), layer = comp.layers.addText(layout.text);
@@ -363,7 +459,7 @@ function uzImportAnimatedCaptions(planPath, offset, name, identity, layerMode, s
     try {
         var comp = uzAnimationComp(name,identity), plan = uzAnimationRead(planPath), count = 0, before = comp.numLayers;
         if (plan.schema !== 1 || plan.width !== comp.width || plan.height !== comp.height) throw new Error("Video o‘lchami o‘zgargan. Animatsiyani qayta yarating.");
-        if (presetOverride === 'none') plan.theme.preset='none';
+        if (presetOverride === 'none') {plan.theme.preset='none';plan.theme.motion=null;}
         app.beginUndoGroup('UzScribe animatsiyalari');
         try {
             for (var i = 0; i < plan.cues.length; i++) count += layerMode === 'words' ? uzAnimationLayers(comp,plan.cues[i],plan.theme,Number(offset)||0,false,i+1) : uzCaptionCueLayer(comp,plan.cues[i],plan.theme,Number(offset)||0,i+1);

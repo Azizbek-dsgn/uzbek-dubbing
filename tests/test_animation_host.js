@@ -11,9 +11,9 @@ assert.ok(JSON.parse(context.uzImportCaptionOverlay('/tmp/overlay.mov',5,'Test',
 seq.videoTracks[1]=empty;empty.clips.numItems=0;assert.ok(JSON.parse(context.uzImportCaptionMogrts([{path:'/tmp/1.mogrt',start:0,end:1},{path:'/tmp/2.mogrt',start:1,end:2}],5,'Test','id')).success);
 let plan={schema:1,width:320,height:568,fps:25,theme:{preset:'karaoke',fontFamily:'Arial',color:'#FFFFFF',active:'#F5D76E',speed:.16},cues:[{start:0,end:1,size:28,runs:[{text:'Salom',start:0,end:.5,x:50,y:350,width:80,height:38},{text:'dunyo',start:.5,end:1,x:140,y:350,width:80,height:38,emphasis:true}]}]};
 const created=[];let keys=0,groups=0,failOnText=null;
-function property(){return {value:{},numKeys:0,setValue(v){this.value=JSON.parse(JSON.stringify(v))},setValueAtTime(t,v){assert.ok(Number.isFinite(t));this.value=JSON.parse(JSON.stringify(v));this.numKeys++;keys++},setInterpolationTypeAtKey(){},canAddToMotionGraphicsTemplate:()=>true,addToMotionGraphicsTemplateAs(){},property(){return property()},addProperty(){return property()}}}
+function property(){return {value:{},numKeys:0,setValue(v){this.value=JSON.parse(JSON.stringify(v))},setValueAtTime(t,v){assert.ok(Number.isFinite(t));this.value=JSON.parse(JSON.stringify(v));this.numKeys++;keys++},setInterpolationTypeAtKey(){},canAddToMotionGraphicsTemplate:()=>true,addToMotionGraphicsTemplateAs(){},property(){return property()},addProperty(){return property()},canAddProperty(){return true}}}
 function CompItem(){}
-const comp=new CompItem();Object.assign(comp,{name:'Test',id:'id',width:320,height:568,duration:10,layers:{addText(t){const source=property(),transformProps={},transform={property:n=>transformProps[n]||(transformProps[n]=property())},layer={text:t,sourceRectAtTime:()=>({left:0,top:-20,width:80,height:28}),property:n=>{if(t===failOnText)throw Error('simulated native text failure');return n==='ADBE Text Properties'?{property:()=>source}:transform;},remove(){created.splice(created.indexOf(this),1)}};created.push(layer);return layer},addShape(){const shape={property:()=>property(),moveAfter(){},remove(){created.splice(created.indexOf(this),1)}};created.push(shape);return shape}}});
+const comp=new CompItem();Object.assign(comp,{name:'Test',id:'id',width:320,height:568,duration:10,layers:{addText(t){const source=property(),transformProps={},transform={property:n=>transformProps[n]||(transformProps[n]=property())},layer={text:t,sourceRectAtTime:()=>({left:0,top:-20,width:80,height:28}),property:n=>{if(t===failOnText)throw Error('simulated native text failure');return n==='ADBE Text Properties'?{property:()=>source}:n==='ADBE Effect Parade'?property():transform;},remove(){created.splice(created.indexOf(this),1)}};created.push(layer);return layer},addShape(){const shape={property:()=>property(),moveAfter(){},remove(){created.splice(created.indexOf(this),1)}};created.push(shape);return shape}}});
 Object.defineProperty(comp,'numLayers',{get:()=>created.length});comp.layer=()=>created[created.length-1];
 const ae={app:{project:{activeItem:comp},beginUndoGroup(){groups++},endUndoGroup(){groups--}},CompItem,File,ParagraphJustification:{LEFT_JUSTIFY:1,CENTER_JUSTIFY:2},KeyframeInterpolationType:{HOLD:1,LINEAR:2},JSON,Math,Number,String,Date,isFinite};
 vm.runInNewContext(fs.readFileSync('adobe/UzbekSubtitles/host/after_effects.jsx','utf8'),ae);
@@ -48,6 +48,15 @@ const layout=ae.uzCaptionLayout({runs:[{text:'O‘zb',y:0},{text:'tili',y:0},{te
 assert.equal(layout.text,'O‘zb tili\rzo‘r');assert.deepEqual(Array.from(layout.ranges,r=>[r.start,r.end]),[[0,4],[5,9],[9,13]]);
 
 const beforeFailure=created.length;failOnText='Salom dunyo';assert.ok(ae.uzImportAnimatedCaptions('/tmp/plan.json',5,'Test','id').includes('import qilinmadi'));assert.equal(created.length,beforeFailure);assert.equal(groups,0);failOnText=null;
+// All new designs dispatch in both modes, using measured plans from the planner.
+const recipes=['saas','apple','bounce','elastic','typewriter','editorial','kinetic','neon','cinematic','sticker','marker','minimal'];
+const originalPlan=plan;
+for(const preset of recipes){for(const mode of ['cue','words']){
+ plan={schema:1,width:320,height:568,fps:25,theme:{preset,motion:'rise',fontPostscript:'Arial-BoldMT',color:'#ffffff',active:'#00ff00',speed:.16,stroke:0,layout:'line',textSweep:false,shapeSweep:false},cues:[{start:0,end:1,size:28,text:'Salom dunyo',wordLayers:false,shapes:[{x:40,y:340,width:190,height:50,radius:10,color:'#102030',opacity:.8,target:-1}],runs:originalRuns.map((r,i)=>Object.assign({},r,{size:28,fontPostscript:'Arial-BoldMT',row:0,motion:[{time:0,dx:0,dy:12,scale:.9,opacity:0,rotation:0},{time:.2,dx:0,dy:0,scale:1,opacity:1,rotation:0},{time:1,dx:0,dy:0,scale:1,opacity:0,rotation:0}]}))}]};
+ const before=created.length;const result=ae.uzImportAnimatedCaptions('/tmp/plan.json',5,'Test','id',mode,false,preset);
+ assert(result.startsWith(mode==='words'?'2 ta':'1 ta'),result);assert.equal(created.length-before,mode==='words'?3:2);
+}}
+plan=originalPlan;
 assert.ok(keys>0);assert.ok(created.every(l=>l.inPoint>=5&&l.outPoint===6));assert.ok(ae.uzImportAnimatedCaptions('/tmp/plan.json',0,'Test','wrong').includes('o‘zgargan'));
 // Force the legacy parser and verify it handles strings without evaluating code.
 ae.JSON=undefined;assert.equal(ae.uzAnimationRead('/tmp/plan.json').cues[0].runs[0].text,'Salom');
