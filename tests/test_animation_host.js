@@ -13,12 +13,23 @@ let plan={schema:1,width:320,height:568,fps:25,theme:{preset:'karaoke',fontFamil
 const created=[];let keys=0,groups=0,failOnText=null;
 function property(){return {value:{},numKeys:0,setValue(v){this.value=JSON.parse(JSON.stringify(v))},setValueAtTime(t,v){assert.ok(Number.isFinite(t));this.value=JSON.parse(JSON.stringify(v));this.numKeys++;keys++},setInterpolationTypeAtKey(){},canAddToMotionGraphicsTemplate:()=>true,addToMotionGraphicsTemplateAs(){},property(){return property()},addProperty(){return property()}}}
 function CompItem(){}
-const comp=new CompItem();Object.assign(comp,{name:'Test',id:'id',width:320,height:568,duration:10,layers:{addText(t){const source=property(),transform=property(),layer={text:t,sourceRectAtTime:()=>({left:0,top:-20,width:80,height:28}),property:n=>{if(t===failOnText)throw Error('simulated native text failure');return n==='ADBE Text Properties'?{property:()=>source}:transform;},remove(){created.splice(created.indexOf(this),1)}};created.push(layer);return layer},addShape(){return {property:()=>property()}}}});
+const comp=new CompItem();Object.assign(comp,{name:'Test',id:'id',width:320,height:568,duration:10,layers:{addText(t){const source=property(),transform=property(),layer={text:t,sourceRectAtTime:()=>({left:0,top:-20,width:80,height:28}),property:n=>{if(t===failOnText)throw Error('simulated native text failure');return n==='ADBE Text Properties'?{property:()=>source}:transform;},remove(){created.splice(created.indexOf(this),1)}};created.push(layer);return layer},addShape(){const shape={property:()=>property(),moveAfter(){},remove(){created.splice(created.indexOf(this),1)}};created.push(shape);return shape}}});
 Object.defineProperty(comp,'numLayers',{get:()=>created.length});comp.layer=()=>created[created.length-1];
-const ae={app:{project:{activeItem:comp},beginUndoGroup(){groups++},endUndoGroup(){groups--}},CompItem,File,ParagraphJustification:{LEFT_JUSTIFY:1},KeyframeInterpolationType:{HOLD:1,LINEAR:2},JSON,Math,Number,String,Date,isFinite};
+const ae={app:{project:{activeItem:comp},beginUndoGroup(){groups++},endUndoGroup(){groups--}},CompItem,File,ParagraphJustification:{LEFT_JUSTIFY:1,CENTER_JUSTIFY:2},KeyframeInterpolationType:{HOLD:1,LINEAR:2},JSON,Math,Number,String,Date,isFinite};
 vm.runInNewContext(fs.readFileSync('adobe/UzbekSubtitles/host/after_effects.jsx','utf8'),ae);
-for(const preset of ['karaoke','pop','pill','reveal','slide','emphasis']){plan.theme.preset=preset;assert.ok(ae.uzImportAnimatedCaptions('/tmp/plan.json',5,'Test','id').startsWith('2 ta'));assert.equal(groups,0)}
-const beforeFailure=created.length;failOnText='dunyo';assert.ok(ae.uzImportAnimatedCaptions('/tmp/plan.json',5,'Test','id').includes('import qilinmadi'));assert.equal(created.length,beforeFailure);assert.equal(groups,0);failOnText=null;
+for(const preset of ['karaoke','pop','pill','reveal','slide','emphasis']){
+ plan.theme.preset=preset;const before=created.length;
+ assert.ok(ae.uzImportAnimatedCaptions('/tmp/plan.json',5,'Test','id').startsWith('1 ta'));
+ const added=created.slice(before),texts=added.filter(l=>typeof l.text==='string');
+ assert.equal(texts.length,1,'one whole cue text layer for '+preset);
+ assert.equal(texts[0].text,'Salom dunyo');assert.equal(texts[0].startTime,5);
+ assert.equal(texts[0].inPoint,5);assert.equal(texts[0].outPoint,6);assert(texts[0].name.includes('001'));
+ assert.equal(added.length,preset==='pill'?2:1,'pill has only one shape helper');assert.equal(groups,0);
+}
+const layout=ae.uzCaptionLayout({runs:[{text:'O‘zb',y:0},{text:'tili',y:0},{text:'zo‘r',y:76}]});
+assert.equal(layout.text,'O‘zb tili\rzo‘r');assert.deepEqual(Array.from(layout.ranges,r=>[r.start,r.end]),[[0,4],[5,9],[9,13]]);
+
+const beforeFailure=created.length;failOnText='Salom dunyo';assert.ok(ae.uzImportAnimatedCaptions('/tmp/plan.json',5,'Test','id').includes('import qilinmadi'));assert.equal(created.length,beforeFailure);assert.equal(groups,0);failOnText=null;
 assert.ok(keys>0);assert.ok(created.every(l=>l.inPoint>=5&&l.outPoint===6));assert.ok(ae.uzImportAnimatedCaptions('/tmp/plan.json',0,'Test','wrong').includes('o‘zgargan'));
 // Force the legacy parser and verify it handles strings without evaluating code.
 ae.JSON=undefined;assert.equal(ae.uzAnimationRead('/tmp/plan.json').cues[0].runs[0].text,'Salom');

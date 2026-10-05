@@ -69,7 +69,7 @@ function importUzbekSrt(srtPath, offsetSeconds, expectedName, expectedIdentity, 
         return "Faol kompozitsiya o'zgargan. Avvalgi kompozitsiyani oching.";
     }
     var blocks = contents.split(/\n\s*\n/);
-    var count = 0;
+    var count = 0, createdLayers = [];
     function seconds(stamp) {
         var m = /^(\d+):(\d+):(\d+),(\d+)$/.exec(stamp);
         if (!m) { return null; }
@@ -88,8 +88,11 @@ function importUzbekSrt(srtPath, offsetSeconds, expectedName, expectedIdentity, 
             if (start === null || end === null || end <= start) { continue; }
             start += Number(offsetSeconds) || 0;
             end += Number(offsetSeconds) || 0;
-            if (start >= comp.duration) { continue; }
+            start = Math.max(0, start); end = Math.min(end, comp.duration);
+            if (end <= start) { continue; }
             var layer = comp.layers.addText(lines.slice(2).join("\r"));
+            createdLayers.push(layer);
+            layer.name = uzCaptionLayerName(count + 1, lines.slice(2).join(" "));
             var text = layer.property("ADBE Text Properties").property("ADBE Text Document").value;
             text.fontSize = Math.max(28, Math.round(comp.width / 32));
             var speaker = speakerLabels && speakerLabels[i];
@@ -101,7 +104,7 @@ function importUzbekSrt(srtPath, offsetSeconds, expectedName, expectedIdentity, 
             text.justification = ParagraphJustification.CENTER_JUSTIFY;
             layer.property("ADBE Text Properties").property("ADBE Text Document").setValue(text);
             layer.property("ADBE Transform Group").property("ADBE Position").setValue([comp.width / 2, comp.height * 0.88]);
-            layer.startTime = 0;
+            layer.startTime = start;
             layer.inPoint = start;
             layer.outPoint = Math.min(end, comp.duration);
             if (captionMode === "word" && !selectForComposer && end - start > 0.08) {
@@ -121,6 +124,9 @@ function importUzbekSrt(srtPath, offsetSeconds, expectedName, expectedIdentity, 
             for (var p = 0; p < previouslySelected.length; p++) previouslySelected[p].selected = false;
             for (var q = 0; q < composerLayers.length; q++) composerLayers[q].selected = true;
         }
+    } catch (error) {
+        for (var failed = createdLayers.length - 1; failed >= 0; failed--) { try { createdLayers[failed].remove(); } catch (_) {} }
+        return "Subtitr import qilinmadi: " + error.toString();
     } finally { app.endUndoGroup(); }
     return count + " ta vaqtli matn qatlami yaratildi.";
 }
@@ -208,12 +214,105 @@ function uzAnimationLayers(comp, cue, theme, offset, expose) {
     }
     return count;
 }
+// One cue = one editable text layer. Per-word animation lives in text animators.
+function uzCaptionLayerName(index, text) {
+    var number = String(index); while (number.length < 3) number = '0' + number;
+    return 'UzScribe ' + number + ' · ' + String(text).replace(/\s+/g, ' ').substr(0, 70);
+}
+function uzCaptionLayout(cue) {
+    var text = '', ranges = [], chars = 0, lastY = null;
+    for (var i = 0; i < cue.runs.length; i++) {
+        var run = cue.runs[i];
+        if (i) { if (run.y !== lastY) text += '\r'; else {text += ' '; chars++;} }
+        // AE index selectors count characters and spaces, but exclude paragraph breaks.
+        var word = String(run.text); ranges.push({start:chars,end:chars+word.length,run:run});
+        text += word; chars += word.length; lastY = run.y;
+    }
+    return {text:text,ranges:ranges};
+}
+function uzCaptionAnimator(layer, range, propertyName, value, label) {
+    var animators = layer.property('ADBE Text Properties').property('ADBE Text Animators');
+    var animator = animators.addProperty('ADBE Text Animator'); animator.name = label;
+    var index = animator.propertyIndex;
+    animator.property('ADBE Text Animator Properties').addProperty(propertyName).setValue(value);
+    // Adding to an indexed group invalidates old native references: reacquire them.
+    animator = animators.property(index);
+    var selector = animator.property('ADBE Text Selectors').addProperty('ADBE Text Selector');
+    var advanced = selector.property('ADBE Text Range Advanced');
+    advanced.property('ADBE Text Range Units').setValue(2);
+    advanced.property('ADBE Text Selector Smoothness').setValue(0);
+    selector.property('ADBE Text Index Start').setValue(range.start);
+    selector.property('ADBE Text Index End').setValue(range.end);
+    return advanced.property('ADBE Text Selector Max Amount');
+}
+function uzCaptionCueLayer(comp, cue, theme, offset, index) {
+    var start = Math.max(0, cue.start + offset), end = Math.min(cue.end + offset, comp.duration);
+    if (!isFinite(start + end) || end <= start || !cue.runs || !cue.runs.length) return 0;
+    var layout = uzCaptionLayout(cue), layer = comp.layers.addText(layout.text);
+    layer.name = uzCaptionLayerName(index, layout.text);
+    layer.startTime = start; layer.inPoint = start; layer.outPoint = end;
+    var source = layer.property('ADBE Text Properties').property('ADBE Text Document'), doc = source.value;
+    doc.fontSize = cue.size; try {doc.font = theme.fontPostscript || theme.fontFamily;} catch (_) {}
+    doc.fillColor = uzAnimationRGB(theme.color); doc.applyFill = true; doc.applyStroke = true;
+    doc.strokeColor = [0,0,0]; doc.strokeWidth = Math.max(1,Math.round(cue.size/32));
+    doc.justification = ParagraphJustification.CENTER_JUSTIFY; doc.autoLeading = false; doc.leading = Math.round(cue.size*1.35);
+    source.setValue(doc);
+    var bounds = layer.sourceRectAtTime(start,false), transform = layer.property('ADBE Transform Group');
+    transform.property('ADBE Anchor Point').setValue([bounds.left+bounds.width/2,bounds.top+bounds.height/2]);
+    var position = [comp.width/2,cue.runs[0].y+bounds.height/2];
+    transform.property('ADBE Position').setValue(position);
+    var speed = Math.min(theme.speed,(end-start)/2), active = uzAnimationRGB(theme.active), preset = theme.preset;
+    if (preset === 'slide') {
+        var pos = transform.property('ADBE Position'), opacity = transform.property('ADBE Opacity');
+        pos.setValueAtTime(start,[position[0],position[1]+24]); pos.setValueAtTime(start+speed,position); uzAnimationLinear(pos);
+        opacity.setValueAtTime(start,0); opacity.setValueAtTime(start+speed,100);
+        opacity.setValueAtTime(end-speed,100); opacity.setValueAtTime(end,0); uzAnimationLinear(opacity);
+    }
+    for (var w = 0; w < layout.ranges.length; w++) {
+        var r = layout.ranges[w], on = Math.max(start,r.run.start+offset), off = Math.min(end,r.run.end+offset), amount;
+        if (off <= on) continue;
+        if (preset === 'karaoke' || preset === 'pop' || preset === 'pill') {
+            amount = uzCaptionAnimator(layer,r,'ADBE Text Fill Color',active,'UzScribe · So‘z '+(w+1));
+            if (on > start) amount.setValueAtTime(start,0);
+            amount.setValueAtTime(on,100); amount.setValueAtTime(off,0); uzAnimationHold(amount);
+        }
+        if (preset === 'pop') {
+            amount = uzCaptionAnimator(layer,r,'ADBE Text Scale 3D',[114,114,100],'UzScribe · Pop '+(w+1));
+            var pulse = Math.min(speed,off-on); amount.setValueAtTime(start,0);
+            amount.setValueAtTime(on,0); amount.setValueAtTime(on+pulse/2,100); amount.setValueAtTime(on+pulse,0); uzAnimationLinear(amount);
+        }
+        if (preset === 'reveal') {
+            amount = uzCaptionAnimator(layer,r,'ADBE Text Opacity',0,'UzScribe · Ochilish '+(w+1));
+            if (on > start) amount.setValueAtTime(start,100);
+            amount.setValueAtTime(on,0); uzAnimationHold(amount);
+        }
+        if (preset === 'emphasis' && r.run.emphasis) uzCaptionAnimator(layer,r,'ADBE Text Fill Color',active,'UzScribe · Urg‘u '+(w+1));
+    }
+    if (preset === 'pill') {
+        var pill = comp.layers.addShape(); pill.name = 'UzScribe ' + index + ' · Highlight';
+        pill.startTime = start; pill.inPoint = start; pill.outPoint = end;
+        pill.parent = layer; pill.moveAfter(layer); // Keep text above the helper, which follows layer moves.
+        var group = pill.property('ADBE Root Vectors Group').addProperty('ADBE Vector Group').property('ADBE Vectors Group');
+        var fill = group.addProperty('ADBE Vector Graphic - Fill'); fill.property('ADBE Vector Fill Color').setValue(active); fill.property('ADBE Vector Fill Opacity').setValue(70);
+        var rect = group.addProperty('ADBE Vector Shape - Rect'); rect.property('ADBE Vector Rect Roundness').setValue(10);
+        var pp = pill.property('ADBE Transform Group').property('ADBE Position');
+        for (var h = 0; h < cue.runs.length; h++) {
+            var run = cue.runs[h], at = Math.max(start,run.start+offset);
+            if (at >= end) continue;
+            // Parent space: compensate for centered anchor; plan geometry remains the highlight guide.
+            pp.setValueAtTime(at,[bounds.left+bounds.width/2+run.x+run.width/2-position[0],bounds.top+bounds.height/2+run.y+run.height/2-position[1]]);
+            rect.property('ADBE Vector Rect Size').setValueAtTime(at,[run.width+16,run.height+3]);
+        }
+        uzAnimationHold(pp); uzAnimationHold(rect.property('ADBE Vector Rect Size'));
+    }
+    return 1;
+}
 function uzImportAnimatedCaptions(planPath, offset, name, identity) {
     try {
         var comp = uzAnimationComp(name,identity), plan = uzAnimationRead(planPath), count = 0, before = comp.numLayers;
         if (plan.schema !== 1 || plan.width !== comp.width || plan.height !== comp.height) throw new Error("Video o‘lchami o‘zgargan. Animatsiyani qayta yarating.");
         app.beginUndoGroup('UzScribe animatsiyalari');
-        try {for (var i = 0; i < plan.cues.length; i++) count += uzAnimationLayers(comp,plan.cues[i],plan.theme,Number(offset),false);}
+        try {for (var i = 0; i < plan.cues.length; i++) count += uzCaptionCueLayer(comp,plan.cues[i],plan.theme,Number(offset)||0,i+1);}
         catch (error) {while (comp.numLayers > before) comp.layer(1).remove();throw error;}
         finally {app.endUndoGroup();}
         return count+' ta vaqtli matn qatlami yaratildi.';

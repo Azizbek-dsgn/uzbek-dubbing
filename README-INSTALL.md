@@ -118,6 +118,10 @@ Tanlangan subtitrning haqiqiy animatsiya preview’i, 40 qadam Undo/Redo va oxir
 
 Mahalliy tekshiruv: 70 Python test, 8 Node test to‘plami va haqiqiy AIFF → WAV konvertatsiyasi o‘tdi. AE sinovlari host API maketlarida tekshirilgan; ochiq Adobe oynasidagi fayl tanlash boshqaruvi javob bermagani sababli ushbu tuzatishning native render/import sinovi hali tasdiqlanmagan.
 
+### 0.6.2 — After Effects subtitr layerlari
+
+Har bir subtitr bloki alohida tahrirlanadigan text layer. So‘z animatsiyalari layer ichida, tartib raqami va o‘z in/out vaqti bilan. Pill uchun bitta qo‘shimcha highlight shape. Panelni yopib qayta oching.
+
 ### 0.6.1 — Renuvo sinov integratsiyasi
 
 Avtomatik obuna adapteri, imzolangan webhook tekshiruvi va panelda “Obunani boshqarish”. Public beta community rejimida; Renuvo sandbox/API kaliti va real provayder acceptance alohida talab qilinadi. [Ulanish](https://github.com/Azizbek-dsgn/uzbek-dubbing/blob/feat/uzbek-subtitles-adobe/billing/RENUVO.md).

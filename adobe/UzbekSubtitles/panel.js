@@ -345,7 +345,7 @@
       audioTrack.disabled = info.host !== 'PPRO';
       animationField.hidden = false;
       animation.disabled = false;
-      animationHint.textContent = info.host === 'AEFT' ? 'Tahrirlanadigan matn qatlamlari.' : 'Shaffof animatsiya klipi uchun bo‘sh video trek kerak.';
+      animationHint.textContent = info.host === 'AEFT' ? 'Har bir subtitr — timeline’da alohida matn layeri. So‘z animatsiyasi layer ichida.' : 'Shaffof animatsiya klipi uchun bo‘sh video trek kerak.';
       if (document.uzscribe.onHost) document.uzscribe.onHost(info);
     });
   }

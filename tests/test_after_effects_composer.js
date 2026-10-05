@@ -23,6 +23,7 @@ const app = {project:{activeItem:comp},beginUndoGroup(){},endUndoGroup(){}};
 const context = {app,CompItem,File,ParagraphJustification:{CENTER_JUSTIFY:1},Number,String,Math,isFinite};
 vm.runInNewContext(script,context);
 const result = context.importUzbekSrt('/tmp/test.srt',0,'Test','7','word',[],true);
+if (created.some(l=>l.startTime!==l.inPoint || !l.name.startsWith('UzScribe '))) throw Error('Cue layer start/name missing');
 if (!result.startsWith('2 ta') || previous.selected || created.length !== 2 ||
     created.some(layer => !layer.selected) || animated) throw Error('Composer layers were not selected cleanly');
 console.log('After Effects Composer layer selection OK');

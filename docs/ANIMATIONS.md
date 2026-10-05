@@ -45,3 +45,11 @@ Pillow is installed with runtime requirements on macOS Apple Silicon/Intel and W
 ## Verification limits
 
 Automated checks cover real transparent MOV generation/decoding for every preset, timing/text validation, safe placement, saved styles, split/merge, failure and cancellation, empty-track protection, and mocked Adobe scripting dispatch. They do not prove live AE/Premiere rendering or MOGRT import on every Adobe release. Live Adobe output remains a release gate; no universal error-free guarantee is made.
+
+## After Effects · 0.6.2
+
+Har bir subtitr bloki (cue) faol kompozitsiyada bitta tahrirlanadigan text layer bo‘ladi. Ikki vizual qatorli cue ham bitta layerda saqlanadi. `UzScribe 001 · matn` nomi, startTime/inPoint/outPoint va Work Area offset bilan timeline’da joylashtiriladi. Karaoke/pop/reveal/emphasis text animator va range selector orqali so‘zlarni shu layer ichida boshqaradi; slide butun cue’ni animatsiyalaydi. Pill presetida har cue uchun bitta text layer va unga parent qilingan bitta highlight shape yordamchi layer bor. Animation Composer oddiy cue layerlarini tanlab beradi. MOGRT eksportining ichki so‘z layerlari alohida eksport kompozitsiyasida qoladi.
+
+UzCaption rasmiy [plugin sahifasi](https://caption.uz/plugin) AE qo‘llovini ko‘rsatadi; ochiq sahifada AE ichki layer tuzilishi yoki manba kodi berilmagan. Ushbu o‘zgarish foydalanuvchi so‘ragan cue-per-layer ish jarayoni va Adobe text animator API asosida yozildi.
+
+Mahalliy Node host testlari layer soni, butun matn, range indekslari (paragraph break hisoblanmaydi), offset, yordamchi shape, Composer va xatoda rollbackni tekshiradi. Ushbu o‘zgarishning haqiqiy Adobe host sinovi hali tasdiqlanmagan.
