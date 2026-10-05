@@ -8,6 +8,24 @@ from subtitles.sentences import restore_sentences, standardize_literary
 
 
 class SubtitleTests(unittest.TestCase):
+    def test_missing_optional_speaker_model_does_not_discard_subtitles(self):
+        import tempfile, json
+        from pathlib import Path
+        from unittest.mock import patch
+        from subtitles.cli import main, optional_speakers
+        with tempfile.TemporaryDirectory() as temp:
+            folder=Path(temp);audio=folder/'audio.wav';audio.write_bytes(b'fixture')
+            output=folder/'captions.srt'
+            with patch('subtitles.cli.transcribe',return_value=[Word(0,1,'Salom.')]),patch('subtitles.cli.diarize',side_effect=RuntimeError('So‘zlovchilar modeli o‘rnatilmagan')):
+                self.assertEqual(main(['--input',str(audio),'--output',str(output),'--speakers','--no-sentence-restore']),0)
+            self.assertIn('Salom.',output.read_text(encoding='utf-8-sig'))
+            data=json.loads(output.with_suffix('.json').read_text())
+            self.assertEqual(data['speaker_turns'],[])
+            self.assertIn('subtitrlar yaratildi',data['warnings'][0])
+            with patch('subtitles.cli.diarize',return_value=[{'start':0,'end':1,'speaker':'SPEAKER_00'}]):
+                turns,warnings=optional_speakers(audio,folder)
+            self.assertEqual(turns[0]['speaker'],'SPEAKER_00');self.assertEqual(warnings,[])
+
     def test_natural_caption_finishes_phrase_instead_of_exact_three_words(self):
         parts = 'Bugun havo juda yaxshi.'.split()
         words = [Word(i*.3, i*.3+.25, text) for i,text in enumerate(parts)]

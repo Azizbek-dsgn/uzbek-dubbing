@@ -597,6 +597,7 @@
       reviewInfo.textContent = validateSrt(srtEditor.value).count + ' ta subtitr tayyor. Matn va vaqtni tahrirlashingiz mumkin.';
       var metadataPath = srt.replace(/\.srt$/, '.json');
       activeRun.metadata = fs.existsSync(metadataPath) ? JSON.parse(fs.readFileSync(metadataPath, 'utf8')) : null;
+      if(activeRun.metadata && activeRun.metadata.warnings && activeRun.metadata.warnings.length)reviewInfo.textContent+=' '+activeRun.metadata.warnings.join(' ');
     } catch (e) { finish('SRT ko‘rib chiqilmadi: ' + e.message); return; }
     activeRun.srt = srt;
     activeRun.info = info;
@@ -663,7 +664,7 @@
     if (splitCommas.checked) args.push('--split-commas');
     if (!splitPauses.checked) args.push('--no-pause-split');
     runState.rules.forEach(function (rule) { args.push('--replace', rule); });
-    var child = spawn(python.value.trim(), args, {cwd: root});
+    var child = spawn(python.value.trim(), args, {cwd: root,windowsHide:true,env:Object.assign({},process.env,{PYTHONUTF8:'1',PYTHONIOENCODING:'utf-8',ORT_DISABLE_TELEMETRY:'1'})});
     runState.child = child;
     var stderr = '', ended = false;
     child.stderr.on('data', function (data) {
@@ -704,19 +705,24 @@
       importCaptions(srt, info, audio);
     });
   }
-  function normalizeAeAudio(source,destination,state,callback) {
+  function normalizeAeAudio(source,destination,state,callback,exportInfo) {
+    var direct=exportInfo && exportInfo.direct===true;
     if(source===destination){callback(null);return;}
-    show('AE audiosi WAV formatiga tayyorlanmoqda...');
+    show(direct?'Tanlangan video audiosi olinmoqda…':'AE audio eksporti tayyorlanmoqda…');
     var code='import sys,subprocess,signal,imageio_ffmpeg\n'+
-      'p=subprocess.Popen([imageio_ffmpeg.get_ffmpeg_exe(),"-nostdin","-v","error","-y","-i",sys.argv[1],"-vn","-ac","1","-ar","16000","-c:a","pcm_s16le",sys.argv[2]])\n'+
+      'trim=["-ss",sys.argv[3]] if len(sys.argv)>3 else []\n'+
+      'limit=["-t",sys.argv[4]] if len(sys.argv)>4 else []\n'+
+      'p=subprocess.Popen([imageio_ffmpeg.get_ffmpeg_exe(),"-nostdin","-v","error","-y"]+trim+["-i",sys.argv[1]]+limit+["-vn","-ac","1","-ar","16000","-c:a","pcm_s16le",sys.argv[2]])\n'+
       'def stop(*args):\n p.terminate()\n raise KeyboardInterrupt\n'+
       'signal.signal(signal.SIGTERM,stop)\n'+
       'try: sys.exit(p.wait())\n'+
       'finally:\n if p.poll() is None: p.kill();p.wait()\n';
-    var child=spawn(python.value,['-c',code,source,destination]),error='',closed=false;state.child=child;
+    var audioArgs=['-c',code,source,destination];
+    if(direct)audioArgs.push(String(exportInfo.seek),String(exportInfo.duration));
+    var child=spawn(python.value,audioArgs,{windowsHide:true,env:Object.assign({},process.env,{PYTHONUTF8:'1',PYTHONIOENCODING:'utf-8',ORT_DISABLE_TELEMETRY:'1'})}),error='',closed=false;state.child=child;
     if(process.platform==='win32')child.kill=function(){spawn('taskkill',['/PID',String(child.pid),'/T','/F']);};
     child.stderr.on('data',function(data){error=(error+String(data)).slice(-1500);});
-    function done(problem){if(closed)return;closed=true;state.child=null;removeTemp(source);if(activeRun!==state)return;
+    function done(problem){if(closed)return;closed=true;state.child=null;if(!direct)removeTemp(source);if(activeRun!==state)return;
       callback(problem);}
     child.on('error',function(e){done(e);});child.on('close',function(code){done(code===0 && fs.existsSync(destination) && fs.statSync(destination).size>44?null:new Error(state.cancelled?'Bekor qilindi.':'AE audio tayyorlanmadi: '+error));});
   }
@@ -763,7 +769,7 @@
         finish('Premiere WAV preset’i topilmadi. Qo‘shimcha sozlamalarda .epr fayl yo‘lini kiriting.');
         return;
       }
-      show('Timeline ovozi eksport qilinmoqda...');
+      show(info.host==='AEFT'?'Tanlangan layer audiosi tayyorlanmoqda…':'Timeline ovozi eksport qilinmoqda...');
       var exportExpression=info.host==='AEFT'
         ? 'uzAeExportAudio('+[requestedRange,audio,info.name,info.identity||'',info.layer_token||'',Number(info.start),Number(info.duration)].map(JSON.stringify).join(',')+')'
         : 'uzExportAudio(' + JSON.stringify(requestedRange) + ',' + JSON.stringify(audio) + ',' + JSON.stringify(preset) + ',' + JSON.stringify(audioTrack.value) + ')';
@@ -779,7 +785,7 @@
               if(error){finish(error.message);return;}
               if(runState.cancelled){removeTemp(audio);finish('Bekor qilindi.');return;}
               transcribe(audio,srt,info,reviewFirst,runState);
-            });
+            },result);
           } else transcribe(result.path, srt, info, reviewFirst, runState);
         },info.host==='AEFT'?aeScript:hostScript);
     }, requestedRange);
@@ -808,7 +814,7 @@
     activeRun = {cancelled:false, child:null, audio:null};
     var state = activeRun; setPhase('working');
     show('Papkadagi fayllar tanilmoqda...');
-    var child = spawn(python.value.trim(), args, {cwd:root}); state.child = child;
+    var child = spawn(python.value.trim(), args, {cwd:root,windowsHide:true,env:Object.assign({},process.env,{PYTHONUTF8:'1',PYTHONIOENCODING:'utf-8',ORT_DISABLE_TELEMETRY:'1'})}); state.child = child;
     var outputText = '';
     child.stdout.on('data', function (data) {
       outputText = (outputText + String(data)).slice(-1500);
@@ -886,7 +892,7 @@
       '--fps', fps.value, '--start-seconds', String(start), '--end-seconds', String(end),
       '--script', scriptChoice.value, '--min-cue-duration', '0'];
     retryCue.disabled = true; show('Tanlangan subtitr qayta aniqlanmoqda...');
-    var child = spawn(python.value.trim(), args, {cwd:root}), errorText = '';
+    var child = spawn(python.value.trim(), args, {cwd:root,windowsHide:true,env:Object.assign({},process.env,{PYTHONUTF8:'1',PYTHONIOENCODING:'utf-8',ORT_DISABLE_TELEMETRY:'1'})}), errorText = '';
     activeRun.child = child;
     child.stderr.on('data', function (data) { errorText = (errorText + String(data)).slice(-1500); });
     child.on('error', function (err) { retryCue.disabled = false; show('Qayta tanish xatosi: ' + err.message); });

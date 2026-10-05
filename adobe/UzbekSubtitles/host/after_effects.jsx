@@ -37,6 +37,22 @@ function uzAeExportAudio(mode,outputPath,expectedName,expectedIdentity,expectedL
         if(queue.rendering)throw new Error("AE Render Queue hozir ishlayapti. Tugashini kuting.");
         if(expectedLayerToken && r.layerToken!==expectedLayerToken)throw new Error("Tanlangan video layer o‘zgargan. Layerni tanlab qayta boshlang.");
         if(expectedStart!==undefined && (Math.abs(r.start-Number(expectedStart))>.0001 || Math.abs(r.duration-Number(expectedDuration))>.0001))throw new Error("Layer/Work Area vaqti o‘zgargan. Qayta boshlang.");
+        // Ordinary footage needs only its source audio; FFmpeg trims it in the panel.
+        // Native audio rendering remains necessary for remap/stretch/effects/precomps.
+        var sourceFile=null, direct=false;
+        try {
+            sourceFile=r.layer.source.file;
+            var effects=r.layer.property('ADBE Effect Parade');
+            var levels=r.layer.property('ADBE Audio Group').property('ADBE Audio Levels');
+            direct=sourceFile && sourceFile.exists && Number(r.layer.stretch)===100 &&
+                !r.layer.timeRemapEnabled && effects && effects.numProperties===0 &&
+                levels && levels.numKeys===0 && !levels.expressionEnabled &&
+                Number(levels.value[0])===0 && Number(levels.value[1])===0 &&
+                r.start-Number(r.layer.startTime)>=0;
+        } catch(directError) {direct=false;}
+        if(direct) {
+            return '{"path":"'+uzAeJson(sourceFile.fsName)+'","direct":true,"seek":'+(r.start-Number(r.layer.startTime))+',"duration":'+r.duration+',"name":"'+uzAeJson(comp.name)+'","identity":"'+uzAeJson(comp.id)+'","layer_token":"'+uzAeJson(r.layerToken)+'"}';
+        }
         // Render a disposable duplicate: preserve layer timing, stretch, remap and audio effects.
         // All isolation toggles belong to the duplicate, never to the user's composition.
         temporaryComp=comp.duplicate(); temporaryComp.name='UzScribe audio · '+new Date().getTime();

@@ -131,3 +131,24 @@ Avtomatik obuna adapteri, imzolangan webhook tekshiruvi va panelda “Obunani bo
 Panelga **Obuna** bo‘limi qo‘shildi: kalit faollashtirish, Payme’da tarif olish/uzaytirish va kompyuterni uzish. Merchant va domen ulanmaguncha public beta **community** rejimida qoladi. Pullik distributiv uchun `tools/build_release.py --license-config` orqali public server konfiguratsiyasini berish kerak.
 
 Tariflar so‘mda; obuna hozir **qo‘lda uzayadi**, kartadan avtomatik yechilmaydi. Serverda tarif, mijoz, muddat, qurilma, to‘lov va audit boshqariladi. [Serverni tayyorlash](https://github.com/Azizbek-dsgn/uzbek-dubbing/blob/feat/uzbek-subtitles-adobe/billing/README.md), [monetizatsiya yo‘llari](https://github.com/Azizbek-dsgn/uzbek-dubbing/blob/feat/uzbek-subtitles-adobe/docs/MONETIZATION.md).
+
+
+### 0.6.9 · Windows subtitles and After Effects audio
+
+Optional speaker labeling no longer aborts a completed transcription when the
+local speaker model or pyannote runtime is unavailable. The SRT is created, with
+an explicit warning in the review and JSON metadata; speaker labels can still be
+assigned manually. All caption Python processes use UTF-8 on Windows.
+
+For a selected ordinary file video layer (100% speed, no remap/effects, static
+0 dB audio levels), After Effects supplies the source file and trim to FFmpeg:
+no Render Queue item is created. Layer startTime and Work Area trims are honored;
+the source file is never deleted during conversion, cancellation or cleanup.
+Stretched/remapped/effected footage and precomps retain the isolated native
+WAV/AIFF audio render to preserve the layer's actual sound. This exports audio,
+not a finished video. Existing queue flags and original composition are retained.
+
+Verified: 25 subtitle tests, selected-layer/direct-source host tests, and panel
+workflow tests with simulated Windows environment, UTF-8, trim and source-file
+preservation. Windows native AE was not available for an end-to-end OS test.
+Use the same one-command installers above to update; no uninstall is required.

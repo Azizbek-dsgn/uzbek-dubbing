@@ -15,7 +15,7 @@ function fixture(formats={'AIFF 48kHz':'AIFF'}) {
       const token=generation;function valid(){assert.equal(token,generation,'Output Module object was not reacquired');}
       return {templates:Object.keys(formats),applyTemplate(n){valid();format=formats[n];generation++},getSettings(){valid();return {Format:format}},setSetting(){valid();generation++},get file(){valid();return output},set file(f){valid();output=f}};
     }};entries.push(added);return added;
-  }},render(){renders++;assert.equal(copy.layer(1).audioEnabled,true);assert.equal(copy.layer(2).audioEnabled,false);assert.equal(copy.layer(2).solo,false);assert.equal(copy.layer(1).guideLayer,false);assert.equal(copy.layer(1).stretch,125);assert.equal(copy.layer(1).startTime,-1);assert.equal(existing.render,false);assert.equal(done.render,false);assert.equal(added.render,true);if(fail)throw Error('render failure');files[added.outputModule(1).file.fsName]=4000;}};
+  }},render(){renders++;assert.equal(copy.layer(1).audioEnabled,true);assert.equal(copy.layer(2).audioEnabled,false);assert.equal(copy.layer(2).solo,false);assert.equal(copy.layer(1).guideLayer,false);assert.equal(copy.layer(1).stretch,layers[0].stretch);assert.equal(copy.layer(1).startTime,-1);assert.equal(existing.render,false);assert.equal(done.render,false);assert.equal(added.render,true);if(fail)throw Error('render failure');files[added.outputModule(1).file.fsName]=4000;}};
   const context={app:{project:{activeItem:comp,renderQueue:queue}},CompItem,File,GetSettingsFormat:{STRING:1},Number,String,Math,isFinite};
   vm.createContext(context);vm.runInContext(fs.readFileSync('adobe/UzbekSubtitles/host/editor.jsx','utf8'),context);vm.runInContext(fs.readFileSync('adobe/UzbekSubtitles/host/after_effects.jsx','utf8'),context);
   return {context,comp,queue,entries,existing,done,layers,get copy(){return copy},get added(){return added},get renders(){return renders},set fail(v){fail=v}};
@@ -37,6 +37,15 @@ f.comp.workAreaStart=13;f.comp.workAreaDuration=2;assert(JSON.parse(f.context.uz
 f=fixture();info=JSON.parse(f.context.uzAeTimelineInfo('auto'));f.layers[0].startTime=0;assert(JSON.parse(f.context.uzAeExportAudio('auto','/tmp/stale.wav',f.comp.name,'42',info.layer_token,info.start,info.duration)).error);assert.equal(f.copy,null);
 f=fixture();info=JSON.parse(f.context.uzAeTimelineInfo('auto'));const original=JSON.stringify(f.layers);result=JSON.parse(f.context.uzAeExportAudio('auto','/tmp/isolated.wav',f.comp.name,'42',info.layer_token,info.start,info.duration));assert.equal(result.layer_token,info.layer_token);assert.equal(JSON.stringify(f.layers),original);assert.equal(f.copy.removed,true);
 f=fixture();f.fail=true;result=JSON.parse(f.context.uzAeExportAudio('auto','/tmp/fail2.wav',f.comp.name,'42'));assert(result.error);assert.equal(f.copy.removed,true);
+
+// Ordinary file footage skips Render Queue and uses source-relative trim.
+f=fixture();f.layers[0].stretch=100;f.layers[0].source.file={fsName:'C:\\Media\\voice.mov',exists:true};
+f.layers[0].property=name=>name==='ADBE Effect Parade'?{numProperties:0}:{property:()=>({numKeys:0,expressionEnabled:false,value:[0,0]})};
+info=JSON.parse(f.context.uzAeTimelineInfo('inout'));
+result=JSON.parse(f.context.uzAeExportAudio('inout','/tmp/direct.wav',f.comp.name,'42',info.layer_token,info.start,info.duration));
+assert.equal(result.direct,true);assert.equal(result.seek,4);assert.equal(result.duration,5);assert.equal(result.path,'C:\\Media\\voice.mov');assert.equal(f.renders,0);assert.equal(f.copy,null);assert.equal(f.existing.render,true);
+f.layers[0].property=name=>name==='ADBE Effect Parade'?{numProperties:1}:{property:()=>({numKeys:0,expressionEnabled:false,value:[0,0]})};
+result=JSON.parse(f.context.uzAeExportAudio('inout','/tmp/effected.wav',f.comp.name,'42'));assert(!result.direct);assert.equal(f.renders,1);
 
 f.context.app.project.activeItem={};assert(JSON.parse(f.context.uzAeTimelineInfo('auto')).error);
 console.log('AE host without app.name, selected layer isolation, trims, Work Area intersection, WAV/AIFF formats, Output Module lifetime, queue recovery and identity guards OK');

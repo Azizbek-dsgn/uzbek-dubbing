@@ -396,6 +396,16 @@ def diarize(path: Path, model_dir: Path, count: int | None = None) -> list[dict]
              "speaker": str(label)} for turn, _, label in annotation.itertracks(yield_label=True)]
 
 
+def optional_speakers(path: Path, model_dir: Path, count: int | None = None):
+    """Optional speaker labeling must never discard a completed transcription."""
+    try:
+        return diarize(path, model_dir, count), []
+    except Exception as exc:
+        warning = 'So‘zlovchilar ajratilmadi; subtitrlar yaratildi. '+str(exc)
+        print('UZWARN '+warning, file=sys.stderr)
+        return [], [warning]
+
+
 def cue_speaker(cue: Cue, turns: list[dict]) -> str | None:
     scores: dict[str, float] = {}
     for turn in turns:
@@ -484,8 +494,8 @@ def main(argv: list[str] | None = None) -> int:
                 alternative = apply_replacements(alternative, args.replace)
                 comparison = [{"start": round(w.start + offset, 3), "end": round(w.end + offset, 3),
                                "text": w.text, "confidence": w.confidence} for w in alternative]
-            turns = diarize(source, Path(__file__).resolve().parent.parent / "models" / "speaker-diarization",
-                            args.num_speakers) if args.speakers else []
+            turns, speaker_warnings = optional_speakers(source, Path(__file__).resolve().parent.parent / "models" / "speaker-diarization",
+                            args.num_speakers) if args.speakers else ([], [])
             for turn in turns:
                 turn["start"] = round(turn["start"] + offset, 3)
                 turn["end"] = round(turn["end"] + offset, 3)
@@ -531,7 +541,7 @@ def main(argv: list[str] | None = None) -> int:
             {"start": round(w.start, 3), "end": round(w.end, 3), "text": w.text,
              "confidence": w.confidence} for w in words], "comparison_model": args.compare_model,
             "comparison_words": comparison,
-            "speaker_turns": turns,
+            "speaker_turns": turns, "warnings": speaker_warnings,
             "cues": [{"start": c.start, "end": c.end, "text": c.text,
                       "speaker": cue_speaker(c, turns)} for c in cues]}
         args.output.with_suffix(".json").write_text(json.dumps(metadata, ensure_ascii=False), encoding="utf-8")
