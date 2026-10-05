@@ -47,6 +47,12 @@ def tokens(text):
     text=unicodedata.normalize('NFKC',text).casefold()
     for apostrophe in ('’','‘','ʻ','ʼ','`'):
         text=text.replace(apostrophe,"'")
+    # Compare Uzbek Latin/Cyrillic ASR output without changing displayed text.
+    mapping=dict(zip('абвгдежзийклмнопрстуфхэыь',
+                     ['a','b','v','g','d','e','j','z','i','y','k','l','m','n','o','p','r','s','t','u','f','x','e','i','']))
+    mapping.update({'ё':'yo','ю':'yu','я':'ya','ч':'ch','ш':'sh','щ':'shch','ц':'ts',
+                    'ў':"o'",'ғ':"g'",'қ':'q','ҳ':'h','ъ':"'"})
+    text=''.join(mapping.get(char,char) for char in text)
     return re.findall(r"[\w]+(?:'[\w]+)*",text,flags=re.UNICODE)
 
 
@@ -72,7 +78,7 @@ def protected(parts):
     # Uzbek negation and numbers are meaningful even when every other word matches.
     return {p for p in parts if any(c.isdigit() for c in p) or
             p in {'emas','yo‘q',"yo'q",'yoq','hech','нет','не'} or
-            re.search(r'(maydi|magan|mas|ма[йг]|эмас)$',p)}
+            re.search(r'(ma(?:y(?:di(?:lar)?|man|san|miz|siz)?|gan|di(?:m|ng|k|ngiz)?|s)|ма[йг]|эмас)$',p)}
 
 
 def repeated(a,b,strength='safe'):
@@ -95,6 +101,21 @@ def repeated(a,b,strength='safe'):
     return matcher.ratio()>=.9 and bool(changed) and set(changed)<=fillers
 
 
+def candidate_repeat(a, b, strength):
+    if repeated(a,b,strength):
+        return True
+    # Minor ASR spelling drift may nominate a long take, but never authorizes
+    # deletion. The independent model must still satisfy strict repeated().
+    left,right=a['tokens'],b['tokens']
+    if min(a.get('confidence',1),b.get('confidence',1))<.6 or min(len(left),len(right))<8:
+        return False
+    if len(left)!=len(right) or protected(left)!=protected(right):
+        return False
+    changed=[(x,y) for x,y in zip(left,right) if x!=y]
+    return 0<len(changed)<=2 and all(min(len(x),len(y))>=5 and
+            SequenceMatcher(None,x,y,autojunk=False).ratio()>=.85 for x,y in changed)
+
+
 def retake_proposals(parts, *, window=45, strength='safe', keep='complete'):
     parents=list(range(len(parts)))
     def find(i):
@@ -103,8 +124,9 @@ def retake_proposals(parts, *, window=45, strength='safe', keep='complete'):
         return i
     for j,b in enumerate(parts):
         # Compare nearby attempts, not identical phrases from a later topic.
-        for i in range(max(0,j-2),j):
-            if b['start']-parts[i]['end']<=window and repeated(parts[i],b,strength):
+        for i in range(j-1,-1,-1):
+            if b['start']-parts[i]['end']>window:break
+            if b['start']-parts[i]['end']<=window and candidate_repeat(parts[i],b,strength):
                 parents[find(i)]=find(j)
     groups={}
     for i in range(len(parts)):groups.setdefault(find(i),[]).append(i)
@@ -119,6 +141,63 @@ def retake_proposals(parts, *, window=45, strength='safe', keep='complete'):
                                   'text':parts[i]['text'],'kept_id':parts[winner]['id'],
                                   'kept_text':parts[winner]['text'],'reason':'Takroriy dubl'})
     return sorted(proposals,key=lambda p:p['start'])
+
+
+def protect_words(plan, words, fps, padding):
+    """Speech recognized by either engine cannot become a silence cut."""
+    spans = merged_ranges([(max(0, round((w.start-padding)*fps)),
+                            round((w.end+padding)*fps)) for w in words],
+                          plan[-1]['end'] if plan else 0)
+    cursor = 0
+    for item in plan:
+        while cursor < len(spans) and spans[cursor][1] <= item['start']:
+            cursor += 1
+        if cursor < len(spans) and spans[cursor][0] < item['end']:
+            item['silent'] = False
+
+
+def verify_retakes(timeline, track, inside, outside, model, cache, parts, proposals, decode):
+    """Independent local ASR must agree before automatically discarding a take."""
+    if not proposals:
+        return [], ''
+    root = Path(__file__).resolve().parents[1]
+    def weight(name):
+        return (root/'models/gigaam-uzbek/checkpoints/large_full_600m/best.pt'
+                if name == 'gigaam-uzbek' else root/'models'/name/'model.bin')
+    candidates = (['navai-medium','large-v3'] if model == 'gigaam-uzbek'
+                  else ['gigaam-uzbek','large-v3'] if model == 'navai-medium'
+                  else ['gigaam-uzbek','navai-medium'])
+    secondary = next((name for name in candidates if weight(name).is_file()), candidates[0])
+    weights = weight(secondary)
+    warning = ''
+    confirmed = set()
+    words = []
+    if weights.is_file():
+        try:
+            print('UZREELS Dubllar ikkinchi model bilan tekshirilmoqda…', flush=True)
+            words, _ = cached_transcript(timeline, track, inside, outside, secondary, cache, decode)
+            def aligned(part):
+                selected = [w for w in words if part['start'] <= (w.start+w.end)/2 <= part['end']]
+                text = _join(selected)
+                return {**part, 'tokens': tokens(text), 'text': text,
+                        'confidence': sum(w.confidence if w.confidence is not None else 1 for w in selected)/max(1,len(selected))}
+            for proposal in proposals:
+                original, kept = parts[proposal['id']], parts[proposal['kept_id']]
+                a, b = aligned(original), aligned(kept)
+                agreement = min(SequenceMatcher(None,p['tokens'],q['tokens'],autojunk=False).ratio()
+                                for p,q in ((original,a),(kept,b)))
+                if agreement >= .65 and repeated(a,b,'balanced'):
+                    confirmed.add(proposal['id'])
+        except Exception as exc:
+            warning = 'Ikkinchi model tekshiruvi tugamadi; shubhali dubllar saqlandi: '+str(exc)[-300:]
+    else:
+        warning = 'Ikkinchi tekshiruv modeli o‘rnatilmagan; takroriy dubllar tekshirish uchun saqlandi.'
+    for proposal in proposals:
+        proposal['verified'] = proposal['id'] in confirmed
+        proposal['verifier'] = secondary
+        if not proposal['verified']:
+            proposal['reason'] = 'Ikki model tasdiqlamadi · saqlandi'
+    return words, warning
 
 
 def merged_ranges(ranges, duration):
@@ -224,9 +303,18 @@ def run(source,output,settings,*,vad=True,decode=reels_transcribe):
     threshold=number('threshold',-42,-80,-10);window=number('window',45,3,120)
     if not any(c.enabled for t in timeline.video for c in t):raise ValueError('Faol video klip topilmadi.')
     print('UZREELS Nutq va pauzalar tahlili…',flush=True)
-    step=max(1,round(fps/10));track,activity,audio_warning=speech_activity(timeline,track,step,inside,outside,threshold,vad=vad)
+    step=max(1,round(fps/10));track,activity,audio_warning=speech_activity(timeline,track,step,inside,outside,threshold,vad=vad,neural=True)
     if not any(activity[inside//step:math.ceil(outside/step)]>threshold):raise ValueError('Tanlangan audio kanalida bu oraliqda nutq topilmadi. Nutqli audio trekni tanlang; mikrofon va trekning mute holatini tekshiring.')
     plan=[{'start':i*step,'end':min(timeline.duration,(i+1)*step),'silent':bool(level<=threshold)} for i,level in enumerate(activity)]
+    proposals=[];parts=[];cached=False;verification_warning='';words=[]
+    cache=source.parent/'reels-cache'
+    if settings.get('remove_retakes',True):
+        words,cached=cached_transcript(timeline,track,inside,outside,model,cache,decode)
+        if not words:raise ValueError('Nutq matni tanilmadi. Boshqa model yoki faqat pauza rejimini sinang.')
+        parts=utterances(words,gap=gap);proposals=retake_proposals(parts,window=window,strength=strength,keep=keep)
+        secondary_words,verification_warning=verify_retakes(timeline,track,inside,outside,model,cache,parts,proposals,decode)
+        words=words+secondary_words
+    protect_words(plan,words,fps,padding)
     retained=retained_ranges(plan,timeline.duration,inside=inside,outside=outside,
                              remove_silence=bool(settings.get('remove_silence',True)),silence_frames=round(silence*fps),pad_frames=round(padding*fps))
     ranges=[];cursor=0
@@ -234,14 +322,10 @@ def run(source,output,settings,*,vad=True,decode=reels_transcribe):
         if a>cursor:ranges.append((cursor,a))
         cursor=b
     if cursor<timeline.duration:ranges.append((cursor,timeline.duration))
-    proposals=[];parts=[];cached=False
-    if settings.get('remove_retakes',True):
-        words,cached=cached_transcript(timeline,track,inside,outside,model,source.parent/'reels-cache',decode)
-        if not words:raise ValueError('Nutq matni tanilmadi. Boshqa model yoki faqat pauza rejimini sinang.')
-        parts=utterances(words,gap=gap);proposals=retake_proposals(parts,window=window,strength=strength,keep=keep)
+    if proposals:
         protected_ids=settings.get('keep_retake_ids',[])
         for proposal in proposals:
-            proposal['remove']=proposal['id'] not in protected_ids
+            proposal['remove']=proposal['verified'] and proposal['id'] not in protected_ids
             if not proposal['remove']:continue
             part=parts[proposal['id']];previous=parts[proposal['id']-1]['end'] if proposal['id'] else inside/fps
             following=parts[proposal['id']+1]['start'] if proposal['id']+1<len(parts) else outside/fps
@@ -256,7 +340,7 @@ def run(source,output,settings,*,vad=True,decode=reels_transcribe):
             'original_frames':timeline.duration,'output_frames':total,'output_seconds':total/fps,
             'removed_seconds':(timeline.duration-total)/fps,'retakes':proposals,
             'removed_retakes':sum(p['remove'] for p in proposals),'cuts':schedule,
-            'audio': track, 'warnings': ([audio_warning] if audio_warning else []) + (['Timeline’da yaratilgan qatlamlar bor. Premiere XML ayrim Adjustment Layer/Graphic effektlarini saqlamaydi; yangi sequence ko‘rinishini tekshiring.'] if any(c.path is None for t in timeline.video for c in t) else []) + (['Kesishga tushgan fade/transition yangi sequence’da olib tashlanadi.'] if len(result.findall('.//transitionitem')) < len(timeline.sequence.findall('.//transitionitem')) else []),
+            'audio': track, 'cleanup_engine':'silero-v6+dual-asr', 'warnings': ([audio_warning] if audio_warning else []) + ([verification_warning] if verification_warning else []) + (['Timeline’da yaratilgan qatlamlar bor. Premiere XML ayrim Adjustment Layer/Graphic effektlarini saqlamaydi; yangi sequence ko‘rinishini tekshiring.'] if any(c.path is None for t in timeline.video for c in t) else []) + (['Kesishga tushgan fade/transition yangi sequence’da olib tashlanadi.'] if len(result.findall('.//transitionitem')) < len(timeline.sequence.findall('.//transitionitem')) else []),
             'transcript':[{k:v for k,v in p.items() if k!='tokens'} for p in parts]}
     output.parent.mkdir(parents=True,exist_ok=True);temporary=output.with_suffix('.tmp.xml')
     ET.ElementTree(result).write(temporary,encoding='utf-8',xml_declaration=True);temporary.replace(output)

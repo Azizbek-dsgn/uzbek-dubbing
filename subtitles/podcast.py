@@ -160,8 +160,8 @@ def audio_route(clip: Clip) -> tuple[int, int]:
     raise ValueError(f'{clip.path.name}: manba audio kanali {physical + 1} topilmadi ({sum(counts)} kanal bor).')
 
 
-def track_activity(timeline: Timeline, track_index: int, step: int, *, vad: bool = True) -> np.ndarray:
-    """Decode one microphone in small chunks, retaining only loudness windows."""
+def track_activity(timeline: Timeline, track_index: int, step: int, *, vad: bool = True, neural: bool = False) -> np.ndarray:
+    """Decode bounded chunks. Neural cleanup retains quiet speech; cameras use loudness."""
     import imageio_ffmpeg
     if not 0 <= track_index < len(timeline.audio):
         raise ValueError('Tanlangan mikrofon treki topilmadi.')
@@ -190,17 +190,36 @@ def track_activity(timeline: Timeline, track_index: int, step: int, *, vad: bool
         with tempfile.TemporaryFile() as error:
             process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=error)
             consumed = 0
+            context = np.empty(0, dtype=np.float32)
+            block_bytes = samples_per_window * 300 * 4
             try:
+                pending = process.stdout.read(block_bytes)
                 while True:
-                    data = process.stdout.read(samples_per_window * 300 * 4)
+                    data = pending
+                    pending = process.stdout.read(block_bytes)
                     if not data:
                         break
                     audio = np.frombuffer(data, dtype='<f4')
                     mask = np.ones(len(audio), dtype=bool)
                     if speech:
                         mask[:] = False
-                        for turn in speech(audio, sampling_rate=16000):
-                            mask[max(0, turn['start']):min(len(audio), turn['end'])] = True
+                        if neural:
+                            # Half a second on both sides avoids resetting VAD at a word.
+                            following = np.frombuffer(pending, dtype='<f4')[:8000]
+                            detection = np.concatenate((context, audio, following))
+                            peak = float(np.percentile(np.abs(detection), 99.5))
+                            if peak > 1e-5:
+                                detection = detection * min(8.0, max(1.0, .1/peak))
+                            turns = speech(detection, sampling_rate=16000, threshold=.35,
+                                           min_silence_duration_ms=120, speech_pad_ms=120)
+                            offset = len(context)
+                        else:
+                            turns = speech(audio, sampling_rate=16000)
+                            offset = 0
+                        for turn in turns:
+                            a, b = max(0, turn['start']-offset), min(len(audio), turn['end']-offset)
+                            if b > a:
+                                mask[a:b] = True
                     for start in range(0, len(audio), samples_per_window):
                         end = min(len(audio), start + samples_per_window)
                         if not mask[start:end].any():
@@ -209,7 +228,8 @@ def track_activity(timeline: Timeline, track_index: int, step: int, *, vad: bool
                         frame = clip.start + round((consumed + start) / 16000 * fps)
                         index = frame // step
                         if 0 <= index < len(levels):
-                            levels[index] = max(levels[index], 20 * math.log10(max(rms, 1e-5)))
+                            levels[index] = max(levels[index], -5.0 if neural and speech else 20 * math.log10(max(rms, 1e-5)))
+                    context = audio[-8000:]
                     consumed += len(audio)
                 code = process.wait()
                 if code:
@@ -224,10 +244,11 @@ def track_activity(timeline: Timeline, track_index: int, step: int, *, vad: bool
 
 
 def speech_activity(timeline: Timeline, selected: int, step: int, inside: int, outside: int,
-                    threshold: float, *, vad: bool = True, allow_sibling: bool = True):
+                    threshold: float, *, vad: bool = True, allow_sibling: bool = True, neural: bool = False):
     def audible(levels):
         return np.any(levels[inside // step:math.ceil(outside / step)] > threshold)
-    levels = track_activity(timeline, selected, step, vad=vad)
+    options = {'vad': vad, **({'neural': True} if neural else {})}
+    levels = track_activity(timeline, selected, step, **options)
     if audible(levels) or not allow_sibling:
         return selected, levels, ''
     def signature(track):
@@ -239,7 +260,7 @@ def speech_activity(timeline: Timeline, selected: int, step: int, inside: int, o
         for index, track in enumerate(timeline.audio):
             if index == selected or signature(track) != selected_signature:
                 continue
-            alternative = track_activity(timeline, index, step, vad=vad)
+            alternative = track_activity(timeline, index, step, **options)
             if audible(alternative):
                 return index, alternative, f'Audio {selected + 1} kanalida nutq yo‘q; shu klipning nutqli Audio {index + 1} kanali ishlatildi.'
     return selected, levels, ''

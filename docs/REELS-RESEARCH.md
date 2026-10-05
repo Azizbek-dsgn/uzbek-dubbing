@@ -32,3 +32,57 @@ Premiere may encode stereo as two `media/audio` components, each with `channelco
 ## Native shutdown recovery fix (0.6.7)
 
 A macOS crash report identified ONNX Runtime 1.30’s PosixTelemetry shutdown thread aborting after Reels XML/JSON output had already been written. All local Python processing entry points now set ORT_DISABLE_TELEMETRY=1 before native runtime initialization; the Reels panel also sets it before spawning Python. The panel saves complete stderr and exit code/signal to a per-run .log file and reports a process signal or explicit processing error instead of treating a PyTorch warning as the cause. The affected exported timeline/settings were rerun offline with the installed runtime, native VAD and cached transcript: output was created and Python exited 0. This check does not verify a Premiere XML import or a fresh GigaAM transcription.
+
+
+## 2026-10-06 · 0.6.8: conservative neural cleanup
+
+Reviewed upstream Silero VAD, WhisperX, TEN VAD and OpenCut. Silero VAD v6
+is already bundled by faster-whisper; reuse its local ONNX model rather than
+adding another platform-specific runtime. The TEN VAD license has additional
+Agora/non-compete restrictions, so it is not bundled. WhisperX forced alignment
+requires a suitable language alignment model; Uzbek support has not been
+validated and is not claimed. No code/weights from OpenCut or TEN were copied.
+
+Primary sources:
+- https://github.com/snakers4/silero-vad
+- https://github.com/m-bain/whisperX
+- https://github.com/SysAdminDoc/OpenCut
+- https://github.com/TEN-framework/ten-vad/blob/main/LICENSE
+
+Implementation:
+- Reels uses Silero speech activity independently of RMS threshold. Podcast
+  microphone loudness comparison retains its existing behavior.
+- Short-pause VAD settings: threshold 0.35, silence 120 ms, speech padding 120 ms.
+  500 ms past/future context across decode blocks; bounded gain up to 8x for
+  quiet speech detection only (source media/audio is not changed).
+- Primary ASR word spans protect silence boundaries with the user's padding.
+- Retake matching searches the configured time window, including interrupted
+  attempts. Numbers, negation, meaningful word differences remain protected.
+- Proposed deletions need independent ASR agreement: Giga uses local NavAI
+  when available, otherwise Whisper large-v3. NavAI/Whisper uses Uzbek Giga
+  when available; NavAI can fall back to Whisper, Whisper to NavAI. Only candidate-containing runs invoke
+  the second model; transcripts are cached using source/weight identities.
+- Both models must support the repeated phrase and agree with the primary text.
+  Uzbek Cyrillic and Latin are normalized for comparison; long takes with
+  up to two minor spelling differences may be nominated, but require strict
+  independent confirmation. Missing model, failure, disagreement or empty text preserves the proposed take
+  and reports the reason. Review can additionally preserve any confirmed take.
+
+This reuses existing pretrained models, not a newly trained Uzbek model. Model
+agreement can still share errors; editorial quality needs real human review.
+The first independent verification can take longer on CPU. All processing is
+local; no extra paid API or new dependency is required.
+
+Verification on the installed Intel Mac runtime:
+- 15 Reels unit/regression tests and 11 Podcast tests passed, including quiet
+  speech versus camera RMS, decode block context, model disagreement/failure,
+  missing verifier, Uzbek negation, Cyrillic/Latin and In/Out preservation.
+- Existing 160-second user export ran offline with native VAD and cached Uzbek
+  words, exited 0; removed 8.61 seconds versus the earlier 31.42 seconds. This
+  demonstrates changed cut boundaries, not a measured human editing score.
+- A private repeated-audio fixture exercised fresh GigaAM, NavAI and Whisper
+  inference. The engines disagreed and the candidate was retained. No promise
+  of perfect repeat removal: this favors retaining a doubtful take over losing
+  speech. These private media/transcripts are not packaged or committed.
+- No live Premiere import or Windows native inference test was performed for
+  this version. Existing XML/frame and panel tests continue to pass.

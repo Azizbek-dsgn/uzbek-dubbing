@@ -8,7 +8,7 @@ from unittest.mock import patch
 
 import numpy as np
 from subtitles.podcast import (camera_plan, retained_ranges, parse_timeline,
-                              make_schedule, edit_xml, run, media_path)
+                              make_schedule, edit_xml, run, media_path, track_activity)
 
 
 def fixture(path, duration=300, fps=25, microphones=2):
@@ -60,6 +60,28 @@ class PodcastTests(unittest.TestCase):
                 self.assertEqual(len(output.findall('.//transitionitem')),expected)
                 self.assertEqual(restored.audio[0][0].end,schedule[0]['end']-schedule[0]['start'])
                 self.assertEqual(len(restored.video[0]),3)
+
+    def test_neural_cleanup_keeps_quiet_voice_without_changing_camera_levels(self):
+        import wave
+        with tempfile.TemporaryDirectory() as temp:
+            source=Path(temp)/'source.xml';fixture(source,duration=1000,microphones=1)
+            # More than one decode block exercises past/future context too.
+            samples=(np.sin(np.arange(16000*43)*2*np.pi*220/16000)*32).astype('<i2')
+            with wave.open(str(source.parent/'media 0.wav'),'wb') as output:
+                output.setnchannels(1);output.setsampwidth(2);output.setframerate(16000);output.writeframes(samples.tobytes())
+            timeline=parse_timeline(source);calls=[]
+            def speech(audio,**options):
+                calls.append((len(audio),options))
+                return [{'start':0,'end':len(audio)}]
+            with patch('faster_whisper.vad.get_speech_timestamps',side_effect=speech):
+                neural=track_activity(timeline,0,3,neural=True)
+                self.assertTrue(np.all(neural>-10))
+                self.assertEqual(len(calls),2)
+                self.assertEqual(calls[0][0],3*16000//25*300+8000)
+                self.assertEqual(calls[0][1]['min_silence_duration_ms'],120)
+                calls.clear();camera=track_activity(timeline,0,3)
+                self.assertTrue(np.all(camera<-42))
+                self.assertNotIn('threshold',calls[0][1])
 
     def test_initial_camera_is_actual_speaker_and_brief_bleed_does_not_cut(self):
         levels=np.full((2,100),-100.);levels[1,:]=-20;levels[0,20:22]=-12
