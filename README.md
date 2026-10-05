@@ -35,7 +35,11 @@ Tanlangan sozlamalar panel qayta ochilganda saqlanadi. Batafsil SRT vaqt kodlari
 - Premiere’da **bitta audio trekni** tanlash mumkin. Eksport vaqtida boshqa treklar vaqtincha o‘chiriladi va avvalgi holati tiklanadi. AE’da kompozitsiya ovozi olinadi.
 - **Bir nechta media fayl** bo‘limida papka yo‘lini kiriting; har bir audio/video uchun SRT (tanlangan bo‘lsa VTT/ASS ham) `exports/batch/` ichida yaratiladi. Bu bo‘lim fayllarni timeline’ga import qilmaydi.
 
-Yangi model va speaker fayllari o‘rnatilgan runtime `models/` papkasida. Faqat source ZIP’ni boshqa kompyuterga ko‘chirsangiz, modellarni alohida o‘rnatishingiz kerak. Speaker modeli [`pyannote-community/speaker-diarization-community-1`](https://huggingface.co/pyannote-community/speaker-diarization-community-1), CC BY 4.0 litsenziyasi bilan. Uni ishlatish uchun `pip install -r subtitles/requirements-speakers.txt` va model snapshot’ini `models/speaker-diarization/` ga yuklang. Audio torchcodec ishlamaydigan macOS’da ffmpeg orqali xotiraga o‘qiladi.
+Terminal o‘rnatuvchi Python, FFmpeg, GigaAM, Whisper large-v3, NavAI medium Uzbek,
+Rubai matn modeli va ONNX so‘zlovchilar modellarini avtomatik tayyorlaydi va ishga
+tushirib tekshiradi. Qo‘lda speaker modeli yoki hisob tokeni kiritish kerak emas.
+O‘rnatilgan modellar runtime `models/` papkasida qoladi; yangilashda qayta ishlatiladi.
+Legacy pyannote modeli bor foydalanuvchilar uchun moslik saqlangan.
 
 Bizning 6 ta qisqa FLEURS o‘qib aytilgan nutq sinovimizda (jami 50 referens so‘z) NavAI small 6, GigaAM 8, NavAI medium 9 so‘z xatosi berdi. Bu juda kichik namuna va real suhbatdagi ustunlikni isbotlamaydi. Mualliflar natijalari ham turli benchmarklarda olingan. Sizning audiongiz berilmagani uchun o‘sha nutqda aniqlikni baholay olmadik.
 
@@ -59,7 +63,7 @@ Taxminan 2.3 GB checkpoint yuklanadi. Mavjud o‘rnatilgan plagin uchun Python p
 
 ## O‘zbekchaga maxsus model
 
-[`navai-uz/whisper-medium-uzbek`](https://huggingface.co/navai-uz/whisper-medium-uzbek) Apache-2.0 litsenziyali model. Uni `faster-whisper` uchun CTranslate2 `int8` formatiga o‘girib `models/navai-medium/` papkasiga joylang:
+[`navai-uz/whisper-medium-uzbek`](https://huggingface.co/navai-uz/whisper-medium-uzbek) Apache-2.0 litsenziyali model. Terminal o‘rnatuvchi uni avtomatik tayyorlaydi. Quyidagi buyruqlar faqat qo‘lda ishlab chiqish uchun. Uni `faster-whisper` uchun CTranslate2 `int8` formatiga o‘girib `models/navai-medium/` papkasiga joylang:
 
 ```bash
 python3 -m pip install 'transformers>=4.40,<5' 'torch>=2.2'

@@ -76,7 +76,7 @@ Hozirgi podcast integratsiyasi **Premiere Pro uchun beta**; After Effects’da s
 | UzScribe Global | Whisper large-v3 | Avtomatik, katta model |
 | UzScribe Uzbek Studio | NavAI Whisper medium Uzbek | Mavjud bo‘lsa panelda |
 
-Bular paneldagi qulay nomlar; modellarni UzScribe o‘qitgan degan da’vo yo‘q. Small/tiny va tajriba variantlari tanlovdan chiqarildi. Yangilash muvaffaqiyatli tugagach, pluginning `models/navai-small`, `models/small`, `models/tiny` papkalari tozalanadi. Foydalanuvchining boshqa keshlariga tegilmaydi. Standart transkripsiya tili o‘zbekcha. Global model va GigaAM jami taxminan 5.4 GB; Python muhiti bilan kamida 12 GB bo‘sh disk joyi tavsiya etiladi.
+Bular paneldagi qulay nomlar; modellarni UzScribe o‘qitgan degan da’vo yo‘q. Small/tiny va tajriba variantlari tanlovdan chiqarildi. Yangilash muvaffaqiyatli tugagach, pluginning `models/navai-small`, `models/small`, `models/tiny` papkalari tozalanadi. Foydalanuvchining boshqa keshlariga tegilmaydi. Standart transkripsiya tili o‘zbekcha. To‘liq model to‘plami va NavAI’ni birinchi tayyorlash uchun vaqtinchalik fayllar ham yuklanadi. Python muhiti bilan kamida 20 GB bo‘sh disk joyi tavsiya etiladi.
 
 Podcast avtomatik sinovlari: sintetik mikrofonlar bilan FFmpeg tahlili, haqiqiy Silero VAD, kamera tanlash, pauzani kesish, FPS va audio/video sinxronligi, panel workflow hamda host mock. Haqiqiy Premiere Pro’da 2020+ versiyalarning barchasi hali tekshirilmagan.
 
@@ -152,3 +152,37 @@ Verified: 25 subtitle tests, selected-layer/direct-source host tests, and panel
 workflow tests with simulated Windows environment, UTF-8, trim and source-file
 preservation. Windows native AE was not available for an end-to-end OS test.
 Use the same one-command installers above to update; no uninstall is required.
+
+
+### 0.7.0 · Complete one-command setup
+
+The same Mac/Windows commands now also install NavAI medium Uzbek (converted
+locally to int8), Rubai transcript correction, and token-free ONNX speaker
+segmentation/embedding models. Python/FFmpeg, GigaAM, Whisper, Silero VAD and
+animation dependencies remain automatic. The installer validates feature files,
+loads the engines and processes test audio/text before reporting success. A
+runtime `install-report.json` lists verified models. Failed/interrupted downloads
+can be retried with the same command. Existing complete ASR models are reused;
+corrupt speaker files are replaced atomically after SHA-256 verification. New
+model downloads need internet and can take time. Software cannot guarantee
+success on arbitrary hardware, unavailable network services or blocked Adobe.
+
+AE direct source audio now handles positive static layer stretch (1–10000%) via
+FFmpeg tempo and source seek, plus common visual effects such as Lumetri, Curves,
+Tint and Gaussian Blur. Work Area/selected layer timing is preserved. Active
+unknown/audio effects, animated audio levels, negative stretch, Time Remap and
+precomps use isolated native audio rendering to preserve their sound/timing.
+No finished video render is produced. Effect-name reference:
+https://ae-scripting.docsforadobe.dev/matchnames/effects/firstparty/
+
+Verified locally: speaker model downloads/checksums, Uzbek source audio,
+public four-speaker demo (four clusters), Whisper conversion architecture fixture,
+real FFmpeg 0.5x/1x/2x durations and original-file preservation, installer/asset
+failure tests and Windows panel simulation. Windows native Adobe and a fresh
+Intel Mac installation still require separate device tests.
+
+The full offline installer verification also passed on the current Mac: Whisper,
+GigaAM, NavAI, ONNX speakers, Rubai generation and animation font loading.
+Dynamic model code caches now live in the plugin runtime, avoiding a separate
+home-directory cache permission requirement. This is a test of existing models
+plus fresh public speaker downloads, not a clean Windows/Intel installation.

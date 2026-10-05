@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import json
 import os
 import platform
 import subprocess
@@ -14,6 +15,7 @@ import venv
 from pathlib import Path
 
 from install import destinations, install, _copy_panel, _enable_debug
+from subtitles.model_assets import require_features
 
 
 ROOT = Path(__file__).resolve().parent
@@ -74,6 +76,8 @@ if not valid_checkpoint():
 
 VERIFY_RUNTIME = r"""
 import faulthandler
+import os
+os.environ["ORT_DISABLE_TELEMETRY"]="1"
 import gc
 import sys
 import tempfile
@@ -82,6 +86,7 @@ from pathlib import Path
 faulthandler.enable()
 
 runtime = Path(sys.argv[1])
+os.environ["HF_MODULES_CACHE"]=str(runtime/"models"/".hf-modules")
 sys.path.insert(0, str(runtime))
 from PIL import Image, ImageFont
 from subtitles.animations import font_path
@@ -102,10 +107,19 @@ with tempfile.TemporaryDirectory(prefix="uzscribe-check-") as temporary:
         output.writeframes(b"\0\0" * 16000)
     from subtitles.cli import transcribe as caption_transcribe
     caption_transcribe(audio, "large-v3", "auto")
+    caption_transcribe(audio, "navai-medium", "auto")
+    from subtitles.speakers import diarize
+    diarize(audio,runtime/"models/speaker-onnx")
+    from subtitles.sentences import local_corrector
+    correct=local_corrector(runtime)
+    if correct is None:raise RuntimeError("Matn modeli yuklanmagan")
+    correct("Salom.")
+    del correct
+    gc.collect()
     transcribe(audio, runtime / "models" / "gigaam-base-large",
                runtime / "models" / "gigaam-uzbek" / "checkpoints" /
                "large_full_600m" / "best.pt", "cpu")
-print("UzScribe Global, Uzbek va audio ishlov berish tekshiruvi o'tdi.", flush=True)
+print("UzScribe: Whisper, GigaAM, NavAI, matn, so‘zlovchilar va audio tekshiruvi o‘tdi.", flush=True)
 """
 
 
@@ -180,6 +194,13 @@ def _install_gigaam(runtime: Path, python: Path, uv: Path | None) -> None:
     _retry_download([str(python), "-c", DOWNLOAD_GIGAAM, str(runtime)])
 
 
+def _install_features(runtime: Path, python: Path, uv: Path | None) -> None:
+    command=([str(uv),'pip','install','--python',str(python)] if uv else
+             [str(python),'-m','pip','install','--disable-pip-version-check'])
+    subprocess.run([*command,'-r',str(ROOT/'subtitles/requirements-speakers.txt')],check=True)
+    _retry_download([str(python),str(runtime/'subtitles/model_assets.py'),str(runtime)])
+
+
 def _verify_installation(runtime: Path, panel: Path, python: Path) -> None:
     if not python.is_file():
         raise RuntimeError("UzScribe Python muhiti topilmadi")
@@ -192,8 +213,9 @@ def _verify_installation(runtime: Path, panel: Path, python: Path) -> None:
                   "large_full_600m" / "best.pt")
     if not checkpoint.is_file() or checkpoint.stat().st_size < 100_000_000:
         raise RuntimeError("GigaAM Uzbek 600M checkpointi to‘liq o‘rnatilmadi")
+    require_features(runtime)
     for name in ("CSXS/manifest.xml", "index.html", "panel.js", "license-core.js", "license-panel.js", "license-config.json", "animation-panel.js", "podcast-panel.js", "reels-panel.js", "text-tools-panel.js", "panel-ui.js",
-                 "assets/uzscribe-logo.jpg"):
+                 "assets/uzscribe-logo.jpg", "host/editor.jsx", "host/after_effects.jsx"):
         if not (panel / name).is_file():
             raise RuntimeError(f"Adobe panel fayli yetishmayapti: {name}")
 
@@ -226,11 +248,16 @@ def main() -> int:
                     developer=False, skip_dependencies=True, model_source=model)
         subprocess.run([str(python), "-c", "import faster_whisper, imageio_ffmpeg"], check=True)
         _install_gigaam(runtime, python, uv)
+        _install_features(runtime, python, uv)
         print("Modellar amalda ishga tushirib tekshirilmoqda…", flush=True)
         subprocess.run([str(python), "-c", VERIFY_RUNTIME, str(runtime)], check=True)
         _copy_panel(ROOT, panel)
         _enable_debug(sys.platform)
         _verify_installation(runtime, panel, python)
+        (runtime/'install-report.json').write_text(json.dumps({'version':'0.7.0',
+            'ready':True,'models':['large-v3','gigaam-uzbek','navai-medium','rubai-transcript','speaker-onnx'],
+            'verified':['audio','silero-vad','animations','caption-asr','text-correction','speaker-diarization']},ensure_ascii=False,indent=2),encoding='utf-8')
+        print('Tayyor: Scribe Giga, Scribe Nav, Whisper, matn tartiblash, so‘zlovchilar, audio va animatsiyalar.',flush=True)
         # Only plugin-owned weak models are removed after successful verification.
         import shutil
         for name in ("navai-small", "small", "tiny"):

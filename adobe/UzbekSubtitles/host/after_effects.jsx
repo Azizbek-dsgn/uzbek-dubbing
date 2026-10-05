@@ -1,4 +1,4 @@
-// After Effects adapter: composition/work area and native Render Queue audio.
+// After Effects adapter: selected source audio, native fallback for complex timing.
 function uzAeJson(s) {return String(s).replace(/\\/g,"\\\\").replace(/"/g,'\\"').replace(/\r/g,'\\r').replace(/\n/g,'\\n');}
 function uzAeLayerToken(layer) {
     var id = ''; try {if (layer.id !== undefined) id = String(layer.id);} catch (_) {}
@@ -38,20 +38,31 @@ function uzAeExportAudio(mode,outputPath,expectedName,expectedIdentity,expectedL
         if(expectedLayerToken && r.layerToken!==expectedLayerToken)throw new Error("Tanlangan video layer o‘zgargan. Layerni tanlab qayta boshlang.");
         if(expectedStart!==undefined && (Math.abs(r.start-Number(expectedStart))>.0001 || Math.abs(r.duration-Number(expectedDuration))>.0001))throw new Error("Layer/Work Area vaqti o‘zgargan. Qayta boshlang.");
         // Ordinary footage needs only its source audio; FFmpeg trims it in the panel.
-        // Native audio rendering remains necessary for remap/stretch/effects/precomps.
-        var sourceFile=null, direct=false;
+        // Native audio rendering remains necessary for remap/audio effects/precomps.
+        var sourceFile=null, direct=false,tempo=1,seek=0;
         try {
             sourceFile=r.layer.source.file;
             var effects=r.layer.property('ADBE Effect Parade');
             var levels=r.layer.property('ADBE Audio Group').property('ADBE Audio Levels');
-            direct=sourceFile && sourceFile.exists && Number(r.layer.stretch)===100 &&
-                !r.layer.timeRemapEnabled && effects && effects.numProperties===0 &&
+            var visual={'ADBE Lumetri':1,'ADBE CurvesCustom':1,'ADBE Gaussian Blur 2':1,
+                        'ADBE Tint':1,'ADBE Fill':1,'ADBE Easy Levels2':1,'ADBE Pro Levels2':1,
+                        'ADBE Exposure2':1,'ADBE HUE SATURATION':1,'ADBE Slider Control':1,
+                        'ADBE Checkbox Control':1,'ADBE Point Control':1,'ADBE Angle Control':1,
+                        'ADBE Color Control':1,'ADBE Geometry2':1,'ADBE Corner Pin':1};
+            var harmless=Boolean(effects);
+            if(effects)for(var fx=1;fx<=effects.numProperties;fx++) {
+                var effect=effects.property(fx);
+                if(effect.enabled!==false && !visual[String(effect.matchName)])harmless=false;
+            }
+            var stretch=Number(r.layer.stretch);
+            tempo=100/stretch;seek=(r.start-Number(r.layer.startTime))*tempo;
+            direct=sourceFile && sourceFile.exists && isFinite(tempo) && stretch>=1 && stretch<=10000 &&
+                !r.layer.timeRemapEnabled && harmless &&
                 levels && levels.numKeys===0 && !levels.expressionEnabled &&
-                Number(levels.value[0])===0 && Number(levels.value[1])===0 &&
-                r.start-Number(r.layer.startTime)>=0;
+                Number(levels.value[0])===0 && Number(levels.value[1])===0 && seek>=0;
         } catch(directError) {direct=false;}
         if(direct) {
-            return '{"path":"'+uzAeJson(sourceFile.fsName)+'","direct":true,"seek":'+(r.start-Number(r.layer.startTime))+',"duration":'+r.duration+',"name":"'+uzAeJson(comp.name)+'","identity":"'+uzAeJson(comp.id)+'","layer_token":"'+uzAeJson(r.layerToken)+'"}';
+            return '{"path":"'+uzAeJson(sourceFile.fsName)+'","direct":true,"seek":'+seek+',"tempo":'+tempo+',"duration":'+r.duration+',"name":"'+uzAeJson(comp.name)+'","identity":"'+uzAeJson(comp.id)+'","layer_token":"'+uzAeJson(r.layerToken)+'"}';
         }
         // Render a disposable duplicate: preserve layer timing, stretch, remap and audio effects.
         // All isolation toggles belong to the duplicate, never to the user's composition.

@@ -712,13 +712,19 @@
     var code='import sys,subprocess,signal,imageio_ffmpeg\n'+
       'trim=["-ss",sys.argv[3]] if len(sys.argv)>3 else []\n'+
       'limit=["-t",sys.argv[4]] if len(sys.argv)>4 else []\n'+
-      'p=subprocess.Popen([imageio_ffmpeg.get_ffmpeg_exe(),"-nostdin","-v","error","-y"]+trim+["-i",sys.argv[1]]+limit+["-vn","-ac","1","-ar","16000","-c:a","pcm_s16le",sys.argv[2]])\n'+
+      'tempo=float(sys.argv[5]) if len(sys.argv)>5 else 1.0\n'+
+      'filters=[]\n'+
+      'while tempo>2: filters.append("atempo=2");tempo/=2\n'+
+      'while tempo<0.5: filters.append("atempo=0.5");tempo/=0.5\n'+
+      'filters.append("atempo="+str(tempo))\n'+
+      'audio_filter=["-af",",".join(filters)]\n'+
+      'p=subprocess.Popen([imageio_ffmpeg.get_ffmpeg_exe(),"-nostdin","-v","error","-y"]+trim+["-i",sys.argv[1]]+audio_filter+limit+["-vn","-ac","1","-ar","16000","-c:a","pcm_s16le",sys.argv[2]])\n'+
       'def stop(*args):\n p.terminate()\n raise KeyboardInterrupt\n'+
       'signal.signal(signal.SIGTERM,stop)\n'+
       'try: sys.exit(p.wait())\n'+
       'finally:\n if p.poll() is None: p.kill();p.wait()\n';
     var audioArgs=['-c',code,source,destination];
-    if(direct)audioArgs.push(String(exportInfo.seek),String(exportInfo.duration));
+    if(direct)audioArgs.push(String(exportInfo.seek),String(exportInfo.duration),String(exportInfo.tempo||1));
     var child=spawn(python.value,audioArgs,{windowsHide:true,env:Object.assign({},process.env,{PYTHONUTF8:'1',PYTHONIOENCODING:'utf-8',ORT_DISABLE_TELEMETRY:'1'})}),error='',closed=false;state.child=child;
     if(process.platform==='win32')child.kill=function(){spawn('taskkill',['/PID',String(child.pid),'/T','/F']);};
     child.stderr.on('data',function(data){error=(error+String(data)).slice(-1500);});

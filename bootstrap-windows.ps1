@@ -6,6 +6,12 @@ $logRoot = Join-Path $env:LOCALAPPDATA 'UzbekSubtitles'
 $logPath = Join-Path $logRoot 'install.log'
 $previousUvInstall = $env:UV_UNMANAGED_INSTALL
 $previousUzscribeUv = $env:UZSCRIBE_UV_BIN
+$previousPythonUtf8 = $env:PYTHONUTF8
+$previousPythonEncoding = $env:PYTHONIOENCODING
+$env:PYTHONUTF8 = '1'
+$env:PYTHONIOENCODING = 'utf-8'
+try { [Console]::OutputEncoding = [Text.UTF8Encoding]::new($false) } catch {}
+$OutputEncoding = [Text.UTF8Encoding]::new($false)
 New-Item -ItemType Directory -Path $work | Out-Null
 New-Item -ItemType Directory -Path $logRoot -Force | Out-Null
 $transcriptStarted = $false
@@ -99,5 +105,7 @@ try {
   if ($transcriptStarted) { Stop-Transcript | Out-Null }
   $env:UV_UNMANAGED_INSTALL = $previousUvInstall
   $env:UZSCRIBE_UV_BIN = $previousUzscribeUv
+  $env:PYTHONUTF8 = $previousPythonUtf8
+  $env:PYTHONIOENCODING = $previousPythonEncoding
   Remove-Item -LiteralPath $work -Recurse -Force -ErrorAction SilentlyContinue
 }

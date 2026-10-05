@@ -9,7 +9,7 @@ from unittest.mock import patch
 
 from install import destinations, install
 from install_online import (CONVERT, DOWNLOAD_GIGAAM, _navai_ready,
-                            _prepare_environment, _install_gigaam,
+                            _prepare_environment, _install_gigaam, _install_features,
                             _verify_installation, VERIFY_RUNTIME, _retry_download)
 
 
@@ -160,7 +160,7 @@ class InstallerTests(unittest.TestCase):
                        ('config.json', 'modeling_gigaam.py')),
                      *(panel / name for name in
                        ('CSXS/manifest.xml', 'index.html', 'panel.js', 'license-core.js', 'license-panel.js', 'license-config.json', 'animation-panel.js', 'podcast-panel.js', 'reels-panel.js', 'text-tools-panel.js', 'panel-ui.js',
-                        'assets/uzscribe-logo.jpg'))]
+                        'assets/uzscribe-logo.jpg','host/editor.jsx','host/after_effects.jsx'))]
             for path in files:
                 path.parent.mkdir(parents=True, exist_ok=True)
                 path.touch()
@@ -171,10 +171,20 @@ class InstallerTests(unittest.TestCase):
             checkpoint.parent.mkdir(parents=True)
             with checkpoint.open('wb') as output:
                 output.truncate(100_000_001)
-            _verify_installation(runtime, panel, python)
-            (panel / 'panel.js').unlink()
-            with self.assertRaisesRegex(RuntimeError, 'panel.js'):
+            with patch('install_online.require_features') as required:
                 _verify_installation(runtime, panel, python)
+                required.assert_called_once_with(runtime)
+            (panel / 'panel.js').unlink()
+            with patch('install_online.require_features'),self.assertRaisesRegex(RuntimeError, 'panel.js'):
+                _verify_installation(runtime, panel, python)
+
+    def test_feature_install_is_mandatory_and_runs_in_runtime_python(self):
+        runtime=Path('/runtime');python=runtime/'.venv/Scripts/python.exe'
+        with patch('install_online.subprocess.run') as run,patch('install_online._retry_download') as download:
+            _install_features(runtime,python,Path('/uv.exe'))
+            self.assertIn(str(python),run.call_args.args[0])
+            self.assertIn('requirements-speakers.txt',run.call_args.args[0][-1])
+            download.assert_called_once_with([str(python),str(runtime/'subtitles/model_assets.py'),str(runtime)])
 
     def test_manifest_targets_adobe_2020_hosts_and_cep9(self):
         manifest = ET.parse(Path(__file__).resolve().parents[1] /

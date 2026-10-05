@@ -44,6 +44,9 @@ f.layers[0].property=name=>name==='ADBE Effect Parade'?{numProperties:0}:{proper
 info=JSON.parse(f.context.uzAeTimelineInfo('inout'));
 result=JSON.parse(f.context.uzAeExportAudio('inout','/tmp/direct.wav',f.comp.name,'42',info.layer_token,info.start,info.duration));
 assert.equal(result.direct,true);assert.equal(result.seek,4);assert.equal(result.duration,5);assert.equal(result.path,'C:\\Media\\voice.mov');assert.equal(f.renders,0);assert.equal(f.copy,null);assert.equal(f.existing.render,true);
+f.layers[0].stretch=200;
+f.layers[0].property=name=>name==='ADBE Effect Parade'?{numProperties:1,property:()=>({matchName:'ADBE Lumetri',enabled:true})}:{property:()=>({numKeys:0,expressionEnabled:false,value:[0,0]})};
+result=JSON.parse(f.context.uzAeExportAudio('inout','/tmp/stretch.wav',f.comp.name,'42'));assert.equal(result.direct,true);assert.equal(result.seek,2);assert.equal(result.tempo,.5);assert.equal(result.duration,5);assert.equal(f.renders,0);
 f.layers[0].property=name=>name==='ADBE Effect Parade'?{numProperties:1}:{property:()=>({numKeys:0,expressionEnabled:false,value:[0,0]})};
 result=JSON.parse(f.context.uzAeExportAudio('inout','/tmp/effected.wav',f.comp.name,'42'));assert(!result.direct);assert.equal(f.renders,1);
 

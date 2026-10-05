@@ -41,7 +41,10 @@ def _copy_runtime(package: Path, target: Path, model_source: Path | None = None)
     model_target.mkdir(parents=True, exist_ok=True)
     for path in model.iterdir():
         if path.is_file() and path.resolve() != (model_target / path.name).resolve():
-            shutil.copy2(path, model_target / path.name)
+            target=model_target/path.name
+            pending=target.with_suffix(target.suffix+'.part')
+            shutil.copy2(path,pending)
+            pending.replace(target)
 
 
 def _verify_package(package: Path) -> None:

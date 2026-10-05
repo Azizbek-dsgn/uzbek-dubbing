@@ -73,7 +73,9 @@ class PodcastTests(unittest.TestCase):
             def speech(audio,**options):
                 calls.append((len(audio),options))
                 return [{'start':0,'end':len(audio)}]
-            with patch('faster_whisper.vad.get_speech_timestamps',side_effect=speech):
+            from types import ModuleType
+            vad=ModuleType('faster_whisper.vad');vad.get_speech_timestamps=speech
+            with patch.dict('sys.modules',{'faster_whisper':ModuleType('faster_whisper'),'faster_whisper.vad':vad}):
                 neural=track_activity(timeline,0,3,neural=True)
                 self.assertTrue(np.all(neural>-10))
                 self.assertEqual(len(calls),2)
