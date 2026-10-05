@@ -1,31 +1,54 @@
 // After Effects adapter: composition/work area and native Render Queue audio.
 function uzAeJson(s) {return String(s).replace(/\\/g,"\\\\").replace(/"/g,'\\"').replace(/\r/g,'\\r').replace(/\n/g,'\\n');}
+function uzAeLayerToken(layer) {
+    var id = ''; try {if (layer.id !== undefined) id = String(layer.id);} catch (_) {}
+    var token = [id,layer.index,layer.name,layer.source.id,layer.inPoint,layer.outPoint,layer.startTime,layer.stretch,layer.timeRemapEnabled].join('|');
+    if (layer.timeRemapEnabled) {
+        var remap = layer.property('ADBE Time Remapping');
+        token += '|' + remap.expressionEnabled + '|' + remap.expression;
+        for (var k=1;k<=remap.numKeys;k++) token += '|' + remap.keyTime(k) + ':' + remap.keyValue(k);
+    }
+    return token;
+}
 function uzAeRange(mode) {
     var comp=app.project && app.project.activeItem;
-    if(!comp || !(comp instanceof CompItem))throw new Error("Avval audio bor kompozitsiyani oching.");
-    var total=Number(comp.duration),start=0,duration=total;
+    if(!comp || !(comp instanceof CompItem))throw new Error("Avval video bor kompozitsiyani oching.");
+    var selected=comp.selectedLayers;
+    if(!selected || selected.length!==1)throw new Error("Timeline’da subtitr qilinadigan bitta video layerni tanlang.");
+    var layer=selected[0];
+    if(!layer.source || !layer.source.hasVideo || !layer.hasAudio)throw new Error("Tanlangan layerda video va audio bo‘lishi kerak. Ovozli video layerni tanlang.");
+    var start=Math.max(0,Number(layer.inPoint)),end=Math.min(Number(comp.duration),Number(layer.outPoint));
     var ws=Number(comp.workAreaStart),wd=Number(comp.workAreaDuration);
-    var marked=wd>0.05 && (ws>0.05 || wd<total-0.05);
-    if(mode==='inout'&&!marked)throw new Error("AE’da Work Area’ni belgilang (B va N).");
-    if(mode!=='full'&&marked){start=Math.max(0,ws);duration=Math.min(wd,total-start);}
-    if(!(duration>0))throw new Error("Kompozitsiya/Work Area davomiyligi noto‘g‘ri.");
-    return {comp:comp,start:start,duration:duration,marked:mode!=='full'&&marked};
+    if(mode==='inout') {start=Math.max(start,ws);end=Math.min(end,ws+wd);}
+    if(!isFinite(start+end) || !(end>start))throw new Error("Tanlangan video layer bu oraliqda yo‘q. Layer yoki Work Area vaqtini tekshiring.");
+    return {comp:comp,layer:layer,layerToken:uzAeLayerToken(layer),start:start,duration:end-start,marked:mode==='inout'};
 }
 function uzAeTimelineInfo(mode) {
     try {
         var r=uzAeRange(mode),comp=r.comp;
-        return '{"host":"AEFT","start":'+r.start+',"duration":'+r.duration+',"marked":'+r.marked+',"fps":'+Number(comp.frameRate)+',"width":'+Number(comp.width)+',"height":'+Number(comp.height)+',"trackCount":0,"videoCount":0,"name":"'+uzAeJson(comp.name)+'","identity":"'+uzAeJson(comp.id)+'"}';
+        return '{"host":"AEFT","start":'+r.start+',"duration":'+r.duration+',"marked":'+r.marked+',"fps":'+Number(comp.frameRate)+',"width":'+Number(comp.width)+',"height":'+Number(comp.height)+',"layer_name":"'+uzAeJson(r.layer.name)+'","layer_token":"'+uzAeJson(r.layerToken)+'","layer_index":'+r.layer.index+',"trackCount":0,"videoCount":0,"name":"'+uzAeJson(comp.name)+'","identity":"'+uzAeJson(comp.id)+'"}';
     }catch(e){return '{"error":"'+uzAeJson(e.toString())+'"}';}
 }
-function uzAeExportAudio(mode,outputPath,expectedName,expectedIdentity) {
-    var item=null,disabled=[];
+function uzAeExportAudio(mode,outputPath,expectedName,expectedIdentity,expectedLayerToken,expectedStart,expectedDuration) {
+    var item=null,temporaryComp=null,disabled=[];
     try {
         var r=uzAeRange(mode),comp=r.comp,queue=app.project.renderQueue;
         if(comp.name!==expectedName || (expectedIdentity && String(comp.id)!==expectedIdentity))throw new Error("Faol kompozitsiya o‘zgargan. Avvalgi kompozitsiyani oching.");
         if(queue.rendering)throw new Error("AE Render Queue hozir ishlayapti. Tugashini kuting.");
+        if(expectedLayerToken && r.layerToken!==expectedLayerToken)throw new Error("Tanlangan video layer o‘zgargan. Layerni tanlab qayta boshlang.");
+        if(expectedStart!==undefined && (Math.abs(r.start-Number(expectedStart))>.0001 || Math.abs(r.duration-Number(expectedDuration))>.0001))throw new Error("Layer/Work Area vaqti o‘zgargan. Qayta boshlang.");
+        // Render a disposable duplicate: preserve layer timing, stretch, remap and audio effects.
+        // All isolation toggles belong to the duplicate, never to the user's composition.
+        temporaryComp=comp.duplicate(); temporaryComp.name='UzScribe audio · '+new Date().getTime();
+        for(var l=1;l<=temporaryComp.numLayers;l++) {
+            var isolated=temporaryComp.layer(l); isolated.locked=false; isolated.solo=false;
+            if(isolated.hasAudio) isolated.audioEnabled=l===r.layer.index;
+        }
+        var chosenLayer=temporaryComp.layer(r.layer.index); chosenLayer.guideLayer=false; chosenLayer.audioEnabled=true;
+
         // Save only render flags we change; do not touch DONE/error queue entries.
         for(var i=1;i<=queue.numItems;i++){var other=queue.item(i);if(other.render){disabled.push(other);other.render=false;}}
-        item=queue.items.add(comp);item.timeSpanStart=r.start;item.timeSpanDuration=r.duration;
+        item=queue.items.add(temporaryComp);item.timeSpanStart=r.start;item.timeSpanDuration=r.duration;
         var module=item.outputModule(1),templates=module.templates,format='',chosen='';
         for(var t=0;t<templates.length;t++) {
             try {
@@ -45,10 +68,11 @@ function uzAeExportAudio(mode,outputPath,expectedName,expectedIdentity) {
         // Output Module can adjust the extension: use its actual resulting path.
         var exported=item.outputModule(1).file;
         if(!exported || !exported.exists || exported.length<1000)throw new Error("AE kompozitsiya audiosi eksport qilinmadi. Audio yoqilganini va Render Queue xatosini tekshiring.");
-        return '{"path":"'+uzAeJson(exported.fsName)+'","name":"'+uzAeJson(comp.name)+'","identity":"'+uzAeJson(comp.id)+'","template":"'+uzAeJson(chosen)+'"}';
+        return '{"path":"'+uzAeJson(exported.fsName)+'","name":"'+uzAeJson(comp.name)+'","identity":"'+uzAeJson(comp.id)+'","layer_token":"'+uzAeJson(r.layerToken)+'","template":"'+uzAeJson(chosen)+'"}';
     }catch(e){return '{"error":"'+uzAeJson(e.toString())+'"}';}
     finally {
         if(item){try{item.remove();}catch(removeError){}}
+        if(temporaryComp){try{temporaryComp.remove();}catch(removeCompError){}}
         for(var j=0;j<disabled.length;j++){try{disabled[j].render=true;}catch(restoreError){}}
     }
 }

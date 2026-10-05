@@ -312,9 +312,9 @@
   }
   function hostUi(host) {
       Array.prototype.forEach.call(range.options,function(option){
-        if(option.value==='auto')option.textContent=host==='AEFT'?'Work Area yoki to‘liq kompozitsiya':'In/Out yoki to‘liq video';
-        if(option.value==='full')option.textContent=host==='AEFT'?'To‘liq kompozitsiya':'To‘liq video';
-        if(option.value==='inout')option.textContent=host==='AEFT'?'Faqat Work Area · B/N':'Faqat In/Out · I/O';
+        if(option.value==='auto')option.textContent=host==='AEFT'?'Tanlangan video layer':'In/Out yoki to‘liq video';
+        if(option.value==='full')option.textContent=host==='AEFT'?'Tanlangan layer · to‘liq':'To‘liq video';
+        if(option.value==='inout')option.textContent=host==='AEFT'?'Tanlangan layer · Work Area B/N':'Faqat In/Out · I/O';
       });
       if(premierePreset.parentNode)premierePreset.parentNode.hidden=host==='AEFT';
       if(audioTrack.parentNode)audioTrack.parentNode.hidden=host==='AEFT';
@@ -325,7 +325,7 @@
     getInfo(function (err, info) {
       if (activeRun) return;
       if (err) { timeline.textContent = err.message; return; }
-      timeline.textContent = info.name + ' · ' + info.duration.toFixed(2) + ' s · ' +
+      timeline.textContent = (info.host==='AEFT'&&info.layer_name ? info.layer_name : info.name) + ' · ' + info.duration.toFixed(2) + ' s · ' +
         (info.marked ? ('boshlanish ' + info.start.toFixed(2) + ' s') : 'to‘liq') +
         ' · ' + info.fps.toFixed(3) + ' fps';
       fps.value = info.fps.toFixed(3);
@@ -764,13 +764,13 @@
       }
       show('Timeline ovozi eksport qilinmoqda...');
       var exportExpression=info.host==='AEFT'
-        ? 'uzAeExportAudio('+[requestedRange,audio,info.name,info.identity||''].map(JSON.stringify).join(',')+')'
+        ? 'uzAeExportAudio('+[requestedRange,audio,info.name,info.identity||'',info.layer_token||'',Number(info.start),Number(info.duration)].map(JSON.stringify).join(',')+')'
         : 'uzExportAudio(' + JSON.stringify(requestedRange) + ',' + JSON.stringify(audio) + ',' + JSON.stringify(preset) + ',' + JSON.stringify(audioTrack.value) + ')';
       jsonCall(exportExpression,
         function (exportError, result) {
           if (runState.cancelled) { removeTemp(audio); finish('Bekor qilindi.'); return; }
           if (exportError) { removeTemp(audio); finish(exportError.message); return; }
-          if (result.name !== info.name || result.identity !== info.identity) {
+          if (result.name !== info.name || result.identity !== info.identity || (info.host==='AEFT' && info.layer_token && result.layer_token!==info.layer_token)) {
             removeTemp(audio); finish('Faol timeline eksport vaqtida o‘zgargan. Qayta urinib ko‘ring.'); return;
           }
           if(info.host==='AEFT') {

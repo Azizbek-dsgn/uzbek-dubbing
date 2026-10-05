@@ -53,3 +53,7 @@ Har bir subtitr bloki (cue) faol kompozitsiyada bitta tahrirlanadigan text layer
 UzCaption rasmiy [plugin sahifasi](https://caption.uz/plugin) AE qo‘llovini ko‘rsatadi; ochiq sahifada AE ichki layer tuzilishi yoki manba kodi berilmagan. Ushbu o‘zgarish foydalanuvchi so‘ragan cue-per-layer ish jarayoni va Adobe text animator API asosida yozildi.
 
 Mahalliy Node host testlari layer soni, butun matn, range indekslari (paragraph break hisoblanmaydi), offset, yordamchi shape, Composer va xatoda rollbackni tekshiradi. Ushbu o‘zgarishning haqiqiy Adobe host sinovi hali tasdiqlanmagan.
+
+## After Effects: selected video (0.6.3)
+
+Select exactly one video layer with audio in the composition timeline. Automatic/full range uses that layer’s visible in/out range; Work Area mode uses its intersection with the selected layer. Only the selected layer’s audio is rendered from a disposable composition copy. The original audio, solo, lock and guide settings are preserved; native rendering keeps stretch, time remapping and audio effects. Captions appear in the original composition at the corresponding timeline times, with one editable text layer per cue.
