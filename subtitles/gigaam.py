@@ -8,6 +8,10 @@ import subprocess
 import tempfile
 from pathlib import Path
 
+# ONNX Runtime 1.29+ telemetry can abort macOS during native shutdown.
+# Local transcription needs no telemetry; opt out before runtime initialization.
+os.environ['ORT_DISABLE_TELEMETRY'] = '1'
+
 
 def _chunks(audio, rate: int, maximum: float = 22.0):
     """Split long speech near a quiet point without changing timeline offsets."""

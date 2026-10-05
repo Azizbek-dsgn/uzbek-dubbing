@@ -39,11 +39,11 @@
   function analyze(state){var config,output,options=settings(state.info),autoImport=!el('reelPreviewFirst').checked;
     try{var key=String(Date.now());output=path.join(path.dirname(state.source),key+'-reels.xml');config=path.join(path.dirname(state.source),key+'-settings.json');fs.writeFileSync(config,JSON.stringify(options),'utf8');}
     catch(e){fail(e.message);return;}
-    var log='';status('O‘zbekcha nutq va dubllar tahlil qilinmoqda…');
-    try{child=spawn(bridge.python.value,[path.join(bridge.root,'subtitles','reels.py'),'--input',state.source,'--output',output,'--settings',config],{windowsHide:true,env:Object.assign({},process.env,{PYTHONUTF8:'1',HF_HUB_OFFLINE:'1'})});}catch(e){fail(e.message);return;}
-    var processRef=child;child.stdout.on('data',function(chunk){if(!cancelled)status(String(chunk).trim());});child.stderr.on('data',function(chunk){log=(log+chunk).slice(-4000);});
+    var log='',logPath=output.replace(/\.xml$/,'.log');try{fs.writeFileSync(logPath,'UzScribe Reels\n','utf8');}catch(_){}status('O‘zbekcha nutq va dubllar tahlil qilinmoqda…');
+    try{child=spawn(bridge.python.value,[path.join(bridge.root,'subtitles','reels.py'),'--input',state.source,'--output',output,'--settings',config],{windowsHide:true,env:Object.assign({},process.env,{PYTHONUTF8:'1',HF_HUB_OFFLINE:'1',ORT_DISABLE_TELEMETRY:'1'})});}catch(e){fail(e.message);return;}
+    var processRef=child;child.stdout.on('data',function(chunk){if(!cancelled)status(String(chunk).trim());});child.stderr.on('data',function(chunk){log=(log+chunk).slice(-12000);try{fs.appendFileSync(logPath,String(chunk),'utf8');}catch(_){}});
     child.on('error',function(error){if(child===processRef)fail('Python ochilmadi: '+error.message);});
-    child.on('close',function(code){if(child!==processRef)return;child=null;if(cancelled){fail('Bekor qilindi. Asl sequence saqlandi.');return;}if(code!==0){fail('Reels montaji tugamadi:\n'+log.replace(/^Reels montaji tugamadi:\s*/, ''));return;}
+    child.on('close',function(code,signal){try{fs.appendFileSync(logPath,'\nExit: '+code+'; signal: '+(signal||'none')+'\n','utf8');}catch(_){}if(child!==processRef)return;child=null;if(cancelled){fail('Bekor qilindi. Asl sequence saqlandi.');return;}if(code!==0){var specific=log.match(/Reels montaji tugamadi:\s*([^\r\n]+)/g);var reason=specific?specific[specific.length-1].replace(/^Reels montaji tugamadi:\s*/, ''):signal?'Tahlil jarayoni '+signal+' bilan to‘xtadi.':'Tahlil jarayoni xato kodi '+code+' bilan to‘xtadi.';fail('Reels montaji tugamadi:\n'+reason+'\nTo‘liq jurnal: '+logPath);return;}
       try{var report=JSON.parse(fs.readFileSync(output.replace(/\.xml$/,'.json'),'utf8'));result={path:output,info:state.info,warnings:report.warnings||[]};review(report);phase(false);status('Tozalash tayyor. Dubllarni tekshirib, keraklisini saqlash mumkin.');if(autoImport)importResult();}
       catch(e){fail('Natija o‘qilmadi: '+e.message);}
     });

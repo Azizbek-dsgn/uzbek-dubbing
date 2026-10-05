@@ -22,6 +22,10 @@ from functools import lru_cache
 from pathlib import Path
 from urllib.parse import unquote, urlparse
 
+# ONNX Runtime 1.29+ telemetry can abort macOS during native shutdown.
+# Local transcription needs no telemetry; opt out before runtime initialization.
+os.environ['ORT_DISABLE_TELEMETRY'] = '1'
+
 import numpy as np
 
 

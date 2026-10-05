@@ -14,6 +14,10 @@ import subprocess
 from dataclasses import dataclass
 from pathlib import Path
 
+# ONNX Runtime 1.29+ telemetry can abort macOS during native shutdown.
+# Local transcription needs no telemetry; opt out before runtime initialization.
+os.environ['ORT_DISABLE_TELEMETRY'] = '1'
+
 
 @dataclass(frozen=True)
 class Word:

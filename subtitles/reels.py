@@ -9,6 +9,7 @@ import argparse
 import hashlib
 import json
 import math
+import os
 import platform
 import re
 import subprocess
@@ -19,6 +20,10 @@ import wave
 from difflib import SequenceMatcher
 from pathlib import Path
 import xml.etree.ElementTree as ET
+
+# ONNX Runtime 1.29+ telemetry can abort macOS during native shutdown.
+# Local transcription needs no telemetry; opt out before runtime initialization.
+os.environ['ORT_DISABLE_TELEMETRY'] = '1'
 
 # Match the verified Intel installation native-library initialization order.
 if sys.platform == 'darwin' and platform.machine().lower() == 'x86_64':
