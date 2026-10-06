@@ -6,6 +6,12 @@ os.environ['ORT_DISABLE_TELEMETRY']='1'
 from pathlib import Path
 import shutil
 import ssl
+import sys
+
+if not __package__:
+    sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from subtitles.install_storage import (GIB, RESERVE, SPACE_EXIT, InsufficientSpace,
+    require_space, navai_download_dir, navai_download_budget, is_disk_full, disk_full_message)
 import tempfile
 import urllib.request
 
@@ -54,6 +60,8 @@ def install_features(runtime):
     os.environ['HF_MODULES_CACHE']=str(runtime/'models'/'.hf-modules')
     from huggingface_hub import snapshot_download
     models = runtime/'models'
+    if not whisper_ready(models/'navai-medium'):
+        require_space(runtime, navai_download_budget(runtime)+RESERVE, 'Scribe Nav tayyorlash')
     speaker = models/'speaker-onnx'
     print('So‘zlovchilar modeli tekshirilmoqda/yuklanmoqda…', flush=True)
     for name,(url,digest) in SPEAKER_ASSETS.items():
@@ -64,25 +72,38 @@ def install_features(runtime):
         from transformers import AutoTokenizer
         from ctranslate2.converters import TransformersConverter
         with tempfile.TemporaryDirectory(prefix='uzscribe-navai-', dir=runtime) as temporary:
-            source=Path(temporary)/'source';converted=Path(temporary)/'converted'
+            source=navai_download_dir(runtime);converted=Path(temporary)/'converted'
+            if source.is_symlink():
+                raise RuntimeError('Nav yuklash papkasi symlink bo‘lishi mumkin emas.')
+            source.mkdir(parents=True, exist_ok=True)
             snapshot_download('navai-uz/whisper-medium-uzbek',revision=NAVAI_REVISION,local_dir=source,token=False,
                               allow_patterns=['*.json','*.txt','*.safetensors','LICENSE','NOTICE','README.md'])
+            require_space(runtime, int(1.2*GIB)+RESERVE, 'Scribe Nav konvertatsiyasi')
             AutoTokenizer.from_pretrained(str(source),local_files_only=True,use_fast=True).save_pretrained(source)
             TransformersConverter(str(source),copy_files=['tokenizer.json','preprocessor_config.json']).convert(str(converted),quantization='int8')
             if not whisper_ready(converted):
                 raise RuntimeError('Scribe Nav konvertatsiyasi to‘liq tugamadi.')
-            # Replace only an incomplete plugin-owned model, after conversion succeeds.
-            navai.mkdir(parents=True,exist_ok=True)
-            for path in converted.iterdir():
-                if path.is_file():
-                    target=navai/path.name;pending=target.with_suffix(target.suffix+'.part')
-                    shutil.copy2(path,pending);pending.replace(target)
             for name in ('LICENSE','NOTICE','README.md'):
-                if (source/name).is_file():shutil.copy2(source/name,navai/name)
+                if (source/name).is_file():shutil.copy2(source/name,converted/name)
+            # Rename on the same volume: no second model.bin copy at peak usage.
+            if navai.is_symlink():
+                raise RuntimeError('Nav model papkasi symlink bo‘lishi mumkin emas.')
+            backup=Path(temporary)/'previous'
+            if navai.exists():navai.replace(backup)
+            try:
+                converted.replace(navai)
+            except OSError:
+                if backup.exists():backup.replace(navai)
+                raise
+        # Delete only our raw conversion cache, after a validated model is installed.
+        shutil.rmtree(source)
     # Retain upstream attributions even when reusing an already converted model.
     snapshot_download('navai-uz/whisper-medium-uzbek',revision=NAVAI_REVISION,local_dir=navai,token=False,
                       allow_patterns=['LICENSE','NOTICE','README.md'])
     print('O‘zbekcha matn va tinish belgisi modeli tekshirilmoqda/yuklanmoqda…', flush=True)
+    corrector=models/'rubai-transcript/model.safetensors'
+    if not corrector.is_file() or corrector.stat().st_size < 100_000_000:
+        require_space(runtime, int(1.6*GIB)+RESERVE, 'Matn modeli yuklash')
     snapshot_download('islomov/rubai-corrector-transcript-uz',revision=RUBAI_REVISION,
                       local_dir=models/'rubai-transcript',token=False,allow_patterns=['*.json','model.safetensors','README.md'])
     require_features(runtime)
@@ -104,5 +125,9 @@ def require_features(runtime):
 
 
 if __name__=='__main__':
-    import sys
-    install_features(Path(sys.argv[1]))
+    try:
+        install_features(Path(sys.argv[1]))
+    except Exception as error:
+        if not is_disk_full(error):raise
+        print(str(error) if isinstance(error, InsufficientSpace) else disk_full_message(), file=sys.stderr, flush=True)
+        raise SystemExit(SPACE_EXIT)

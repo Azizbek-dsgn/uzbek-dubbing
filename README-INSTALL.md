@@ -8,24 +8,24 @@ Bu beta paket. macOS’da lokal transkripsiya sinovdan o‘tgan; Windows’da av
 
 ## GitHub’dan bir buyruq bilan o‘rnatish
 
-Quyidagi buyruqlar Git yoki Python’ni oldindan o‘rnatishni talab qilmaydi. Ular GitHub’dan kodni yuklab, Python 3.12 kerak bo‘lsa [uv](https://docs.astral.sh/uv/getting-started/installation/) orqali o‘rnatadi, [Whisper large-v3](https://huggingface.co/Systran/faster-whisper-large-v3) va [GigaAM Uzbek](https://huggingface.co/rustam1221/uzbek-asr-gigaam) modellarini yuklaydi hamda panelni Adobe CEP katalogiga qo‘yadi. Birinchi o‘rnatishda bir necha gigabayt bo‘sh disk joyi va internet kerak; keyingi transkripsiya offline ishlaydi. Adobe Premiere Pro yoki After Effects o‘zi avvaldan o‘rnatilgan bo‘lishi kerak.
+Quyidagi buyruqlar Git yoki Python’ni oldindan o‘rnatishni talab qilmaydi. Ular GitHub’dan kodni yuklab, Python 3.12 kerak bo‘lsa [uv](https://docs.astral.sh/uv/getting-started/installation/) orqali o‘rnatadi, [Whisper large-v3](https://huggingface.co/Systran/faster-whisper-large-v3) va [GigaAM Uzbek](https://huggingface.co/rustam1221/uzbek-asr-gigaam) modellarini yuklaydi hamda panelni Adobe CEP katalogiga qo‘yadi. Noldan to‘liq o‘rnatish uchun taxminan 25 GB (kamida 22 GiB) bo‘sh disk joyi va internet kerak; keyingi transkripsiya offline ishlaydi. Adobe Premiere Pro yoki After Effects o‘zi avvaldan o‘rnatilgan bo‘lishi kerak.
 
 macOS Terminal:
 
 ```sh
-bash -c 'set -o pipefail; curl -fsSL https://raw.githubusercontent.com/Azizbek-dsgn/uzbek-dubbing/feat/uzbek-subtitles-adobe/bootstrap-mac.sh | bash'
+bash -c 'set -o pipefail; curl -fsSL "https://raw.githubusercontent.com/Azizbek-dsgn/uzbek-dubbing/feat/uzbek-subtitles-adobe/bootstrap-mac.sh?v=0.8.1" | bash'
 ```
 
 Windows PowerShell:
 
 ```powershell
-powershell.exe -NoProfile -NoExit -ExecutionPolicy Bypass -Command "irm 'https://raw.githubusercontent.com/Azizbek-dsgn/uzbek-dubbing/feat/uzbek-subtitles-adobe/bootstrap-windows.ps1' | iex"
+powershell.exe -NoProfile -NoExit -ExecutionPolicy Bypass -Command "irm 'https://raw.githubusercontent.com/Azizbek-dsgn/uzbek-dubbing/feat/uzbek-subtitles-adobe/bootstrap-windows.ps1?v=0.8.1' | iex"
 ```
 
 Windows **Command Prompt (CMD, `C:\Users\...>` oynasi)**:
 
 ```bat
-powershell -NoProfile -NoExit -ExecutionPolicy Bypass -Command "Invoke-RestMethod 'https://raw.githubusercontent.com/Azizbek-dsgn/uzbek-dubbing/feat/uzbek-subtitles-adobe/bootstrap-windows.ps1' | Invoke-Expression"
+powershell -NoProfile -NoExit -ExecutionPolicy Bypass -Command "Invoke-RestMethod 'https://raw.githubusercontent.com/Azizbek-dsgn/uzbek-dubbing/feat/uzbek-subtitles-adobe/bootstrap-windows.ps1?v=0.8.1' | Invoke-Expression"
 ```
 
 Faqat oynangizga mos **bitta buyruqni** joylang. `bootstrap-windows.ps1` faylining ichidagi `$python`, `Invoke-WebRequest` kabi qatorlarni CMD’ga alohida joylamang; ular PowerShell sintaksisidir.
@@ -76,7 +76,7 @@ Hozirgi podcast integratsiyasi **Premiere Pro uchun beta**; After Effects’da s
 | UzScribe Global | Whisper large-v3 | Avtomatik, katta model |
 | UzScribe Uzbek Studio | NavAI Whisper medium Uzbek | Mavjud bo‘lsa panelda |
 
-Bular paneldagi qulay nomlar; modellarni UzScribe o‘qitgan degan da’vo yo‘q. Small/tiny va tajriba variantlari tanlovdan chiqarildi. Yangilash muvaffaqiyatli tugagach, pluginning `models/navai-small`, `models/small`, `models/tiny` papkalari tozalanadi. Foydalanuvchining boshqa keshlariga tegilmaydi. Standart transkripsiya tili o‘zbekcha. To‘liq model to‘plami va NavAI’ni birinchi tayyorlash uchun vaqtinchalik fayllar ham yuklanadi. Python muhiti bilan kamida 20 GB bo‘sh disk joyi tavsiya etiladi.
+Bular paneldagi qulay nomlar; modellarni UzScribe o‘qitgan degan da’vo yo‘q. Small/tiny va tajriba variantlari tanlovdan chiqarildi. Yangilash muvaffaqiyatli tugagach, pluginning `models/navai-small`, `models/small`, `models/tiny` papkalari tozalanadi. Foydalanuvchining boshqa keshlariga tegilmaydi. Standart transkripsiya tili o‘zbekcha. To‘liq model to‘plami va NavAI’ni birinchi tayyorlash uchun vaqtinchalik fayllar ham yuklanadi. Python muhiti bilan taxminan 25 GB (kamida 22 GiB) bo‘sh disk joyi tavsiya etiladi. Yangilashda o‘rnatuvchi faqat yetishmayotgan modellar va ishchi fayllar uchun joy hisoblaydi.
 
 Podcast avtomatik sinovlari: sintetik mikrofonlar bilan FFmpeg tahlili, haqiqiy Silero VAD, kamera tanlash, pauzani kesish, FPS va audio/video sinxronligi, panel workflow hamda host mock. Haqiqiy Premiere Pro’da 2020+ versiyalarning barchasi hali tekshirilmagan.
 
@@ -190,3 +190,15 @@ plus fresh public speaker downloads, not a clean Windows/Intel installation.
 ### 0.8.0 · Caption design studio
 
 12 replacement presets, 6 manual typography layouts plus automatic selection, configurable shape backgrounds and independent text/shape light sweeps. Installed system fonts are reused; no extra model or browser download is needed. After Effects creates editable native layers; Premiere imports a transparent MOV overlay. Close/reopen the panel after updating. See [animation guide](docs/ANIMATIONS.md).
+
+### 0.8.1 · Disk joyi va model yuklash
+
+`No space left on device` / `Errno 28` — o‘rnatish diskida joy tugagan. Plaginni o‘chirmang: shu diskda joy bo‘shating va yuqoridagi buyruqni qayta bajaring. O‘rnatuvchi yetishmayotgan modellarga qarab **bo‘sh / kerakli GiB** miqdorini ko‘rsatadi; boshqa diskdagi bo‘sh joy C: diskdagi o‘rnatmaga yordam bermaydi.
+
+- Python yuklashidan avval bootstrap diskida kamida 1 GiB tekshiriladi; kutubxona va modellardan avval to‘liq hisob tekshiriladi.
+- Disk to‘lishi yuklash uzilishi deb olinmaydi va uch marta qayta urinilmaydi (chiqish kodi 28).
+- NavAI xom modeli pluginning `models/.downloads/navai-<revision>` papkasida saqlanadi. Konvertatsiya uzilsa, qayta ishga tushirish shu yuklangan nusxani ishlatadi. Muvaffaqiyatli konvertatsiyadan keyin faqat shu vaqtinchalik nusxa tozalanadi.
+- Tayyor NavAI va Global modellari bir disk ichida ko‘chiriladi; `model.bin` uchun ikkinchi katta nusxa yozilmaydi.
+- Avvalgi o‘rnatuvchi xatoda o‘chirgan vaqtinchalik NavAI faylini tiklab bo‘lmaydi: bu safar u bir marta qayta yuklanadi.
+
+Bo‘sh joy o‘rnatish davomida boshqa dastur tomonidan kamayishi mumkin. Shunda o‘rnatish tushunarli xato bilan to‘xtaydi; u diskda yangi joy yarata olmaydi.

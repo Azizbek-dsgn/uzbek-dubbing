@@ -100,3 +100,7 @@ SRT UTF-8 BOM bilan yoziladi. Timestamps kadrga moslanadi. Sheva, fon shovqini v
 ## UzScribe 0.8.0 · Animatsiya va dizayn
 
 SaaS, Apple, Bounce, Elastic, Typewriter, Editorial, Kinetic, Neon, Cinematic, Sticker, Marker va Minimal. Katta-kichik shriftlar, 6 xil qo‘lda tanlanadigan joylashuv, fon shakllari va matn/fon uchun alohida light sweep. AE’da tahrirlanadigan layerlar; Premiere’da shaffof MOV. [Uslublar va ishlatish](docs/ANIMATIONS.md).
+
+## UzScribe 0.8.1 · O‘rnatishdagi disk xatosi
+
+O‘rnatuvchi Windows va macOS’da model yuklashdan oldin bo‘sh joyni tekshiradi. Disk to‘lsa qayta yuklashga urinmaydi; NavAI konvertatsiyasi uchun xom fayllar qayta ishga tushirishga saqlanadi. Tayyor model bir disk ichida ko‘chiriladi. [Yangilash va disk joyi](README-INSTALL.md#081--disk-joyi-va-model-yuklash).

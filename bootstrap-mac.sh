@@ -20,6 +20,15 @@ finish() {
 }
 trap finish EXIT
 
+# Check bootstrap space before downloading Python; the full budget follows.
+for check_path in "$log_root" "$work"; do
+  available_kib=$(df -Pk "$check_path" | awk 'NR==2 {print $4}')
+  if [[ "$available_kib" =~ ^[0-9]+$ ]] && (( available_kib < 1048576 )); then
+    echo "$check_path: diskda joy yetarli emas. Avval kamida 1 GiB joy bo‘shating; keyingi tekshiruv barcha modellar uchun kerakli joyni ko‘rsatadi." >&2
+    exit 28
+  fi
+done
+
 if [[ -n "${UZSCRIBE_SOURCE_DIR:-}" ]]; then
   source_dir="$UZSCRIBE_SOURCE_DIR"
 else

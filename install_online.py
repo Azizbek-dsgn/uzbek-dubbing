@@ -16,6 +16,8 @@ from pathlib import Path
 
 from install import destinations, install, _copy_panel, _enable_debug
 from subtitles.model_assets import require_features
+from subtitles.install_storage import (SPACE_EXIT, InsufficientSpace, require_space,
+    installation_budget, is_disk_full, disk_full_message)
 
 
 ROOT = Path(__file__).resolve().parent
@@ -28,6 +30,8 @@ import os
 import sys
 from pathlib import Path
 os.environ.setdefault("HF_HUB_DISABLE_XET", "1")
+from subtitles.install_storage import install_error_hook
+install_error_hook()
 from huggingface_hub import snapshot_download
 repo, revision, temporary = sys.argv[1:]
 output = Path(temporary) / "converted"
@@ -44,6 +48,8 @@ import os
 import sys
 from pathlib import Path
 os.environ.setdefault("HF_HUB_DISABLE_XET", "1")
+from subtitles.install_storage import install_error_hook
+install_error_hook()
 from huggingface_hub import hf_hub_download
 
 runtime = Path(sys.argv[1])
@@ -126,9 +132,13 @@ print("UzScribe: Whisper, GigaAM, NavAI, matn, so‘zlovchilar va audio tekshiru
 def _retry_download(command: list[str]) -> None:
     for attempt in range(3):
         try:
-            subprocess.run(command, check=True)
+            environment = dict(os.environ)
+            environment["PYTHONPATH"] = str(ROOT) + os.pathsep + environment.get("PYTHONPATH", "")
+            subprocess.run(command, check=True, env=environment)
             return
-        except subprocess.CalledProcessError:
+        except subprocess.CalledProcessError as error:
+            if error.returncode == SPACE_EXIT:
+                raise InsufficientSpace(disk_full_message()) from error
             if attempt == 2:
                 raise
             print("Yuklash uzildi. Qayta urinilmoqda…", flush=True)
@@ -160,6 +170,7 @@ def _prepare_environment(runtime: Path, system: str, *, convert: bool,
         except OSError:
             healthy = False
         if not healthy:
+            require_space(runtime, 8 * 1024**3, "Python muhitini qayta yaratish")
             backup = runtime / (".venv-backup-" + uuid.uuid4().hex)
             (runtime / ".venv").rename(backup)
             print(f"Python muhiti qayta yaratilmoqda. Eski nusxa: {backup}", flush=True)
@@ -234,15 +245,37 @@ def main() -> int:
             raise FileNotFoundError(f"UzScribe Global modeli to‘liq emas: {args.model_dir}")
         model = args.model_dir or (existing if _navai_ready(existing) else None)
         uv = Path(os.environ["UZSCRIBE_UV_BIN"]) if os.environ.get("UZSCRIBE_UV_BIN") else None
+        require_space(runtime, installation_budget(runtime, global_ready=model is not None and model.resolve() == existing.resolve()), "UzScribe o‘rnatish")
         python = _prepare_environment(runtime, sys.platform, convert=model is None, uv=uv)
         if model is None:
-            with tempfile.TemporaryDirectory(prefix="uzscribe-model-") as temporary:
-                print("UzScribe Global yuklanmoqda (taxminan 3.1 GB)…", flush=True)
-                _retry_download([str(python), "-c", CONVERT, MODEL_REPO,
-                                 MODEL_REVISION, temporary])
-                install(ROOT, sys.platform, Path.home(), dict(os.environ),
-                        developer=False, skip_dependencies=True,
-                        model_source=Path(temporary) / "converted")
+            # Keep resumable HF metadata/downloads on the target volume.
+            temporary = runtime / "models" / ".downloads" / ("global-" + MODEL_REVISION)
+            if temporary.is_symlink() or (temporary/"converted").is_symlink():
+                raise RuntimeError("Global yuklash papkasi symlink bo‘lishi mumkin emas")
+            temporary.mkdir(parents=True, exist_ok=True)
+            print("UzScribe Global yuklanmoqda (taxminan 3.1 GB)…", flush=True)
+            _retry_download([str(python), "-c", CONVERT, MODEL_REPO,
+                             MODEL_REVISION, str(temporary)])
+            downloaded = temporary / "converted"
+            if not _navai_ready(downloaded):
+                raise RuntimeError("UzScribe Global modeli to‘liq yuklanmadi")
+            backup = temporary / "previous"
+            if existing.is_symlink():
+                raise RuntimeError("Global model papkasi symlink bo‘lishi mumkin emas")
+            if existing.exists():
+                # A previous failed swap must not overwrite its saved model.
+                if backup.exists():
+                    backup = temporary / ("previous-" + uuid.uuid4().hex)
+                existing.replace(backup)
+            try:
+                downloaded.replace(existing)
+            except OSError:
+                if backup.exists():backup.replace(existing)
+                raise
+            install(ROOT, sys.platform, Path.home(), dict(os.environ),
+                    developer=False, skip_dependencies=True, model_source=existing)
+            import shutil
+            shutil.rmtree(temporary)
         else:
             install(ROOT, sys.platform, Path.home(), dict(os.environ),
                     developer=False, skip_dependencies=True, model_source=model)
@@ -254,7 +287,7 @@ def main() -> int:
         _copy_panel(ROOT, panel)
         _enable_debug(sys.platform)
         _verify_installation(runtime, panel, python)
-        (runtime/'install-report.json').write_text(json.dumps({'version':'0.8.0',
+        (runtime/'install-report.json').write_text(json.dumps({'version':'0.8.1',
             'ready':True,'models':['large-v3','gigaam-uzbek','navai-medium','rubai-transcript','speaker-onnx'],
             'verified':['audio','silero-vad','animations','caption-asr','text-correction','speaker-diarization']},ensure_ascii=False,indent=2),encoding='utf-8')
         print('Tayyor: Scribe Giga, Scribe Nav, Whisper, matn tartiblash, so‘zlovchilar, audio va animatsiyalar.',flush=True)
@@ -265,8 +298,10 @@ def main() -> int:
             if old.is_dir() and not old.is_symlink():
                 shutil.rmtree(old)
     except (OSError, RuntimeError, subprocess.CalledProcessError) as exc:
-        print(f"UzScribe o‘rnatilmadi: {exc}", file=sys.stderr)
-        return 1
+        full = is_disk_full(exc)
+        detail = disk_full_message() if full and not isinstance(exc, InsufficientSpace) else str(exc)
+        print(f"UzScribe o‘rnatilmadi: {detail}", file=sys.stderr)
+        return SPACE_EXIT if full else 1
     print("UzScribe o‘rnatildi. Premiere Pro yoki After Effects’ni qayta oching.")
     return 0
 

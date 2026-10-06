@@ -14,7 +14,7 @@ ROOT = Path(__file__).resolve().parents[1]
 PANEL = ("CSXS/manifest.xml", "index.html", "panel.js", "license-core.js", "license-panel.js", "license-config.json", "animation-panel.js", "podcast-panel.js", "reels-panel.js", "text-tools-panel.js", "panel-ui.js", "assets/uzscribe-logo.jpg",
          "host/editor.jsx", "host/after_effects.jsx")
 RUNTIME = ("__init__.py", "podcast.py", "reels.py", "cli.py", "batch.py", "animations.py", "caption_design.py", "sentences.py", "gigaam.py",
-           "fastconformer.py", "speakers.py", "model_assets.py", "requirements.txt", "requirements-release.txt",
+           "fastconformer.py", "speakers.py", "model_assets.py", "install_storage.py", "requirements.txt", "requirements-release.txt",
            "requirements-gigaam.txt", "requirements-fastconformer.txt",
            "requirements-intel-mac.txt",
            "requirements-speakers.txt")

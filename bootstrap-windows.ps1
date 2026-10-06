@@ -12,15 +12,22 @@ $env:PYTHONUTF8 = '1'
 $env:PYTHONIOENCODING = 'utf-8'
 try { [Console]::OutputEncoding = [Text.UTF8Encoding]::new($false) } catch {}
 $OutputEncoding = [Text.UTF8Encoding]::new($false)
-New-Item -ItemType Directory -Path $work | Out-Null
-New-Item -ItemType Directory -Path $logRoot -Force | Out-Null
 $transcriptStarted = $false
 try {
+  # Small bootstrap reserve; Python checks the complete missing-model budget.
+  foreach ($checkPath in @($logRoot, $work)) {
+    $drive = [IO.DriveInfo]::new([IO.Path]::GetPathRoot([IO.Path]::GetFullPath($checkPath)))
+    if ($drive.AvailableFreeSpace -lt 1GB) {
+      throw "$($drive.Name) diskda joy yetarli emas. Avval kamida 1 GiB joy bo'shating; keyingi tekshiruv barcha modellar uchun kerakli joyni ko'rsatadi."
+    }
+  }
+  New-Item -ItemType Directory -Path $work | Out-Null
+  New-Item -ItemType Directory -Path $logRoot -Force | Out-Null
   try {
     Start-Transcript -Path $logPath -Append -ErrorAction Stop | Out-Null
     $transcriptStarted = $true
   } catch {
-    Write-Warning "O‘rnatish jurnalini yozib bo‘lmadi: $($_.Exception.Message)"
+    Write-Warning "O'rnatish jurnalini yozib bo'lmadi: $($_.Exception.Message)"
   }
   if ($env:UZSCRIBE_SOURCE_DIR) {
     $source = Get-Item -LiteralPath $env:UZSCRIBE_SOURCE_DIR
@@ -47,7 +54,7 @@ try {
     $env:UV_UNMANAGED_INSTALL = Join-Path $work 'uv-bin'
     $powerShellExecutable = (Get-Process -Id $PID).Path
     & $powerShellExecutable -NoProfile -ExecutionPolicy Bypass -File $uvScript
-    if ($LASTEXITCODE -ne 0) { throw "uv o‘rnatilmadi (kod $LASTEXITCODE)." }
+    if ($LASTEXITCODE -ne 0) { throw "uv o'rnatilmadi (kod $LASTEXITCODE)." }
     $uv = Join-Path $env:UV_UNMANAGED_INSTALL 'uv.exe'
     if (-not (Test-Path -LiteralPath $uv)) { throw 'uv.exe topilmadi.' }
     $env:UZSCRIBE_UV_BIN = $uv
@@ -95,10 +102,11 @@ try {
     $installArgs += @('--model-dir', $bundledModel)
   }
   & $python @installArgs
+  if ($LASTEXITCODE -eq 28) { throw "Diskda joy yetarli emas. Joy bo'shatib, shu buyruqni qayta bajaring; yuklangan modellar saqlanadi." }
   if ($LASTEXITCODE -ne 0) { throw 'UzScribe install failed.' }
-  Write-Host "UzScribe o‘rnatildi. Jurnal: $logPath"
+  Write-Host "UzScribe o'rnatildi. Jurnal: $logPath"
 } catch {
-  Write-Host "UzScribe o‘rnatilmadi: $($_.Exception.Message)" -ForegroundColor Red
+  Write-Host "UzScribe o'rnatilmadi: $($_.Exception.Message)" -ForegroundColor Red
   Write-Host "Xato jurnali: $logPath"
   throw
 } finally {
