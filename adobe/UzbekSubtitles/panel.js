@@ -301,7 +301,7 @@
       var value=cues.map(function(c,i) {return (i+1)+'\n'+stamp(c.start)+' --> '+stamp(c.end)+'\n'+c.text;}).join('\n\n')+'\n\n';
       srtEditor.value=validateSrt(value).text;if(activeRun) activeRun.metadata=metadata;
       selectedCue=selected||0;renderCues();
-    }, phase:setPhase, show:show, finish:finish, problem:importProblem, authorize:allowLicense};
+    }, phase:setPhase, show:show, finish:finish, problem:importProblem};
   function adobeHost() {
     try {var environment=JSON.parse(__adobe_cep__.getHostEnvironment());return environment.appName;}
     catch (_) {return '';}
@@ -732,13 +732,7 @@
       callback(problem);}
     child.on('error',function(e){done(e);});child.on('close',function(code){done(code===0 && fs.existsSync(destination) && fs.statSync(destination).size>44?null:new Error(state.cancelled?'Bekor qilindi.':'AE audio tayyorlanmadi: '+error));});
   }
-  function allowLicense(feature) {
-    if(document.uzscribeLicense)return document.uzscribeLicense.allow(feature);
-    try {if(JSON.parse(fs.readFileSync(path.join(__dirname,'license-config.json'),'utf8')).mode==='community')return true;}catch(e){}
-    show('Obuna moduli yuklanmadi. UzScribe’ni yangilang.');return false;
-  }
   function start(reviewFirst) {
-    if(!allowLicense("captions"))return;
     var rate = Number(fps.value);
     if (!isFinite(rate) || rate <= 0 || rate > 120) { show('FPS 1–120 oralig‘ida bo‘lsin.'); return; }
     if (validNumber(lines, 1, 3) === null || validNumber(words, 1, 8) === null ||
@@ -798,7 +792,6 @@
   }
   run.onclick = function () { start(true); };
   batchRun.onclick = function () {
-    if(!allowLicense("captions"))return;
     var input = batchDir.value.trim();
     if (!input || !fs.existsSync(input) || !fs.statSync(input).isDirectory()) {
       show('Media papkasini to‘g‘ri kiriting.'); return;

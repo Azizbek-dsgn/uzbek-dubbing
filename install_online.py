@@ -225,8 +225,8 @@ def _verify_installation(runtime: Path, panel: Path, python: Path) -> None:
     if not checkpoint.is_file() or checkpoint.stat().st_size < 100_000_000:
         raise RuntimeError("GigaAM Uzbek 600M checkpointi to‘liq o‘rnatilmadi")
     require_features(runtime)
-    for name in ("CSXS/manifest.xml", "index.html", "panel.js", "license-core.js", "license-panel.js", "license-config.json", "animation-panel.js", "podcast-panel.js", "reels-panel.js", "text-tools-panel.js", "panel-ui.js",
-                 "assets/uzscribe-logo.jpg", "host/editor.jsx", "host/after_effects.jsx"):
+    for name in ("CSXS/manifest.xml", "index.html", "panel.js", "donation-panel.js", "animation-panel.js", "podcast-panel.js", "reels-panel.js", "text-tools-panel.js", "panel-ui.js",
+                 "assets/uzscribe-logo.jpg", "assets/donation-qr.svg", "host/editor.jsx", "host/after_effects.jsx"):
         if not (panel / name).is_file():
             raise RuntimeError(f"Adobe panel fayli yetishmayapti: {name}")
 
@@ -287,7 +287,7 @@ def main() -> int:
         _copy_panel(ROOT, panel)
         _enable_debug(sys.platform)
         _verify_installation(runtime, panel, python)
-        (runtime/'install-report.json').write_text(json.dumps({'version':'0.8.1',
+        (runtime/'install-report.json').write_text(json.dumps({'version':'0.8.2',
             'ready':True,'models':['large-v3','gigaam-uzbek','navai-medium','rubai-transcript','speaker-onnx'],
             'verified':['audio','silero-vad','animations','caption-asr','text-correction','speaker-diarization']},ensure_ascii=False,indent=2),encoding='utf-8')
         print('Tayyor: Scribe Giga, Scribe Nav, Whisper, matn tartiblash, so‘zlovchilar, audio va animatsiyalar.',flush=True)

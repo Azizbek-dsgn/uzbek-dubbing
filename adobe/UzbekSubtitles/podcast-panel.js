@@ -77,7 +77,6 @@
   function fail(message) { child=null;phase(false);status(message); }
   el('podRun').addEventListener('click',function(){
     if(busy || document.uzscribeBusy)return;
-    if(bridge.authorize && !bridge.authorize('podcast'))return;
     save();cancelled=false;result=null;el('podReview').hidden=true;phase(true);status('Timeline tekshirilmoqda…');
     refresh(function(err,data){
       if(err){fail(err.message);return;}if(cancelled){fail('Bekor qilindi.');return;}

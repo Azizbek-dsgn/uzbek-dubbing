@@ -37,7 +37,8 @@ jobs:
           node tests/test_reels_panel.js
           node tests/test_animation_panel.js
           node tests/test_animation_host.js
-          node tests/test_license_panel.js
+          node tests/test_donation_panel.js
+          node tests/test_panel_ui.js
       - name: Windows installer syntax
         if: runner.os == 'Windows'
         shell: pwsh

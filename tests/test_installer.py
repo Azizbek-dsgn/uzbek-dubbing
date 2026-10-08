@@ -37,7 +37,7 @@ class InstallerTests(unittest.TestCase):
             (package / 'adobe/UzbekSubtitles/assets').mkdir()
             (package / 'adobe/UzbekSubtitles/assets/uzscribe-logo.jpg').write_bytes(b'logo')
             (package / 'adobe/UzbekSubtitles/CSXS/manifest.xml').write_text('<root/>')
-            for name in ('index.html', 'panel.js', 'license-core.js', 'license-panel.js', 'license-config.json', 'animation-panel.js', 'podcast-panel.js', 'reels-panel.js', 'text-tools-panel.js', 'panel-ui.js'):
+            for name in ('index.html', 'panel.js', 'donation-panel.js', 'animation-panel.js', 'podcast-panel.js', 'reels-panel.js', 'text-tools-panel.js', 'panel-ui.js'):
                 (package / 'adobe/UzbekSubtitles' / name).write_text(name)
             (package / 'adobe/UzbekSubtitles/host/editor.jsx').write_text('editor')
             with patch('install._enable_debug') as debug:
@@ -45,14 +45,21 @@ class InstallerTests(unittest.TestCase):
                                          developer=True, skip_dependencies=True)
             self.assertEqual((runtime / 'models/large-v3/model.bin').read_bytes(), b'test')
             self.assertEqual((panel / 'panel.js').read_text(), 'panel.js')
-            self.assertEqual((panel / 'license-config.json').read_text(), 'license-config.json')
-            self.assertTrue((panel / 'license-panel.js').is_file())
+            self.assertTrue((panel / 'donation-panel.js').is_file())
+            self.assertFalse((panel / 'license-panel.js').exists())
             self.assertEqual((panel / 'assets/uzscribe-logo.jpg').read_bytes(), b'logo')
             debug.assert_called_once_with('darwin')
+            for name in ('license-panel.js', 'license-config.json', 'license-core.js'):
+                (panel / name).write_text('obsolete script')
+            (runtime / 'license').mkdir()
+            (runtime / 'license/state.json').write_text('user state')
             with patch('install._enable_debug'):
                 install(package, 'darwin', base / 'home', {}, developer=True,
                         skip_dependencies=True, model_source=runtime / 'models/large-v3')
             self.assertEqual((runtime / 'models/large-v3/model.bin').read_bytes(), b'test')
+            self.assertEqual((runtime / 'license/state.json').read_text(), 'user state')
+            self.assertFalse(any((panel / name).exists() for name in
+                                 ('license-panel.js', 'license-config.json', 'license-core.js')))
 
     def test_online_converter_script_is_valid_python(self):
         ast.parse(CONVERT)
@@ -159,8 +166,8 @@ class InstallerTests(unittest.TestCase):
                      *(runtime / 'models/gigaam-base-large' / name for name in
                        ('config.json', 'modeling_gigaam.py')),
                      *(panel / name for name in
-                       ('CSXS/manifest.xml', 'index.html', 'panel.js', 'license-core.js', 'license-panel.js', 'license-config.json', 'animation-panel.js', 'podcast-panel.js', 'reels-panel.js', 'text-tools-panel.js', 'panel-ui.js',
-                        'assets/uzscribe-logo.jpg','host/editor.jsx','host/after_effects.jsx'))]
+                       ('CSXS/manifest.xml', 'index.html', 'panel.js', 'donation-panel.js', 'animation-panel.js', 'podcast-panel.js', 'reels-panel.js', 'text-tools-panel.js', 'panel-ui.js',
+                        'assets/uzscribe-logo.jpg','assets/donation-qr.svg','host/editor.jsx','host/after_effects.jsx'))]
             for path in files:
                 path.parent.mkdir(parents=True, exist_ok=True)
                 path.touch()

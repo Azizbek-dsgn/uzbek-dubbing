@@ -95,17 +95,7 @@ class BillingTests(unittest.TestCase):
   script="const fs=require('fs'),assert=require('assert'),core=require('./adobe/UzbekSubtitles/license-core.js'),f=JSON.parse(fs.readFileSync(process.argv[1]));assert(core.validate(f.token,f.public,'1'.repeat(64),f.now,0,'captions'));assert.throws(()=>core.validate(f.token+'X',f.public,'1'.repeat(64),f.now,0));assert.throws(()=>core.validate(f.token,f.public,'2'.repeat(64),f.now,0));assert.throws(()=>core.validate(f.token,f.public,'1'.repeat(64),f.now+259201,0));assert.throws(()=>core.validate(f.token,f.public,'1'.repeat(64),f.now,f.now+600));"
   subprocess.run([node,'-e',script,str(fixture)],check=True)
 
- def test_paid_release_contains_only_public_config(self):
-  import zipfile
+ def test_release_rejects_obsolete_paid_configuration(self):
   from tools import build_release
-  model=Path(self.tmp.name)/'model';model.mkdir()
-  for name in build_release.MODEL:(model/name).write_bytes(b'synthetic packaging fixture')
-  config=Path(self.tmp.name)/'public.json';public=self.private.public_key().public_bytes(serialization.Encoding.PEM,serialization.PublicFormat.SubjectPublicKeyInfo).decode()
-  config.write_text(json.dumps({'mode':'subscription','api_url':'https://example.com','public_key':public}))
-  target=Path(self.tmp.name)/'buyer.zip';build_release.build(model,target,license_config=config)
-  with zipfile.ZipFile(target) as z:
-   self.assertEqual(json.loads(z.read('adobe/UzbekSubtitles/license-config.json'))['mode'],'subscription')
-   self.assertIn('adobe/UzbekSubtitles/license-panel.js',z.namelist())
-   self.assertFalse(any(n.startswith('billing/') or n.endswith('.pem') for n in z.namelist()))
-  config.write_text(json.dumps({'mode':'subscription','api_url':'https://example.com','public_key':'BEGIN PRIVATE KEY'}))
-  with self.assertRaises(ValueError):build_release.build(model,target,license_config=config)
+  with self.assertRaisesRegex(ValueError,'Obuna distributivi olib tashlangan'):
+   build_release.build(Path(self.tmp.name)/'model',Path(self.tmp.name)/'buyer.zip',license_config=Path('old-config.json'))

@@ -6,7 +6,7 @@
   document.body.setAttribute('data-host',host);
   el('hostBadge').textContent=host==='AEFT'?'After Effects':host==='PPRO'?'Premiere Pro':'';
   if(host==='AEFT')el('captionGuide').textContent='Bitta video layerni tanlang. Subtitrni yarating va timeline’ga qo‘shing.';
-  var ids=['captionsTab','textToolsTab','podcastTab','reelsTab'],nav=document.querySelector('.mode-tabs'),account=el('subscription');
+  var ids=['captionsTab','textToolsTab','podcastTab','reelsTab'],nav=document.querySelector('.mode-tabs'),account=el('support');
   function syncTabs(){ids.forEach(function(id){var tab=el(id);tab.tabIndex=tab.getAttribute('aria-selected')==='true'&&!tab.hidden?0:-1;});}
   function modelLabel(){var model=el('model'),option=model.options[model.selectedIndex];el('modelSummary').textContent=option?option.textContent:'Avtomatik';}
   el('model').addEventListener('change',modelLabel);modelLabel();syncTabs();
