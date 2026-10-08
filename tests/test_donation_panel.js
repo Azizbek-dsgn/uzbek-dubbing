@@ -1,29 +1,22 @@
-const assert=require('assert'),fs=require('fs'),vm=require('vm');
-const script=fs.readFileSync('adobe/UzbekSubtitles/donation-panel.js','utf8'),DAY=86400000,KEY='uzscribe.donation.v1';
-function fixture(memory, now=100*DAY, opts={}){
- const els={};for(const id of ['donationNotice','support','donationNever','donateLink','donationStatus','donationDismiss','donationShow'])els[id]={hidden:id==='donationNotice',open:false,checked:false,textContent:'',focus(){this.focused=true}};
- let opened='',clicks=0;const storage={getItem(k){if(opts.failRead)throw Error('blocked');return memory[k]||null},setItem(k,v){if(opts.failWrite)throw Error('quota');memory[k]=v}};
- const doc={getElementById:id=>els[id],uzscribeBusy:!!opts.busy};
- const context={document:doc,localStorage:storage,Date:{now:()=>now},JSON,Math,isFinite,window:{innerHeight:opts.height||700}};
- if(!opts.browser)context.__adobe_cep__={openURLInDefaultBrowser(u){if(opts.failOpen)throw Error('unavailable');opened=u;clicks++}};
- vm.runInNewContext(script,context);return {els,doc,opened:()=>opened,clicks:()=>clicks};
+const assert=require('assert'),fs=require('fs'),vm=require('vm'),path=require('path');
+const source=fs.readFileSync('adobe/UzbekSubtitles/donation-panel.js','utf8');
+function fixture(memory={},options={}){
+ const elements={};for(const id of ['donationNotice','support','donateLink','donationStatus','donationShow'])elements[id]={hidden:true,open:false,textContent:'',focus(){this.focused=true}};
+ let opened='',calls=[];
+ const ctx={document:{getElementById:id=>elements[id]},JSON,Math,isFinite,localStorage:{getItem:k=>memory[k]||null,setItem(k,v){if(options.blocked)throw Error('blocked');memory[k]=v}},window:{},process:{platform:options.platform||'darwin',env:{SystemRoot:'C:\\Windows'}}};
+ if(!options.browser){ctx.__adobe_cep__={};ctx.require=n=>n==='path'?path.win32:{execFile(...args){calls.push(args);if(options.error)args[args.length-1](Error('failed'));else args[args.length-1](null)}};
+ if(options.bridge)ctx.window.cep={util:{openURLInDefaultBrowser(u){opened=u;return options.code||0}}};}
+ vm.runInNewContext(source,ctx);return {elements,opened:()=>opened,calls};
 }
-let memory={},f=fixture(memory);
-assert(!f.els.donationNotice.hidden,'first opening shows an inline invitation');
-f=fixture(memory);assert(f.els.donationNotice.hidden,'reopening without dismissing must not repeat it');
-f=fixture(memory,131*DAY);assert(!f.els.donationNotice.hidden,'next monthly slot is available');f.els.donationDismiss.onclick();assert(f.els.donationNotice.hidden);
-assert(fixture(memory,132*DAY).els.donationNotice.hidden);
-f=fixture(memory,162*DAY);let stopped=false;f.els.donationShow.onclick({stopPropagation(){stopped=true}});assert(stopped&&f.els.support.open&&f.els.donateLink.focused&&f.els.donationNotice.hidden);
-f.els.donationNever.checked=true;f.els.donationNever.onchange();assert(JSON.parse(memory[KEY]).never);assert(fixture(memory,900*DAY).els.donationNotice.hidden);
-f=fixture(memory,901*DAY);assert(f.els.donationNever.checked);f.els.donationShow.onclick();assert(f.els.support.open,'manual support remains available after opting out');
-let prevented=false;f.els.donateLink.onclick({preventDefault(){prevented=true}});assert(prevented);assert.equal(f.opened(),'https://taps.uz/fikrosfera/d');assert.equal(f.clicks(),1);
-assert(JSON.parse(memory[KEY]).never,'opening Taps must not undo the permanent opt-out');
-f.els.donationNever.checked=false;f.els.donationNever.onchange();assert(!JSON.parse(memory[KEY]).never);
-assert(fixture(memory,950*DAY).els.donationNotice.hidden,'opening the link snoozes for 90 days');
-for(const opts of [{failRead:true},{failWrite:true},{height:300},{busy:true}])assert(fixture({},100*DAY,opts).els.donationNotice.hidden);
-f=fixture({[KEY]:'broken JSON'});assert(f.els.donationNotice.hidden);f.els.donationShow.onclick();assert(f.els.support.open);
-f=fixture({},100*DAY,{failOpen:true});f.els.donateLink.onclick({preventDefault(){}});assert(f.els.donationStatus.textContent.includes('QR'));assert.equal(f.clicks(),0);
-f=fixture({},100*DAY,{browser:true});f.els.donateLink.onclick({preventDefault(){throw Error('keep normal browser link')}});assert(f.els.donationNotice.hidden);
-const html=fs.readFileSync('adobe/UzbekSubtitles/index.html','utf8');assert(html.includes('assets/donation-qr.svg'));assert(html.includes('href="https://taps.uz/fikrosfera/d"'));assert(!html.includes('license-panel.js'));assert(!html.includes('id="subscription"'));
-for(const name of ['panel.js','animation-panel.js','podcast-panel.js','reels-panel.js'])assert(!/uzscribeLicense|license-config|allowLicense|bridge\.authorize/.test(fs.readFileSync('adobe/UzbekSubtitles/'+name,'utf8')),name+' must have no subscription gate');
-console.log('Donations: monthly limits, persistent opt-out, no blocking, storage failures, offline UI and exact Taps browser handoff OK');
+let memory={};for(let i=1;i<=15;i++){const f=fixture(memory);assert(!f.elements.donationNotice.hidden);assert.equal(f.elements.support.open,i%5===0);}
+let f=fixture({'uzscribe.donation.v1':JSON.stringify({never:true,nextNoticeAt:9999999999999})});assert(!f.elements.donationNotice.hidden,'old opt-out is removed');
+f.elements.donationShow.onclick({stopPropagation(){}});assert(f.elements.support.open&&f.elements.donateLink.focused);
+f=fixture({}, {bridge:true});f.elements.donateLink.onclick({preventDefault(){}});assert.equal(f.opened(),'https://taps.uz/fikrosfera/d');assert.equal(f.calls.length,0);
+for(const platform of ['darwin','win32']){
+ f=fixture({}, {platform,bridge:true,code:201});f.elements.donateLink.onclick({preventDefault(){}});assert.equal(f.calls.length,1);assert(f.calls[0][1].includes('https://taps.uz/fikrosfera/d'));assert.equal(f.calls[0][0],platform==='darwin'?'/usr/bin/open':'C:\\Windows\\System32\\rundll32.exe');
+}
+f=fixture({}, {error:true});f.elements.donateLink.onclick({preventDefault(){}});assert(f.elements.donationStatus.textContent.includes('QR'));
+f=fixture({}, {browser:true});f.elements.donateLink.onclick({preventDefault(){throw Error('keep normal anchor')}});
+f=fixture({}, {blocked:true});assert(!f.elements.donationNotice.hidden);assert(!f.elements.support.open);
+const html=fs.readFileSync('adobe/UzbekSubtitles/index.html','utf8');assert(!html.includes('donationNever'));assert(!html.includes('donationDismiss'));assert(!html.includes('.donation-notice{display:none'));assert(html.includes('assets/donation-qr.svg'));
+console.log('Pinned notice, every fifth opening, removed opt-out, correct CEP bridge, macOS/Windows fallback and browser errors OK');

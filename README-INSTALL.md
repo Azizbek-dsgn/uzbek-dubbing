@@ -13,19 +13,19 @@ Quyidagi buyruqlar Git yoki Python’ni oldindan o‘rnatishni talab qilmaydi. U
 macOS Terminal:
 
 ```sh
-bash -c 'set -o pipefail; curl -fsSL "https://raw.githubusercontent.com/Azizbek-dsgn/uzbek-dubbing/feat/uzbek-subtitles-adobe/bootstrap-mac.sh?v=0.8.1" | bash'
+bash -c 'set -o pipefail; curl -fsSL "https://raw.githubusercontent.com/Azizbek-dsgn/uzbek-dubbing/feat/uzbek-subtitles-adobe/bootstrap-mac.sh?v=0.8.3" | bash'
 ```
 
 Windows PowerShell:
 
 ```powershell
-powershell.exe -NoProfile -NoExit -ExecutionPolicy Bypass -Command "irm 'https://raw.githubusercontent.com/Azizbek-dsgn/uzbek-dubbing/feat/uzbek-subtitles-adobe/bootstrap-windows.ps1?v=0.8.1' | iex"
+powershell.exe -NoProfile -NoExit -ExecutionPolicy Bypass -Command "irm 'https://raw.githubusercontent.com/Azizbek-dsgn/uzbek-dubbing/feat/uzbek-subtitles-adobe/bootstrap-windows.ps1?v=0.8.3' | iex"
 ```
 
 Windows **Command Prompt (CMD, `C:\Users\...>` oynasi)**:
 
 ```bat
-powershell -NoProfile -NoExit -ExecutionPolicy Bypass -Command "Invoke-RestMethod 'https://raw.githubusercontent.com/Azizbek-dsgn/uzbek-dubbing/feat/uzbek-subtitles-adobe/bootstrap-windows.ps1?v=0.8.1' | Invoke-Expression"
+powershell -NoProfile -NoExit -ExecutionPolicy Bypass -Command "Invoke-RestMethod 'https://raw.githubusercontent.com/Azizbek-dsgn/uzbek-dubbing/feat/uzbek-subtitles-adobe/bootstrap-windows.ps1?v=0.8.3' | Invoke-Expression"
 ```
 
 Faqat oynangizga mos **bitta buyruqni** joylang. `bootstrap-windows.ps1` faylining ichidagi `$python`, `Invoke-WebRequest` kabi qatorlarni CMD’ga alohida joylamang; ular PowerShell sintaksisidir.
@@ -122,16 +122,9 @@ Mahalliy tekshiruv: 70 Python test, 8 Node test to‘plami va haqiqiy AIFF → W
 
 Har bir subtitr bloki alohida tahrirlanadigan text layer. So‘z animatsiyalari layer ichida, tartib raqami va o‘z in/out vaqti bilan. Pill uchun bitta qo‘shimcha highlight shape. Panelni yopib qayta oching.
 
-### 0.6.1 — Renuvo sinov integratsiyasi
+### Avvalgi obuna tajribasi
 
-Avtomatik obuna adapteri, imzolangan webhook tekshiruvi va panelda “Obunani boshqarish”. Public beta community rejimida; Renuvo sandbox/API kaliti va real provayder acceptance alohida talab qilinadi. [Ulanish](https://github.com/Azizbek-dsgn/uzbek-dubbing/blob/feat/uzbek-subtitles-adobe/billing/RENUVO.md).
-
-### 0.6.0 — obuna uchun tayyor tizim
-
-Panelga **Obuna** bo‘limi qo‘shildi: kalit faollashtirish, Payme’da tarif olish/uzaytirish va kompyuterni uzish. Merchant va domen ulanmaguncha public beta **community** rejimida qoladi. Pullik distributiv uchun `tools/build_release.py --license-config` orqali public server konfiguratsiyasini berish kerak.
-
-Tariflar so‘mda; obuna hozir **qo‘lda uzayadi**, kartadan avtomatik yechilmaydi. Serverda tarif, mijoz, muddat, qurilma, to‘lov va audit boshqariladi. [Serverni tayyorlash](https://github.com/Azizbek-dsgn/uzbek-dubbing/blob/feat/uzbek-subtitles-adobe/billing/README.md), [monetizatsiya yo‘llari](https://github.com/Azizbek-dsgn/uzbek-dubbing/blob/feat/uzbek-subtitles-adobe/docs/MONETIZATION.md).
-
+Obuna tizimi hozirgi panel va distributivdan olib tashlangan. Barcha funksiyalar bepul, donat ixtiyoriy.
 
 ### 0.6.9 · Windows subtitles and After Effects audio
 
@@ -202,3 +195,7 @@ plus fresh public speaker downloads, not a clean Windows/Intel installation.
 - Avvalgi o‘rnatuvchi xatoda o‘chirgan vaqtinchalik NavAI faylini tiklab bo‘lmaydi: bu safar u bir marta qayta yuklanadi.
 
 Bo‘sh joy o‘rnatish davomida boshqa dastur tomonidan kamayishi mumkin. Shunda o‘rnatish tushunarli xato bilan to‘xtaydi; u diskda yangi joy yarata olmaydi.
+
+## Hozirgi donat tartibi · 0.8.3
+
+Oldingi oylik eslatma va “Boshqa ko‘rsatma” tanlovi bekor qilindi. Xabar tepada doim turadi. QR oynasi panelning har 5-ochilishida (5, 10, 15…) ochiladi; Escape yoki tashqarisini bosib yopiladi, xabar esa qoladi. Tab almashtirish yoki brauzerdan qaytish hisoblanmaydi. Donat tugmasi Taps sahifasini standart brauzerda ochadi; CEP API ishlamasa macOS yoki Windows tizim ochuvchisi ishlatiladi.

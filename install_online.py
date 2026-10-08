@@ -287,7 +287,7 @@ def main() -> int:
         _copy_panel(ROOT, panel)
         _enable_debug(sys.platform)
         _verify_installation(runtime, panel, python)
-        (runtime/'install-report.json').write_text(json.dumps({'version':'0.8.2',
+        (runtime/'install-report.json').write_text(json.dumps({'version':'0.8.3',
             'ready':True,'models':['large-v3','gigaam-uzbek','navai-medium','rubai-transcript','speaker-onnx'],
             'verified':['audio','silero-vad','animations','caption-asr','text-correction','speaker-diarization']},ensure_ascii=False,indent=2),encoding='utf-8')
         print('Tayyor: Scribe Giga, Scribe Nav, Whisper, matn tartiblash, so‘zlovchilar, audio va animatsiyalar.',flush=True)

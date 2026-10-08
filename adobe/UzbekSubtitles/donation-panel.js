@@ -1,80 +1,39 @@
-/* global __adobe_cep__ */
 (function () {
   'use strict';
-  var URL = 'https://taps.uz/fikrosfera/d';
-  var KEY = 'uzscribe.donation.v1';
-  var DAY = 86400000;
-  var notice = document.getElementById('donationNotice');
-  var support = document.getElementById('support');
-  var never = document.getElementById('donationNever');
-  var link = document.getElementById('donateLink');
-  var status = document.getElementById('donationStatus');
-  var state = { nextNoticeAt: 0, never: false };
-  var persistent = false;
-  if (!notice || !support || !never || !link || !status) return;
-
+  var URL='https://taps.uz/fikrosfera/d', KEY='uzscribe.donation.v2';
+  var notice=document.getElementById('donationNotice'),support=document.getElementById('support');
+  var link=document.getElementById('donateLink'),status=document.getElementById('donationStatus');
+  if(!notice||!support||!link||!status)return;
+  notice.hidden=false;
+  // Count panel loads, not tab changes, clicks or returns from the browser.
   try {
-    var raw = localStorage.getItem(KEY);
-    if (raw) {
-      var saved = JSON.parse(raw);
-      state.never = saved.never === true;
-      if (typeof saved.nextNoticeAt === 'number' && isFinite(saved.nextNoticeAt) && saved.nextNoticeAt > 0) {
-        state.nextNoticeAt = saved.nextNoticeAt;
-      }
+    var state=JSON.parse(localStorage.getItem(KEY)||'{}');
+    var count=typeof state.opens==='number'&&isFinite(state.opens)&&state.opens>=0&&state.opens<5&&Math.floor(state.opens)===state.opens?state.opens:0;
+    count=(count+1)%5;
+    localStorage.setItem(KEY,JSON.stringify({opens:count}));
+    if(count===0)support.open=true;
+  } catch (_) { /* The pinned notice and manual QR still work without storage. */ }
+  document.getElementById('donationShow').onclick=function(event){
+    if(event)event.stopPropagation();support.open=true;link.focus();
+  };
+  function failed(){status.textContent='Brauzer ochilmadi. QR kodni skanerlang yoki taps.uz/fikrosfera/d havolasini brauzerda oching.';}
+  link.onclick=function(event){
+    status.textContent='';
+    var util=typeof window!=='undefined'&&window.cep&&window.cep.util;
+    var inAdobe=!!util||typeof __adobe_cep__!=='undefined';
+    if(!inAdobe&&typeof require!=='function')return; // Regular browser: use the anchor.
+    if(event)event.preventDefault();
+    if(util&&typeof util.openURLInDefaultBrowser==='function'){
+      try {var result=util.openURLInDefaultBrowser(URL);if(result===0||typeof result==='undefined')return;}catch(_){}
     }
-    persistent = true;
-  } catch (_) {
-    // No persistent storage: keep only the manual button, so reopening never nags.
-  }
-  never.checked = state.never;
-  function save() {
-    if (!persistent) return false;
+    // CEP's browser bridge may be missing or return an error. Use the OS launcher.
     try {
-      localStorage.setItem(KEY, JSON.stringify(state));
-      return true;
-    } catch (_) {
-      persistent = false;
-      return false;
-    }
-  }
-  function hide(days) {
-    notice.hidden = true;
-    state.nextNoticeAt = Math.max(state.nextNoticeAt, Date.now() + days * DAY);
-    save();
-  }
-  // Consume the monthly slot on showing, even if the panel is closed without dismissing.
-  // Small panels need all their space for editing; the manual support button stays.
-  if (persistent && !state.never && Date.now() >= state.nextNoticeAt &&
-      !document.uzscribeBusy && (typeof window === 'undefined' || window.innerHeight > 380)) {
-    state.nextNoticeAt = Date.now() + 30 * DAY;
-    if (save()) notice.hidden = false;
-  }
-  document.getElementById('donationDismiss').onclick = function () { hide(30); };
-  document.getElementById('donationShow').onclick = function (event) {
-    if (event) event.stopPropagation();
-    hide(30);
-    support.open = true;
-    link.focus();
-  };
-  never.onchange = function () {
-    state.never = never.checked;
-    hide(30);
-    status.textContent = save() ?
-      (state.never ? 'Donat eslatmasi o‘chirildi. Tugmadan istalgan payt foydalanishingiz mumkin.' : 'Donat eslatmasi oyiga bir martadan ko‘p chiqmaydi.') :
-      'Bu panelda eslatma sozlamasi saqlanmadi. Avtomatik eslatma ko‘rsatilmaydi.';
-  };
-  link.onclick = function (event) {
-    status.textContent = '';
-    if (typeof __adobe_cep__ !== 'undefined' && typeof __adobe_cep__.openURLInDefaultBrowser === 'function') {
-      if (event) event.preventDefault();
-      try {
-        __adobe_cep__.openURLInDefaultBrowser(URL);
-      } catch (_) {
-        status.textContent = 'Sahifa ochilmadi. QR kodni skanerlang yoki taps.uz/fikrosfera/d havolasini brauzerda oching.';
-        return;
-      }
-    }
-    // Opening a link is not proof of payment. Just pause reminders longer.
-    hide(90);
+      var cp=require('child_process');
+      if(process.platform==='darwin')cp.execFile('/usr/bin/open',[URL],function(error){if(error)failed();});
+      else if(process.platform==='win32'){
+        var path=require('path'),system=process.env.SystemRoot||'C:\\Windows';
+        cp.execFile(path.join(system,'System32','rundll32.exe'),['url.dll,FileProtocolHandler',URL],{windowsHide:true},function(error){if(error)failed();});
+      }else failed();
+    }catch(_){failed();}
   };
 }());
