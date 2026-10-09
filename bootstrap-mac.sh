@@ -2,7 +2,7 @@
 set -euo pipefail
 export PYTHONUTF8=1 PYTHONIOENCODING=utf-8
 
-SOURCE_URL="https://codeload.github.com/Azizbek-dsgn/uzbek-dubbing/tar.gz/refs/heads/feat/uzbek-subtitles-adobe"
+SOURCE_URL="https://codeload.github.com/Azizbek-dsgn/UzScribe/tar.gz/refs/heads/main"
 log_root="$HOME/Library/Application Support/UzbekSubtitles"
 mkdir -p "$log_root"
 log_path="$log_root/install.log"

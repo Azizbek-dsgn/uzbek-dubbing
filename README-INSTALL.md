@@ -13,19 +13,19 @@ Quyidagi buyruqlar Git yoki Python’ni oldindan o‘rnatishni talab qilmaydi. U
 macOS Terminal:
 
 ```sh
-bash -c 'set -o pipefail; curl -fsSL "https://raw.githubusercontent.com/Azizbek-dsgn/uzbek-dubbing/feat/uzbek-subtitles-adobe/bootstrap-mac.sh?v=0.8.3" | bash'
+bash -c 'set -o pipefail; curl -fsSL "https://raw.githubusercontent.com/Azizbek-dsgn/UzScribe/main/bootstrap-mac.sh?v=0.8.3" | bash'
 ```
 
 Windows PowerShell:
 
 ```powershell
-powershell.exe -NoProfile -NoExit -ExecutionPolicy Bypass -Command "irm 'https://raw.githubusercontent.com/Azizbek-dsgn/uzbek-dubbing/feat/uzbek-subtitles-adobe/bootstrap-windows.ps1?v=0.8.3' | iex"
+powershell.exe -NoProfile -NoExit -ExecutionPolicy Bypass -Command "irm 'https://raw.githubusercontent.com/Azizbek-dsgn/UzScribe/main/bootstrap-windows.ps1?v=0.8.3' | iex"
 ```
 
 Windows **Command Prompt (CMD, `C:\Users\...>` oynasi)**:
 
 ```bat
-powershell -NoProfile -NoExit -ExecutionPolicy Bypass -Command "Invoke-RestMethod 'https://raw.githubusercontent.com/Azizbek-dsgn/uzbek-dubbing/feat/uzbek-subtitles-adobe/bootstrap-windows.ps1?v=0.8.3' | Invoke-Expression"
+powershell -NoProfile -NoExit -ExecutionPolicy Bypass -Command "Invoke-RestMethod 'https://raw.githubusercontent.com/Azizbek-dsgn/UzScribe/main/bootstrap-windows.ps1?v=0.8.3' | Invoke-Expression"
 ```
 
 Faqat oynangizga mos **bitta buyruqni** joylang. `bootstrap-windows.ps1` faylining ichidagi `$python`, `Invoke-WebRequest` kabi qatorlarni CMD’ga alohida joylamang; ular PowerShell sintaksisidir.

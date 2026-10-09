@@ -1,6 +1,6 @@
 $ErrorActionPreference = 'Stop'
 [Net.ServicePointManager]::SecurityProtocol = [Net.ServicePointManager]::SecurityProtocol -bor [Net.SecurityProtocolType]::Tls12
-$sourceUrl = 'https://codeload.github.com/Azizbek-dsgn/uzbek-dubbing/zip/refs/heads/feat/uzbek-subtitles-adobe'
+$sourceUrl = 'https://codeload.github.com/Azizbek-dsgn/UzScribe/zip/refs/heads/main'
 $work = Join-Path ([IO.Path]::GetTempPath()) ('uzscribe-' + [guid]::NewGuid().ToString('N'))
 $logRoot = Join-Path $env:LOCALAPPDATA 'UzbekSubtitles'
 $logPath = Join-Path $logRoot 'install.log'
